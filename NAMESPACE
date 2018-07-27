@@ -1,0 +1,4 @@
+useDynLib(mable, .registration = TRUE)
+export(bern.approx, mable.em, mable.optim, mable.em.group, mable.optim.group, plotmable)
+importFrom("graphics", lines, plot)
+importFrom("stats", dbeta, pbeta)
