@@ -1,0 +1,377 @@
+---
+title: Maximum Approximate Bernstein/Beta Likelihood Estimation in R package  'mable'
+  v2.0
+author: "Zhong Guan"
+date: "12/31/2019"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+link-citations: yes
+bibliography:
+- bernstein.bib
+- por-model.bib
+- chpt.bib
+biblio-style: chicago
+vignette: >
+  %\VignetteIndexEntry{Maximum Approximate Bernstein/Beta Likelihood Estimation in R package 'mable' v2.0} 
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignettEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+\setcounter{section}{0}
+# Introduction
+
+Any continuous density function $f$ on a known closed interval $[a,b]$ can be approximated by Bernstein polynomial $f_m(x; p)=(b-a)^{-1}\sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]$, where $p_i\ge 0$, $\sum_{i=0}^m p_i=1$ and $\beta_{mi}(u)=(m+1){m\choose i}u^i(1-u)^{m-i}$, $i=0,1,\ldots,m$, is the beta density with shapes $(i+1, m-i+1)$. This provides a way to approximately model the unknwon underlying density with a mixture beta model with an appropriate \emph{model degree} $m$ and solve a nonparametric or semiparametric statistical problem ``parametrically'' using the maximum likelihood method. For instance, based on one-sample data, $x_1,\ldots,x_n$, one can estimate a nonparametric density $f$ parametrically by maximizing the approximate likelihood $\ell(p)=\sum_{j=0}^n\log f_m(x_j; p)$ with respect to $p$ [@Guan-jns-2015]. 
+
+Since the Bernstein polynomial model of degree $m$ is nested in the model of degree $m+1$, the maximum likelihood is increasing in $m$. The increase is negligible when the model becomes overfitting. Therefore an optimal degree can be chosen as the change-point of the log likelihood ratios over a set of consecutive candidate model degrees. 
+
+This approach works surprisingly well for even more complicated models and data. With an estimate $\hat p=(\hat p_0,\ldots,\hat p_m)$ of $p$ one can estimate the cumulative distribution function $F$ by
+$\hat F(x)=F_m(x;\hat p)=\sum_{i=0}^m \hat p_i B_{mi}[(x-a)/(b-a)]$, where $B_{mi}(u)=\int_0^u\beta_{mj}(t)dt$, $i=0,\ldots,m$, is the beta distribution function with shapes $(i+1,m-i+1)$. This manual will illustrate the use of the R package \texttt{mable} for obtaining not only smooth estimates of density, cumulative distribution, and survival functions but also estimates of parameters such as regression coefficients. 
+
+```{r echo = FALSE}
+library(mable)
+```
+
+# One-sample Problems 
+## Raw Data
+Let $x_1,\ldots,x_n$ be a sample from a population with cumulative distribution function $F$ and density function $f$. on $[a,b]$. If $[a,b]$ is unknown we choose $[a,b]\supset [x_{(1)},x_{(n)}]$, where $x_{(1)}$ and $x_{(n)}$ are the minimum and maximum statistics, respectively. 
+
+### Example: Vaal River Annual Flow Data
+For the annual flow data of Vaal River at Standerton as given by Table 1.1 of @Linhart-and-Zucchini-model-selection-book give the flow in millions of cubic metres, 
+```{r}
+data(Vaal.Flow)
+head(Vaal.Flow, 3)
+```
+we want to estimate the density and the distribution functions of annual flow
+```{r results = "hide", warning = FALSE}
+vaal<-mable(Vaal.Flow$Flow, M=c(2,100), interval=c(0, 3000), IC="all",
+       controls = mable.ctrl(sig.level=1e-8, maxit=2000, eps=1.0e-9))
+```
+Here we truncate the density by \texttt{interval=c(0, 3000)} and choose an optimal degree $m$ among the candidate degrees M[1]:M[2] using the method of change-point. The maximum number of iterations is \texttt{maxit} and the convergence criterion is \texttt{eps} for each $m$ of M[1]:M[2]. The search of an optimal degree stops when the $p$-value \texttt{pval} of change-point test falls below the specified significance level \texttt{sig.level} or the largest degree, M[2], has been reached. If the latter occurs a warning message shows up. In this case we should check the last value of \texttt{pval}. In the above example, we got warning message and the last \texttt{pval}, `r vaal$pval[vaal$M[2]-vaal$M[1]+1]`, which is small enough. The selected optimal degree is $m=$ `r vaal$m[1]`. One can also look at the Bayesian information criteria, \texttt{BIC}, and other information criteria, Akaike information criterion \texttt{AIC} and Hannan–Quinn information criterion \texttt{QHC}, at each candidate degree. These information criteria are not reliable due to the difficulty of determining the model dimension. The \texttt{plot} method for \texttt{mable} class object can visualize some of the results. 
+```{r fig.align='center', fig.cap="Vaal River Annual Flow Data\\label{fig:vaal-river-data-plot}", fig.width=7, fig.height=7}
+op<-par(mfrow=c(1,2))
+layout(rbind(c(1, 2), c(3, 3)))
+plot(vaal, which="likelihood", cex=.5)
+plot(vaal, which="change-point", lgd.x="topright")
+hist(Vaal.Flow$Flow, prob=TRUE, xlim=c(0,3000), ylim=c(0,.0022), breaks=100*(0:30), 
+ main="Histogram and Densities of the Annual Flow of Vaal River",
+ border="dark grey",lwd=1,xlab="Flow", ylab="Density", col ="light grey")
+lines(density(x<-Vaal.Flow$Flow, bw = "nrd0", adjust = 1), lty=2, col = 2,lwd=2)
+lines(y<-seq(0, 3000, length=100), dlnorm(y, mean(log(x)),
+                  sqrt(var(log(x)))), lty=4, col=4, lwd=2)
+plot(vaal, which="density", add=TRUE, lwd=2)
+legend("topright", lty=c(1, 4, 2), col=c(1, 4, 2), bty="n",lwd=2, 
+c(expression(paste("MABLE: ",hat(f)[B])), 
+       expression(paste("Log-Normal: ",hat(f)[P])),
+              expression(paste("KDE: ",hat(f)[K]))))
+par(op)
+```
+In Figure \ref{fig:vaal-river-data-plot}, the unknown density $f$ is estimated by \texttt{MABLE}  $\hat f_B$ using optimal degrees $m=$ `r vaal$m` selected using the exponential change-point method, the parametric estimate using \texttt{Log-Normal} model and the kernel density estimate \texttt{KDE}: $\hat f_K$.
+
+We can also look at the plots of AIC, BIC, and QHC, and likelihood ration(LR) of gamma change-point. 
+```{r fig.align='center', fig.cap="AIC and BIC based on Vaal River Data\\label{fig:Vaal-River-data-AIC-BIC-plot}", fig.width=6, fig.height=4}
+M<-vaal$M[1]:vaal$M[2]
+aic<-vaal$ic$AIC
+bic<-vaal$ic$BIC
+qhc<-vaal$ic$QHC
+vaal.gcp<-optim.gcp(vaal) # choose m by gamma change-point model
+lr<-vaal.gcp$lr
+plot(M, aic, cex=0.7, col=1, xlab="m", ylab="", ylim=c(ymin<-min(aic,bic,qhc,lr),
+      ymax<-max(aic,bic,qhc,lr)), main="AIC, BIC, QHC, and LR")
+points(M, bic, pch=2, cex=0.7, col=2)
+points(M, qhc, pch=3, cex=0.7, col=3)
+points(M[-1], lr, pch=4, cex=0.7, col=4)
+segments(which.max(aic)+M[1]-1->m1, ymin, m1, max(aic), lty=2)
+segments(which.max(bic)+M[1]-1->m2, ymin, m2, max(bic), lty=2, col=2)
+segments(which.max(qhc)+M[1]-1->m3, ymin, m3, max(qhc), lty=2, col=3)
+segments(which.max(lr)+M[1]->m4, ymin, m4, max(lr), lty=2, col=4)
+axis(1, c(m1,m2, m3, m4),  as.character(c(m1,m2,m3,m4)), col.axis=4)
+legend("topright", pch=c(1,2,3,4), c("AIC", "BIC", "QHC", "LR"), bty="n", col=c(1,2,3,4))
+```
+From Figure \ref{fig:Vaal-River-data-AIC-BIC-plot} we see that the gamma change-point method gives the same optimal degree $m=$ `r m4` as the exponential method; BIC and QHC give the same degree $m=$ `r m2`; the degree $m=$ `r m1` selected by AIC method is closer to the one selected by change-point methods. From this Figure we also see that unlike the LR plot the information criteria do not have clear peak points.
+
+For any given degree $m$, one can fit the data by specifying \texttt{M=m} in \texttt{mable()} to obtain an estimate of $f$.
+
+The \texttt{summary} method \texttt{summary.mable} prints and returns invisibly the summarized results.
+
+```{r}
+summary(vaal)
+```
+The mixing proportions, the coefficients of the Bernstein polynomials, $p$ can be obtained as either \texttt{p<-vaal\$p} 
+```{r}
+p<-vaal$p
+p
+```
+or \texttt{summary(res)\$p}. However, the latter only returns \texttt{p.cp} with an optimal degree $m$ selected by the method of change-point while \texttt{p.bic} is the one with a degree $m$ selected by BIC method.
+
+## Grouped Data
+
+With a grouped dataset, a frequency table of data from a continuous population, one can estimate the density from histogram using \texttt{mable.group()} with an optimal degree $m$ chosen from \texttt{M[1]:M[2]} or with a given degree $m$ using \texttt{M=m} [@Guan-2017-jns].
+
+### Example: The Chicken Embryo Data
+Consider the chicken embryo data contain the number of hatched eggs on each day during the 21 days of incubation period. The times of hatching ($n=43$) are treated as grouped by intervals with equal width of one day. The data were studied first by @Jassim-et-al-1996. @Kuurman-et-al-2003 and @Lin-and-He-2006-bka also analyzed the data using the minimum Hellinger distance estimator, in addition to other methods assuming some parametric mixture models including Weibull model. 
+
+```{r}
+data(chicken.embryo)
+head(chicken.embryo, 2)
+```
+```{r results = "hide", warning = FALSE}
+a<-0
+b<-21
+day<-chicken.embryo$day
+nT<-chicken.embryo$nT
+embryo<-mable.group(x=nT, breaks=a:b, M=c(2,100), interval=c(a, b), IC="aic",
+    controls=mable.ctrl(sig.level=1e-6,  maxit=2000, eps=1.0e-7))
+```
+
+```{r fig.align='center', fig.cap="Chicken Embryo Data\\label{fig:chicken-embryo-data-plot}", fig.width=6, fig.height=7}
+Day<-rep(day,nT)
+op<-par(mfrow=c(1,2), lwd=2)
+layout(rbind(c(1, 2), c(3, 3)))
+plot(embryo, which="likelihood")
+plot(embryo, which="change-point")
+fk<-density(x=rep((0:20)+.5, nT), bw="sj", n=101, from=a, to=b)
+hist(Day, breaks=seq(a,b,  length=12), freq=FALSE, col="grey",
+          border="white", main="Histogram and Density Estimates")
+plot(embryo, which="density", cex=0.7, add=TRUE)
+lines(fk, lty=2, col=2)
+legend("top", lty=c(1:2), c("MABLE",
+         "Kernel"), bty="n", col=c(1:2))
+par(op)
+```
+We see in Figure \ref{fig:chicken-embryo-data-AIC-BIC-plot} that AIC and gamma change-point method give the same optimal degree as the one, $m=$ `r embryo$m`, given by the exponential change-point method. However, BIC fails in choosing a useful model degree. 
+```{r fig.align='center', fig.cap="AIC and BIC based on Chicken Embryo Data\\label{fig:chicken-embryo-data-AIC-BIC-plot}", fig.width=6, fig.height=4}
+M<-embryo$M[1]:embryo$M[2]
+aic<-embryo$ic$AIC
+bic<-embryo$ic$BIC
+res.gcp<-optim.gcp(embryo) # choose m by gamma change-point model
+lr<-res.gcp$lr
+plot(M, aic, cex=0.7, col=1, xlab="m", ylab="", ylim=c(ymin<-min(aic,bic,lr),
+      ymax<-max(aic,bic,lr)), main="AIC, BIC, and LR")
+points(M, bic, pch=2, cex=0.7, col=2)
+points(M[-1], lr, pch=3, cex=0.7, col=4)
+segments(which.max(aic)+M[1]-1->m1, ymin, m1, max(aic), lty=2)
+segments(which.max(bic)+M[1]-1->m2, ymin, m2, max(bic), lty=2, col=2)
+segments(which.max(lr)+M[1]->m3, ymin, m3, max(lr), lty=2, col=4)
+axis(1, c(m1,m2, m3),  as.character(c(m1,m2,m3)), col.axis=4)
+legend("right", pch=c(1,2,3), c("AIC", "BIC", "LR"), bty="n", col=c(1,2,4))
+```
+The results are summarized as follows.
+```{r}
+summary(embryo)
+```
+
+## Contaminated Data--Density Deconvolution
+
+Consider the additive measurement error model $Y = X + \epsilon$, where $X$ has an unknown distribution $F$, $\epsilon$ has a known distribution $G$, and $X$ and $\epsilon$ are independent. We want to estimate density $f=F'$ based on independent observations, $y_i = x_i + \epsilon_i$, $i=1,\ldots,n$, of $Y$, where $x_i$'s and $\epsilon_i$'s are unobservable. \texttt{mable.decon()} implements the method of @Guan-2019-mable-deconvolution and gives an estimate of the density $f$ using the approximate Bernstein polynomial model.
+
+### Example: A Simulate Normal Dataset
+```{r results = "hide", warning = FALSE}
+set.seed(123)
+mu<-1; sig<-2; a<-mu-sig*5; b<-mu+sig*5;
+gn<-function(x) dnorm(x, 0, 1)
+n<-50;
+x<-rnorm(n, mu, sig); e<-rnorm(n); y<-x+e;
+decn<-mable.decon(y, gn, interval=c(a,b), M=c(5, 50))
+```
+
+```{r fig.align='center', fig.cap="Simulated Normal Data\\label{fig:simulated-normal-data-plot}", fig.width=7, fig.height=7}
+op<-par(mfrow=c(2,2),lwd=2)
+plot(decn, which="likelihood")
+plot(decn, which="change-point", lgd.x="right")
+plot(xx<-seq(a, b, length=100), yy<-dnorm(xx, mu, sig), type="l", xlab="x",
+     ylab="Density", ylim=c(0, max(yy)*1.1))
+plot(decn, which="density", add=TRUE, lty=2, col=2)
+# kernel density based on pure data
+lines(density(x), lty=5, col=4)
+legend("topright", bty="n", lty=c(1,2,5), col=c(1,2,4), c(expression(f),     
+    expression(hat(f)),  expression(tilde(f)[K])))
+plot(xx, yy<-pnorm(xx, mu, sig), type="l", xlab="x", ylab="Distribution Function")
+plot(decn, which="cumulative", add=TRUE, lty=2, col=2)
+legend("bottomright", bty="n", lty=c(1,2), col=c(1,2), c(expression(F), 
+    expression(hat(F))))
+par(op)
+```
+
+## Interval Censored Data
+
+When data are interval censored, the ``\texttt{interval2}'' type observations are of the form $(l,u)$ which is the interval containing the event time. Data is uncensored if $l = u$, right censored if $u =$ \texttt{Inf}  or $u =$ \texttt{NA}, and  left censored data if $l =0$.  
+
+Let $f(t)$ and $F(t)=1-S(t)$ be the density and cumulative distribution functions of the event time, respectively, on $(0, \tau)$, where $\tau\le \infty$. If $\tau$ is unknown or $\tau=\infty$, then  $f(t)$ on $[0,\tau_n]$ can be approximated by $fm(t; p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)$, where $p_i\ge 0$, $i=0,\ldots,m$, $\sum_{i=0}^mp_i=1-p_{m+1}$, and $\tau_n$ is the largest observation, either uncensored time, or right endpoint of interval/left censored, or left endpoint of right censored time. So we can approximate $S(t)$ on $[0,\tau]$ by $Sm(t; p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)$, where  $\bar B_{mi}(u)=1-\int_0^u\beta_{mj}(t)dt$, $i=0,\ldots,m$, is the beta survival function with shapes $(i+1,m-i+1)$, $\bar B_{m,m+1}(t)=1$, $p_{m+1}=1-\pi$, and $\pi=F(\tau_n)$. For data without right-censored time, $p_{m+1}=1-\pi=0$. The search for optimal degree $m$ among \texttt{M=c(m0,m1)} using the method of change-point is stopped if either \texttt{m1} is reached or the test for change-point results in a p-value \texttt{pval} smaller than \texttt{sig.level}. @Guan-arXiv-2019 proposed a method, as a special case of a semiparametric regression model, for estimating $p$ with an optimal degree $m$. The method is implemented in R function \texttt{mable.ic()}.  
+
+### Example: The Breast Cosmesis Data
+Consider the breast cosmesis data as described in @Finkelstein-and-Wolfe-1985-biom is used to study the cosmetic effects of cancer therapy. The time-to-breast-retractions in months ($T$) were  subject to interval censoring and were measured for 94 women among them 46 received radiation only ($X=0$) (25 right-censored, 3 left-censored and 18 interval censored) and 48 received radiation plus chemotherapy ($X=1$)  (13 right-censored, 2 left-censored and 33 interval censored). The right-censored event times were for those women who did not experienced cosmetic deterioration.   
+
+Load package \texttt{interval} to access Breast Cosmesis Data. We fit the two-sample data separately.
+```{r results = "hide", warning = FALSE}
+library(interval) 
+```
+```{r}
+data(bcos)
+head(bcos, 3)
+```
+```{r results = "hide"}
+bc.res0<-mable.ic(bcos[bcos$treatment=="Rad",1:2], M=c(1,50), IC="none")
+bc.res1<-mable.ic(bcos[bcos$treatment=="RadChem",1:2], M=c(1,50), IC="none")
+```
+As the warning message suggested, we check the \texttt{pval}. The \texttt{pval} when the search stopped is `r round(bc.res0$pval[length(bc.res0$pval)],4)`. 
+```{r  fig.align='center', fig.cap="Breast Cosmesis Data\\label{fig:Breast-Cosmesis-Data-plot}", fig.width=7, fig.height=7}
+op<-par(mfrow=c(2,2),lwd=2)
+plot(bc.res0, which="change-point", lgd.x="right")
+plot(bc.res1, which="change-point", lgd.x="right")
+plot(bc.res0, which="survival", xlab="Months", ylim=c(0,1), main="Radiation Only")
+plot(bc.res1, which="survival", xlab="Months", main="Radiation and Chemotherapy")
+par(op)
+```
+
+## Multivariate Data
+A $d$-variate density $f$ on a hyperrectangle $[a,b]=[a_1,b_1]\times \cdots\times[a_d,b_d]$ can be approximated by a mixture of $d$-variate beta densities on $[a,b]$, $\beta_{mj}(x; a, b)=\prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)$, with proportions $p(j_1,\ldots,j_d)$, $0\le j_i\le m_i, i=1,\ldots,d$. Because all the marginal densities can be approximated by Bernstein polynomials, we can choose optimal degree $m_i$ based on observations of the $i$-th component of $x$. For the $i$-th marginal density, an optimal degree is selected using \texttt{mable()}. Then fit the data using EM algorithm with the selected optimal degrees $m=(m_1,\ldots,m_d)$ to obtain a vector $p$ of the mixture proportions $p(j_1,\ldots,j_d)$, arranged in the lexicographical order of $j = (j_1,\ldots,j_d)$, $(p_0,\ldots,p_{K-1})$, where $K=\prod_{i=1}^d (m_i+1)$. The proposed method of @Wang-and-Guan-2019 is implemented by function \texttt{mable.mvar()}.
+
+### Example: The Old Faithful Data
+
+```{r}
+data(faithful)
+head(faithful, 3)
+```
+```{r results = "hide"}
+ a<-c(0, 40); b<-c(7, 110)
+ faith2<-mable.mvar(faithful, M=c(100,100), interval=cbind(a,b))
+```
+```{r fig.align='center', fig.cap="Density Estimate based on the Old Faithful Data\\label{fig:Old-Faithful-Data-plot}", fig.width=6, fig.height=6}
+plot(faith2, which="density")
+```
+The density surface for two-dimensional data can be plot using the \texttt{plot} method (see Figure\ref{fig:Old-Faithful-Data-plot}). The summarized results are given below.
+```{r}
+summary(faith2)
+```
+
+# Event Time Data with Covariates
+Let $T$ be an event time and $X$ be an associated $d$-dimensional covariate with distribution $H(x)$ on $\cal{X}$. We denote the marginal and the conditional survival functions of $T$, respectively, by
+ $S(t) = \bar F(t)= 1- F(t)=\Pr(T > t)$ and $S(t | x) = \bar F(t | x)=  1- F(t |  x)=\Pr(T > t |  X=x).$
+Let $f(t |  x)$ denote the conditional density of a continuous $T$ given $X=x$. The conditional cumulative hazard function and odds ratio,   respectively,
+ $\Lambda(t |  x)=-\log S(t |  x)$ and $O(t |  x)={S(t |  x)}/[{1-S(t |  x)}]$.
+ We will consider the general situation where the event time is subject to interval censoring.  The observed data are $(X, Y)$, where $Y=(Y_1,Y_2]$, $0\le Y_1\le Y_2\le\infty$.
+The reader is referred to @Huang-and-Wellner-1997 for a review and more references about interval censoring.
+Special cases are right-censoring $Y_2=\infty$, left-censoring $Y_1=0$, and current status data.
+
+## Cox Proportional Hazards Model
+
+ Consider the Cox proportional hazard regression model [@Cox1972]
+\begin{equation}\label{eq: Cox PH model-conditional survival function}
+S(t |  x) =S(t | x; \gamma, f_0)=S_0(t)^{\exp(\gamma^T\tilde{x})},
+\end{equation}
+where $\gamma\in \mathbb{G}  \subset \mathbb{R}^d$, $\tilde{x} =x -x_0$, $x_0$ is any fixed covariate value, $f_0(\cdot)=f(\cdot | x_0)$ is the unknown baseline density and  $S_0(t)=\int_t^\infty f_0(s)ds$. Define $\tau=\inf\{t: F(t |  x_{0})=1\}$.
+It is true that $\tau$ is independent of $x_0$, $0<\tau\le\infty$, and $f(t |  x)$ have the same support $[0,\tau]$ for all $x\in \cal{X}$. 
+Let $(x_i, y_i)=(x_i, (y_{i1}, y_{j2}])$, $i=1,\dots,n$, be independent observations of $(X, Y)$ and
+$\tau_n\ge y_{(n)}=\max\{y_{i1}, y_{j2}: y_{j2}<\infty;\, i,j=1,\dots,n\}$. 
+Given any $x_0$, denote $\pi=\pi(x_0)=1-S_0(\tau_n)$. For integer $m\ge 1$ we define $\mathbb{S}_m\equiv \{(u_0,\ldots,u_m)^T\in \mathbb{R}^{m+1}: u_i\ge 0, \sum_{i=0}^m u_i=1.\}.$
+@Guan-arXiv-2019 propose to approximate $f_0(t)$   on $[0,\tau_n]$  by $f_m(t; p) = \tau_n^{-1}\sum_{i=0}^{m} p_i\beta_{mi}(t/\tau_n)$, where $p=p(x_0)=(p_0,\ldots,p_{m+1})$  are subject to constraints   $p\in \mathbb{S}_{m+1}$ and $p_{m+1}=1-\pi$.
+ Here the dependence of $\pi$ and $p$ on $x_0$ will be suppressed.
+If $\pi< 1$,  although we cannot estimate the values of $f_0(t)$  on $(\tau_n,\infty)$, we can put an arbitrary guess on them such as
+$f_m(t; p)=  p_{m+1} \alpha(t-\tau_n)$, $t\in (\tau_n,\infty)$, where  $\alpha(\cdot)$ is a density on $[0,\infty)$ such that $(1-\pi)\alpha(0)=(m+1)p_m/\tau_n$ so that $f_m(t; p)$ is continuous at $t=\tau_n$, e.g., $\alpha(t)=\alpha(0)\exp[-\alpha(0)t]$.  If $\tau$ is finite and known we choose $\tau_n=\tau$ and specify $p_{m+1}=0$. Otherwise,  we choose $\tau_n=y_{(n)}$. For data without right-censoring or covariate
+we also have to specify $p_{m+1}=0$ due to its unidentifiability. 
+
+The above method is implemented in function \texttt{mable.ph()} which returns maximum approximate Bernstein likelihood estimates of $(\gamma, p)$ with an optimal model degree $m$ and a prespecified $m$,  respectively. With a efficient estimate of $\gamma$ obtained using other method, \texttt{maple.ph()} can be used to get an optimal degree $m$ and a mable of $p$. 
+
+The \texttt{plot} method \texttt{plot.mable\_reg()} for class \texttt{mable\_reg} object returned by all the above functions produces graphs of the loglikelihoods at $m$ in a set \texttt{M[1]:M[2]} of consecutive candidate model degrees, the likelihood ratios of change-point at $m$ in \texttt{(M[1]+1):M[2]},  estimated density and survival function on the truncated \texttt{support}=$[0,\tau_n]$.
+
+### Example: Ovarian Cancer Survival Data
+The Ovarian Cancer Survival Data is included in package \texttt{interval}.
+```{r}
+library(interval)
+futime2=ovarian$futime
+futime2[ovarian$fustat==0]=Inf
+ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, futime2=futime2)
+head(ovarian2, 3)
+```
+```{r results = "hide", warning = FALSE}
+ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M=c(2,35), g=.16)
+```
+```{r}
+summary(ova)
+```
+```{r fig.align='center', fig.cap="Ovarian Cancer Data\\label{fig:ovarian-Data-plot}", fig.width=7, fig.height=7}
+op<-par(mfrow=c(2,2))
+plot(ova,  which="likelihood")
+plot(ova,  which="change-point")
+plot(ova, y=data.frame(c(60)), which="survival", type="l", xlab="Days", 
+     main="Age = 60")
+plot(ova, y=data.frame(c(65)), which="survival", type="l", xlab="Days", 
+     main="Age = 65")
+par(op)
+```
+Alternatively we can use \texttt{mable.reg()}.
+```{r results = "hide", warning = FALSE}
+ova1<-mable.reg(cbind(futime1, futime2) ~ age, data = ovarian2, M=c(2,35))
+```
+
+## Accelerated Failure Time Model
+
+The AFT model can be specified as
+\begin{equation}\label{eq: AFT model in terms of density}
+f(t\mid x)=f(t\mid x;\gamma)=e^{-\gamma^T x}f(te^{-\gamma^T x}\mid 0),\quad t\in[0,\infty),
+\end{equation}
+where $\gamma\in \mathbb{G}\subset \mathbb{R}^d$. Let $\gamma_0\in \mathbb{G}$ be the true value of $\gamma$.
+The AFT model (\ref{eq: AFT model in terms of density}) is equivalent to
+$$S(t\mid x;\gamma)=S(te^{-\gamma^T x}\mid 0),\quad t\in[0,\infty).$$
+Thus this is actually a scale regression model.
+The AFT model can also be written as linear regression $\log(T)=\gamma^T x +\varepsilon$. It is clear that one can choose any $x_0$ in $\mathcal{X}$ as baseline by transform $\tilde{x}=x-x_0$. If $f(t\mid 0)$ has support $[0,\tau_0)$, $\tau_0\le\infty$, then 
+$f(t\mid x)$ has support $[0,\tau_0 e^{\gamma_0^T x})$.  We define $\tau=\max\{\tau_0 e^{\gamma_0^T x}: x\in\mathcal{X}\}$ if $\tau_0<\infty$ and $\tau=\infty$ otherwise.
+The above AFT model can also be written as
+$$f(t\mid x;\gamma)=e^{-\gamma^T {x}} f_0(te^{-\gamma^T {x}}), \quad
+S(t\mid x;\gamma)=S_0(te^{-\gamma^T {x}}),$$
+where   $f_0(t)=f(t\mid 0)$ and $S_0(t)=S(t\mid 0)=\int_t^\infty f_0(u)du$.
+
+As in Cox PH model, we choose $\tau_n>y_{(n)}= \max\{y_{i1}, y_{j2}: y_{j2}<\infty;\, i,j=1,\dots,n\}$ so that $S(\tau_n)$ and $\max_{x\in\mathcal{X}} S(\tau_n\mid x)$ are believed very small.
+Then we approximate $f_0(t)$ and $S_0(t)$ on $[0,\tau_n]$, respectively, by
+\begin{align*}
+f_0(t)&\approx f_m(t; p)=\frac{1}{\tau_n}\sum_{j=0}^m p_j\beta_{mj}\Big(\frac{t}{\tau_n}\Big),\quad t\in[0,\tau_n];\\
+S_0(t)&\approx S_m(t; p)= \sum_{j=0}^{m} p_j \bar B_{mj}\Big(\frac{t}{\tau_n}\Big),\quad  t\in[0,\tau_n],
+\end{align*}
+where $S_m(\infty; p)=0$, and $p= (p_0,\ldots,p_{m})^T\in \mathbb{S}_{m}$.
+  Then $f(t\mid x; \gamma)$ and $S(t\mid x; \gamma)$  can be approximated, respectively, by
+\begin{align}\nonumber
+f_m(t\mid x; \gamma, p)&=e^{-\gamma^T {x}}f_m\Big(te^{-\gamma^T {x}}; p\Big)\\
+&=
+ \frac{e^{-\gamma^T {x}}}{\tau_n}\sum_{j=0}^m p_j\beta_{mj}\Big(e^{-\gamma^T {x}}\frac{t}{\tau_n}\Big),\quad t\in[0,\tau_ne^{\gamma^T {x}}];\\\nonumber
+S_m(t\mid x;\gamma,p)&=S_m\Big(te^{-\gamma^T {x}}; p\Big)\\
+&=  \sum_{j=0}^{m} p_j\bar B_{mj}\Big(e^{-\gamma^T {  x}}\frac{t}{\tau_n}\Big),\quad t\in[0,\tau_ne^{\gamma^T {x}}].
+\end{align}
+@Guan-2019-mable-aft's proposal is implemented by functions \texttt{mable.aft()} and \texttt{maple.aft()}.
+
+### Example: Breast Cosmesis Data
+```{r results = "hide", warning = FALSE}
+library(interval) 
+```
+```{r}
+data(bcos)
+bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treatment=="RadChem"))
+```
+```{r results = "hide"}
+g<--0.41 # Hanson and Johnson 2004, JCGS
+aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g, tau=100, x0=1)
+```
+```{r}
+summary(aft.res)
+```
+```{r fig.align='center', fig.cap="AFT Model Fit for Breast Cosmesis Data\\label{fig:Breast-Cosmesis-Data-aft-plot}", fig.width=7, fig.height=4}
+op<-par(mfrow=c(1,2), lwd=1.5)
+plot(x=aft.res, which="likelihood")
+plot(x=aft.res, y=data.frame(x=0), which="survival", type="l", col=1, 
+      main="Survival Function")
+plot(x=aft.res, y=data.frame(x=1), which="survival", lty=2, col=1, add=TRUE)
+legend("bottomleft", bty="n", lty=1:2, col=1, c("Radiation Only", 
+                    "Radiation and Chemotherapy"), cex=.7)
+par(op)
+```
+Alternatively we can use \texttt{mable.reg()}.
+```{r results = "hide"}
+aft.res1<-mable.reg(cbind(left, right)~x, data=bcos2, 'aft', M=c(1, 30), tau=100, x0=1)
+```
+
+## References
