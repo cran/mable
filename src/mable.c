@@ -1249,8 +1249,9 @@ void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double 
         Rprintf("\n");}
     delta[0]=del;
     if(it==maxit){
-        conv[0]+=1;
-        warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);}
+        conv[0] = 1;
+     //  warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);
+     }
     // Rprintf("mable-m: it=%d, del=%f\n", it, del);
     minverse(ddell, d); //Sig=-n*ddell
     Free(tmp); Free(z); Free(z2); Free(BSz); Free(BSz2); 
@@ -1335,9 +1336,10 @@ void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y,
         Rprintf("\n");}
     // Rprintf("mable-aft done!\n"); 
     if(m==M[1]){
-        conv[0]=1; 
-        warning("\nThe maximum candidate degree has been reached \nwith a p-value of the change-point %f.\n", res[0]);}
-    else conv[0]=0;
+        conv[0]+=1; 
+        warning("\nThe maximum candidate degree has been reached \nwith a p-value of the change-point %f.\n", res[0]);
+    }
+//    else conv[0]=0;
     M[1]=m;
     tmp=cp[0]*(M[0]*2+(cp[0]+1))/2;
     dm[1]=cp[0]+M[0];
@@ -1503,7 +1505,7 @@ void gofp_ph(double *gama, int d, double *p, int m, double *x, double *x0, int n
             del += fabs(tmp[i]);
         }
         logblik_ph_derv(gama, d, x, x0, n0, n1, Sy, Sy2, ell, dell, ddell);
-        for(i=0;i<d;i++) del+=abs(dell[i]);
+        for(i=0;i<d;i++) del+=fabs(dell[i]);
         it++;
         R_CheckUserInterrupt();
     }
@@ -1609,7 +1611,8 @@ void pofg_ph(double *p, int m, double *egx, int n0, int n1, double *BSy, double 
     delta[0]=del;
     if(it==maxit){
         conv[0]+=1;
-        warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);}
+        //warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);
+    }
     Free(Tmp); 
     Free(Tmp2); 
     Free(pnu);//Free(Sp);  Free(Sp2);
@@ -1801,7 +1804,8 @@ void mable_ph_m(double *gama, double *p, int *dm, double *x, double *y, double *
     delta[0]=del;
     if(it==maxit){
         conv[0]+=1;
-        warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);}
+        //warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);
+    }
 //    Rprintf("mable-m: it=%d, del=%f\n", it, del);
     minverse(ddell, d); //Sig=-n*ddell
     Free(BSy); 
@@ -1888,9 +1892,9 @@ void mable_ph(int *M, double *gama, int *dm, double *p, double *pi0, double *x,
         ProgressBar(1.0,"");
         Rprintf("\n");}
     if(m==M[1]){
-        conv[0]=1; 
+        conv[0]+=1; 
         warning("\nThe maximum candidate degree has been reached \nwith a p-value of the change-point %f.\n", res[0]);}
-    else conv[0]=0;
+//    else conv[0]=0;
     M[1]=m;
     tmp=cp[0]*(M[0]*2+(cp[0]+3))/2;
     dm[1]=cp[0]+M[0];
@@ -2170,11 +2174,12 @@ static void eta_mj(double *x, int n, void *ex)
 {
     SEXP args, resultsxp, tmp;
     int i, j, m;
-    double y;
+    double y, *z;
+    z = Calloc(n, double);
     MableStruct MS = (MableStruct) ex;
-   m = MS->m;
-   j = MS->j;
-   y = MS->y;
+    m = MS->m;
+    j = MS->j;
+    y = MS->y;
     PROTECT(args = allocVector(REALSXP, n));
     for(i = 0; i < n; i++) REAL(args)[i] = y - x[i];
 
@@ -2184,15 +2189,18 @@ static void eta_mj(double *x, int n, void *ex)
     if(length(resultsxp) != n)
 	error("evaluation of function gave a result of wrong length");
     if(TYPEOF(resultsxp) == INTSXP) {
-	resultsxp = coerceVector(resultsxp, REALSXP);
-    } else if(TYPEOF(resultsxp) != REALSXP)
-	error("evaluation of error density gave a result of wrong type");
-    for(i = 0; i < n; i++) {
-	   x[i] = REAL(resultsxp)[i]*dbeta(x[i], j+1,  m-j+1, FALSE);
+	   resultsxp = coerceVector(resultsxp, REALSXP);
+    } 
+    else if(TYPEOF(resultsxp) != REALSXP)
+	   error("evaluation of error density gave a result of wrong type");
+    for(i = 0; i < n; i++){
+	   z[i] = REAL(resultsxp)[i];
+	   x[i] = z[i]*dbeta(x[i], j+1,  m-j+1, FALSE);
 	   if(!R_FINITE(x[i]))
 	       error("non-finite error density value");
     }
     UNPROTECT(3);
+    Free(z);
     return;
 }
 /*////////////////////////////////////////////////////////////////////////*/
@@ -2213,17 +2221,13 @@ void convol_beta_g(double *y, double *psi_m, int m, int n, void *ex){
     ms.m = m;
     for(i=0;i<n;i++){
         ms.y = y[i];
-//        l = y[i]-1.0;
-//        u = y[i];
         for(j=0; j<=m; j++){
             ms.j = j;
-            Rdqags(eta_mj, (void*)&ms,  &l, &u, &epsabs, &epsrel, &result, &abserr, &neval, &ier, &limit, &lenw, &last, iwork,  work);
+            Rdqags(eta_mj, (void*)&ms, &l, &u, &epsabs, &epsrel, &result, &abserr, &neval, &ier, &limit, &lenw, &last, iwork, work);
             psi_m[i+j*n] = result;
         }
     }
 }
-
-
 /*//////////////////////////////////////////////////*/
 /*          EM Algorithm for a fixed m              */
 /*//////////////////////////////////////////////////*/
@@ -2311,14 +2315,12 @@ SEXP mable_decon(SEXP args)
     pval = Calloc(nm+1, double);
     bic = Calloc(nm+1, double);
     chpts = Calloc(nm+1, int); 
-//    optim = Calloc(1, int); //Calloc(2, int);
     cp = Calloc(1, int); 
     res = Calloc(1, double); 
     lp = M[0]*(nm+1)+(nm+1)*(nm+2)/2;
     p = Calloc(M[1]+1, double); // Calloc(2*M[1]+2, double);
     phat = Calloc(lp, double);  
     m = M[0]; 
-    //optim[1]=0;
     for(j=0; j<=m; j++) p[j]=1.0/(double) (m+1);
     em_gBeta_mix(y, p, m, n, maxit_em, eps_em, llik, (void*)&is);
     for(j=0; j<=m; j++) phat[j]=p[j];
@@ -2329,8 +2331,6 @@ SEXP mable_decon(SEXP args)
     for(j=0;j<=m;j++) d+=1*(p[j]>=eps);
     d=d-1;
     bic[0]=lk[0]-.5*d*log(n);
-//    max_bic=bic[0];
-//    Rprintf("\n lk[0]=%g\n.", lk[0]);
     i=1;
     while(i<=nm && pval[i-1]>level){
         m = M[0]+i;
@@ -2339,7 +2339,6 @@ SEXP mable_decon(SEXP args)
         lk[i] = *llik;
         for(j=0;j<=m;j++) phat[j+tmp]=p[j];
         tmp += m+1;
-//        Rprintf("\n lk[%d]=%g\n.",i, lk[i]);
         //   lr: exponential LR of change-point
         if(i>=3){
             cp[0]=i;
@@ -2356,10 +2355,6 @@ SEXP mable_decon(SEXP args)
         for(j=0;j<=m;j++) d+=1*(p[j]>=eps);
         d=d-1;
         bic[i]=lk[i]-.5*d*log(n);
-//        if(bic[i]>max_bic){
-//            max_bic=bic[i];
-//            optim[1]=i;
-//        }
         pct = i*(i+1)/ttl;
         if(progress==1) {
             ProgressBar(pct,"");}
@@ -2370,13 +2365,11 @@ SEXP mable_decon(SEXP args)
         ProgressBar(1.0,"");
         Rprintf("\n");}
     if(m==M[1]){
-//        convergence[0]+=1; 
         Rprintf("Warning: The maximum candidate degree has been reached.\n");}
     M[1]=m;
     nm = M[1]-M[0];
     Free(llik); 
     if(progress==1) Rprintf("\n");
-//    Rprintf("\n Program  'mable_decon' Finished. \n\n\n");
     PROTECT(ans = allocVector(VECSXP, 8));
     PROTECT(ansnames = allocVector(STRSXP, 8));
     SET_STRING_ELT(ansnames, 0, mkChar("lk"));
@@ -2386,31 +2379,18 @@ SEXP mable_decon(SEXP args)
     for(i=0;i<nm;i++){
         REAL(VECTOR_ELT(ans, 0))[i] = lk[i];
         REAL(VECTOR_ELT(ans, 1))[i] = lr[i];
-//Rprintf("\n lk[%d]=%g\n.",i, lk[i]);
-//Rprintf("\n lr[%d]=%g\n.",i, lr[i]);
     }
     REAL(VECTOR_ELT(ans, 0))[nm] = lk[nm];
     SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, cp[0]+M[0]+1));
     SET_STRING_ELT(ansnames, 2, mkChar("p"));
     tmp=cp[0]*(M[0]*2+(cp[0]+1))/2;
     m=cp[0]+M[0];
-//    optim[0]=cp[0]+M[0];
-//    m=optim[0];
     for(i=0;i<=m;i++){
         REAL(VECTOR_ELT(ans, 2))[i] = phat[tmp+i];
     }
-//    tmp=optim[1]*(M[0]*2+(optim[1]+1))/2;
-//    optim[1]+=M[0];
-//    m=optim[1];
-//    for(i=0;i<=m;i++){
-//        REAL(VECTOR_ELT(ans, 2))[optim[0]+1+i] = phat[tmp+i];
-//    }
     SET_STRING_ELT(ansnames, 3, mkChar("m"));
     SET_VECTOR_ELT(ans, 3, allocVector(INTSXP, 1));
     INTEGER(VECTOR_ELT(ans, 3))[0] = m;
-//    for(i=0;i<=1;i++){
-//        INTEGER(VECTOR_ELT(ans, 3))[i] = optim[i];
-//    }
     SET_STRING_ELT(ansnames, 4, mkChar("pval"));
     SET_STRING_ELT(ansnames, 5, mkChar("bic"));
     SET_STRING_ELT(ansnames, 6, mkChar("chpts"));
@@ -2428,8 +2408,8 @@ SEXP mable_decon(SEXP args)
         INTEGER(VECTOR_ELT(ans, 7))[i] = M[i];
     }
     setAttrib(ans, R_NamesSymbol, ansnames);
-    UNPROTECT(2);//????
-    Free(lk); Free(lr); Free(phat); Free(p);// Free(optim);
+    UNPROTECT(2);
+    Free(lk); Free(lr); Free(phat); Free(p);
     Free(pval); Free(bic); Free(chpts); Free(cp); Free(res); 
     return ans;
 }
@@ -2461,7 +2441,7 @@ void Multivar_dBeta(double *x, int *m, int n, int d, int *km, double *dBta) {
     for(it=0; it<K; it++)
         for(j=0; j<n; j++) dBta[it+K*j]=1.0; //get initial value of dBta of K*n metrix
     for(j=0; j<n; j++){
-        for(k=0; k<d; k++){ //m-var desity function
+        for(k=0; k<d; k++){ //d-var desity function
             it=0;
             for(jj =1; jj*(m[k]+1)<=km[k]; jj++){
                for(i=0; i<=m[k]; i++){
@@ -2486,7 +2466,6 @@ void Multivar_pBeta(double *x, int *m, int n, int d, int *km,
                 double *pBta) {
     int i, j, jj, k, r, K, it;
     K=km[d-1];
-//    ii= Calloc(K, int);
     for(it=0; it<K; it++)
         for(j=0; j<n; j++) pBta[it+K*j]=1.0;
     for(j=0; j<n; j++){
@@ -2495,7 +2474,6 @@ void Multivar_pBeta(double *x, int *m, int n, int d, int *km,
             for(jj =1; jj*(m[k]+1)<=km[k]; jj++){
                for(i=0; i<=m[k]; i++){
                     for(r=1; r*km[k]<=K; r++){
-//                      ii[it+K*k]=i;
                         pBta[it+K*j]*=pbeta(x[j+n*k], i+1, m[k]-i+1, TRUE, FALSE);
 //Rprintf("it=%d, k=%d, i= %d, j= %d, x[%d,%d]=%f\n", it, k, i, j, j, k, x[j+n*k]);
                         it+=1;

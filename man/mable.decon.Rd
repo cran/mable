@@ -9,13 +9,13 @@ mable.decon(y, gn, ..., M, interval = c(0, 1), IC = c("none", "aic",
   progress = TRUE)
 }
 \arguments{
-\item{y}{observaed data}
+\item{y}{vector of observed data values}
 
 \item{gn}{error density function}
 
 \item{...}{additional arguments to be passed to gn}
 
-\item{M}{a vector \code{(m0, m1)} specifies the set of consective candidate model degrees, \code{M=m0:m1}.}
+\item{M}{a vector \code{(m0, m1)} specifies the set of consective candidate model degrees, \code{M = m0:m1}.}
 
 \item{interval}{a finite vector containing the endpoints of supporting/truncation interval}
 
@@ -31,13 +31,13 @@ and other control options. Default is \code{\link{mable.ctrl}}.}
 \value{
 A \code{mable} class object with components
 \itemize{
-     \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate degree when the search stoped
+     \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate degree when the search stoped
      \item \code{m} the selected optimal degree \code{m}
-     \item \code{p} the estimate of \code{p=(p_0,\dots,p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
-     \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-     \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+     \item \code{p} the estimate of \code{p = (p_0, \dots, p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
+     \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+     \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
      \item \code{convergence} An integer code. 0 indicates an optimal degree
-       is successfully selected in \code{M}). 1 indicates that the search stoped at \code{m1}.
+       is successfully selected in \code{M}. 1 indicates that the search stoped at \code{m1}.
       \item \code{ic} a list containing the selected information criterion(s)
      \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
      \item \code{chpts} the change-points chosen with the given candidate model degrees
@@ -50,8 +50,8 @@ with a known error density.
 \details{
 Consider the additive measurement error model \eqn{Y = X + \epsilon}, where
 \eqn{X} has an unknown distribution \eqn{F}, \eqn{\epsilon} has a known distribution \eqn{G},
-and \eqn{X} and \eqn{\epsilon} are independent. We want to estimate density \eqn{f=F'}
-based on independent observations, \eqn{y_i = x_i + \epsilon_i}, \eqn{i=1,\ldots,n}, of \eqn{Y}.
+and \eqn{X} and \eqn{\epsilon} are independent. We want to estimate density \eqn{f = F'}
+based on independent observations, \eqn{y_i = x_i + \epsilon_i}, \eqn{i = 1, \ldots, n}, of \eqn{Y}.
 }
 \examples{
 \donttest{
@@ -61,8 +61,8 @@ based on independent observations, \eqn{y_i = x_i + \epsilon_i}, \eqn{i=1,\ldots
  gn<-function(x) dnorm(x, 0, 1)
  n<-50;
  x<-rnorm(n, mu, sig); e<-rnorm(n); y<-x+e;
- res<-mable.decon(y, gn, interval=c(a,b), M=c(5, 50))
- op<-par(mfrow=c(2,2),lwd=2)
+ res<-mable.decon(y, gn, interval = c(a, b), M = c(5, 50))
+ op<-par(mfrow = c(2, 2),lwd = 2)
  plot(res, which="likelihood")
  plot(res, which="change-point", lgd.x="topright")
  plot(xx<-seq(a, b, length=100), yy<-dnorm(xx, mu, sig), type="l", xlab="x",

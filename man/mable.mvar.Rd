@@ -9,16 +9,16 @@ mable.mvar(x, M, search = TRUE, interval = NULL,
   controls = mable.ctrl(), progress = TRUE)
 }
 \arguments{
-\item{x}{an n x d matrix or data.frame of multivariate sample of size \code{n}}
+\item{x}{an \code{n x d} matrix or \code{data.frame} of multivariate sample of size \code{n}}
 
-\item{M}{one positive integer or a vector of \code{d} positive integers specify
+\item{M}{a positive integer or a vector of \code{d} positive integers specify
 the maximum candidate or the given model degrees for marginal densities.}
 
 \item{search}{logical, whether to search optimal degrees using \code{M} as maximum candidate 
 degrees or not but use \code{M} as the given model degrees for marginal densities.}
 
-\item{interval}{a vector or two endpoints or a d x 2 matrix, each row containing 
-the endpoints of supporting/truncation interval for each marginal density.
+\item{interval}{a vector of two endpoints or a \code{d x 2} matrix, each row containing 
+the endpoints of support/truncation interval for each marginal density.
 If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
@@ -31,14 +31,14 @@ A list with components
 \itemize{
  \item \code{dim} the dimension \code{d} of the data
  \item \code{m} a vector of the selected optimal degrees by the method of change-point
- \item \code{p} a vector of the mixture proportions \eqn{p(j_1,\ldots,j_d)}, arranged in the 
-   lexicographical order of \eqn{j = (j_1,\ldots,j_d)}, \eqn{0\le j_i\le m_i, i=1,\ldots,d}.
+ \item \code{p} a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
+   lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}.
  \item \code{mloglik}  the maximum log-likelihood at an optimal degree \code{m}
  \item \code{pval}  the p-values of change-points for choosing the optimal degrees for the 
    marginal densities
- \item \code{M} the vector \code{(m1,m2,...,md)}, where \code{mi} is the largest candidate 
+ \item \code{M} the vector \code{(m1, m2, ... , md)}, where \code{mi} is the largest candidate 
    degree when the search stoped for the \code{i}-th marginal density
- \item \code{support} supporting hyperrectangle \eqn{[a,b]=[a_1,b_1]\times \cdots\times[a_d,b_d]}
+ \item \code{interval} support hyperrectangle \eqn{[a, b]=[a_1, b_1] \times \cdots \times [a_d, b_d]}
  \item \code{convergence} An integer code. 0 indicates successful completion(the EM iteration is   
    convergent). 1 indicates that the iteration limit \code{maxit} had been reached in the EM iteration;
 }
@@ -48,25 +48,25 @@ Maximum Approximate Bernstein Likelihood Estimate
  of Multivariate Density Function
 }
 \details{
-A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a,b]
-  =[a_1,b_1]\times \cdots\times[a_d,b_d]} can be approximated 
-  by a mixture of \eqn{d}-variate beta densities on \eqn{[a,b]}, 
-  \eqn{\beta_{mj}(x)=\prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
-  with proportion \eqn{p(j_1,\ldots,j_d)}, \eqn{0\le j_i\le m_i, i=1,\ldots,d}. 
+A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a, b]
+  =[a_1, b_1] \times \cdots \times [a_d, b_d]} can be approximated 
+  by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
+  \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
+  with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
   Because all the marginal densities can be approximated by Bernstein polynomials, 
   we can choose optimal degree \eqn{m_i} based on the \eqn{i}-th column \code{x}. 
   For the \code{i}-th marginal density, an optimal degree is selected using
   \code{mable()} with \code{M=c(2, M[i])}. Then fit the data using EM algorithm 
-  with the selected optimal degrees \eqn{m=(m_1,\ldots,m_d)} to obtain \code{p},   
-  a vector of the mixture proportions \eqn{p(j_1,\ldots,j_d)}, arranged in the 
-  lexicographical order of \eqn{j = (j_1,\ldots,j_d)}, \eqn{p_0,\ldots,p_{K-1}}, 
+  with the selected optimal degrees \eqn{m=(m_1, \ldots, m_d)} to obtain \code{p},   
+  a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
+  lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
   where \eqn{K=\prod_{i=1}^d (m_i+1)}.
 }
 \examples{
 ## Old Faithful Data
 \donttest{
  a<-c(0, 40); b<-c(7, 110)
- ans<-mable.mvar(faithful, M=c(100,100), interval=cbind(a,b))
+ ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
  plot(ans, which="density") 
  plot(ans, which="cumulative")
 }

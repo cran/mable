@@ -15,13 +15,13 @@
 #' Mable fit of Cox's proportional hazards regression model 
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
 #' @param data a dataset
-#' @param M an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},  
+#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
 #'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
-#'   where $\code{m1-m0>3}.  
+#'   where \code{m1-m0>3}.  
 #' @param g initial guess of \eqn{d}-vector of regression coefficients.  See 'Details'. 
-#' @param pi0 Initial guess of \eqn{\pi(x_0)=F(\tau_n|x_0)}. Without right censored data, \code{pi0=1}. See 'Details'.
-#' @param tau right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time
+#' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
+#' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param x0 a working baseline covariate. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
@@ -30,23 +30,23 @@
 #' based on interal censored event time data.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x)=S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
-#'   Let \eqn{f(t|x)} and \eqn{F(t|x)=1-S(t|x)} be the density and cumulative distribution
-#' functions of the event time given \eqn{X=x}, respectively.
-#' Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
-#' \eqn{f_m(t|x_0, p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
-#' where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1-p_{m+1}},  
+#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+#'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
+#' functions of the event time given \eqn{X = x}, respectively.
+#' Then \eqn{f(t|x_0)} on \eqn{[0, \tau_n]} can be approximated by  
+#' \eqn{f_m(t|x_0, p) = \tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
+#' where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},  
 #' \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and 
-#' \eqn{\tau_n} is the last obs, either uncensored time, or right endpoint of interval/left censored,
-#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0,\tau_n]} by
-#' \eqn{S_m(t|x_0;p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau_n)}, where 
-#' \eqn{\bar B_{mi}(u)}, \eqn{i=0,\ldots,m}, is the beta survival function with shapes 
-#'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t)=1}, \eqn{p_{m+1}=1-\pi(x_0)}, and
-#' \eqn{\pi(x_0)=F(\tau_n|x_0)}. For data without right-censored time, \eqn{p_{m+1}=1-\pi(x_0)=0}.
+#' \eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of interval/left censored,
+#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau_n]} by
+#' \eqn{S_m(t|x_0; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau_n)}, where 
+#' \eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
+#'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) = 1}, \eqn{p_{m+1} = 1-\pi(x_0)}, and
+#' \eqn{\pi(x_0) = F(\tau_n|x_0)}. For data without right-censored time, \eqn{p_{m+1} = 1-\pi(x_0) = 0}.
 #'
-#' Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
+#' Response variable should be of the form \code{cbind(l, u)}, where \code{(l, u)} is the interval 
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
-#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l =0}.
+#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 #' The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
 #' \eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x} and 
 #' all \eqn{\gamma} in a neighborhood of its true value.
@@ -58,28 +58,28 @@
 #' This process takes longer than \code{\link{maple.ph}} to select an optimal degree.  
 #' @return A list with components
 #' \itemize{ 
-#'   \item \code{m} the selected optimal degree \code{m}
-#'   \item \code{p} the estimate of \eqn{p=(p_0,\dots,p_m,p_{m+1})}, the coefficients of Bernstein polynomial of degree \code{m}
+#'   \item \code{m} the selected/preselected optimal degree \code{m}
+#'   \item \code{p} the estimate of \eqn{p = (p_0, \dots, p_m, p_{m+1})}, the coefficients of Bernstein polynomial of degree \code{m}
 #'   \item \code{coefficients} the estimated regression coefficients of the PH model
 #'   \item \code{SE} the standard errors of the estimated regression coefficients 
 #'   \item \code{z} the z-scores of the estimated regression coefficients 
 #'   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
 #'   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-#'   \item \code{tau} right endpoint of support \eqn{[0,\tau)}
+#'   \item \code{tau} right endpoint of support \eqn{[0, \tau)}
 #'   \item \code{x0} the working baseline covariates 
 #'   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
 #'   \item \code{convergence} an integer code, 1 indicates either the EM-like 
 #'     iteration for finding maximum likelihood reached the maximum iteration for at least one \code{m} 
 #'     or the search of an optimal degree using change-point method reached the maximum candidate degree,
 #'     2 indicates both occured, and 0 indicates a successful completion.  
-#'   \item \code{delta} the final \code{delta} if \code{m0=m1} or the final \code{pval} of the change-point 
+#'   \item \code{delta} the final \code{delta} if \code{m0 = m1} or the final \code{pval} of the change-point 
 #'      for searching the optimal degree \code{m};
 #'  }
 #'  and, if \code{m0<m1},
 #' \itemize{
-#'   \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate degree when the search stoped
-#'   \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+#'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate degree when the search stoped
+#'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0,\ldots, m_1\}}
+#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
@@ -91,13 +91,13 @@
 #' \donttest{
 #'    # Ovarian Cancer Survival Data
 #'    require(survival)
-#'    futime2=ovarian$futime
-#'    futime2[ovarian$fustat==0]=Inf
+#'    futime2<-ovarian$futime
+#'    futime2[ovarian$fustat==0]<-Inf
 #'    ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, futime2=futime2)
 #'    ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M=c(2,35), g=.16)
 #'    op<-par(mfrow=c(2,2))
-#'    plot(ova,  which="likelihood")
-#'    plot(ova,  which="change-point")
+#'    plot(ova, which = "likelihood")
+#'    plot(ova, which = "change-point")
 #'    plot(ova, y=data.frame(c(60)), which="survival", add=F, type="l", xlab="Days", main="Age = 60")
 #'    plot(ova, y=data.frame(c(65)), which="survival", add=F, type="l", xlab="Days", main="Age = 65")
 #'    par(op)
@@ -166,7 +166,7 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
         x0<-res[[8]]
         gama<-res[[1]]
         egx0<-exp(sum(gama*x0))
-        Sig=-n*matrix(res[[10]], nrow=d, ncol=d)
+        Sig <- -n*matrix(res[[10]], nrow=d, ncol=d)
         se<-sqrt(diag(Sig)/n)
         ans<-list(m=m, mloglik=llik,  p=res[[2]], x0=x0, egx0=egx0, coefficients=gama, 
             tau.n=b, tau=tau, SE=se, z=gama/se, xNames=Dta$xNames, convergence=res[[14]],
@@ -189,9 +189,9 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
         k<-M[2]-M[1]
         gama<-res[[2]]
         #x0<-res[[10]]
-        Sig=-n*matrix(res[[13]], nrow=d, ncol=d)
+        Sig <- -n*matrix(res[[13]], nrow=d, ncol=d)
         se<-sqrt(diag(Sig)/n)
-        lr=res[[12]][1:k]; 
+        lr<-res[[12]][1:k]; 
         lk<-res[[11]][1:(k+1)]
         m<-res[[3]][2]  
         llik<-lk[m-M[1]+1]
@@ -208,26 +208,19 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
     class(ans)<-"mable_reg"
     return(ans)
 }
-###############################################
+##################################################################
 #  Select optimal degree m with a given gamma
-# M: set of positive integers as candidate degrees of Bernstein poly model
-# gama: an efficient estimate of regression coefficient gamma
-#    x: covariate centered at x0 satisfying gama'x0=min{gama'xi, i=1,...,n}
-#   fn: the initial guess of the baseline density f(.|x0)
-#       In simulation we use the true f(.|x0).
-#       In real data analysis we use histogram or kernel density based on "survfit"
-#  ...: extra arguments of fn
 ##################################################################
 #' Mable fit of the PH model with given regression coefficients 
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
 #' @param data a dataset
-#' @param M an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},  
-#'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
+#'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.  
 #' @param g the given \eqn{d}-vector of regression coefficients 
-#' @param pi0 Initial guess of \eqn{\pi(x_0)=F(\tau_n|x_0)}. Without right censored data, \code{pi0=1}. See 'Details'.
-#' @param tau right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time
+#' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
+#' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param x0 a working baseline covariate. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
@@ -236,26 +229,26 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'  polynomial model in Cox's proportional hazards regression  based on interal 
 #'  censored event time data with a given regression coefficients which are efficient
 #'  estimates provided by other semiparametric methods. Select optimal degree with a 
-#'  given regression coefficients
+#'  given regression coefficients.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x)=S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
-#'   Let \eqn{f(t|x)} and \eqn{F(t|x)=1-S(t|x)} be the density and cumulative distribution
-#' functions of the event time given \eqn{X=x}, respectively.
+#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+#'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
+#' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
-#' \eqn{f_m(t|x_0, p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
-#' where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1-p_{m+1}},
+#' \eqn{f_m(t|x_0; p) = \tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
+#' where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},
 #' \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
-#' \eqn{\tau_n} is the largest obs, either uncensored time, or right endpoint of interval/left censored,
-#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0,\tau_n]} by
-#' \eqn{S_m(t|x_0;p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau_n)}, where 
-#' \eqn{\bar B_{mi}(u)}, \eqn{i=0,\ldots,m}, is the beta survival function with shapes 
-#'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t)=1}, \eqn{p_{m+1}=1-\pi(x_0)}, and
-#' \eqn{\pi(x_0)=F(\tau_n|x_0)}. For data without right-censored time, \eqn{p_{m+1}=1-\pi(x_0)=0.}  
+#' \eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of interval/left censored,
+#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau_n]} by
+#' \eqn{S_m(t|x_0; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau_n)}, where 
+#' \eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
+#'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) =  1}, \eqn{p_{m+1} = 1-\pi(x_0)}, and
+#' \eqn{\pi(x_0) = F(\tau_n|x_0)}. For data without right-censored time, \eqn{p_{m+1} = 1-\pi(x_0) = 0.}  
 #'
-#' Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
+#' Response variable should be of the form \code{cbind(l, u)}, where \code{(l, u)} is the interval 
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
-#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l =0}.
+#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 #' The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
 #' \eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x}.
 #'
@@ -263,15 +256,15 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 #' @return a class '\code{mable_reg}' object, a list with components
 #' \itemize{ 
-#'   \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate degree when the search stoped
+#'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate degree when the search stoped
 #'   \item \code{m} the selected optimal degree \code{m}
-#'   \item \code{p} the estimate of \eqn{p=(p_0,\dots,p_m,p_{m+1})}, the coefficients of Bernstein polynomial of degree \code{m}
+#'   \item \code{p} the estimate of \eqn{p = (p_0, \dots, p_m,p_{m+1})}, the coefficients of Bernstein polynomial of degree \code{m}
 #'   \item \code{coefficients} the given regression coefficients of the PH model
 #'   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
-#'   \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+#'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
 #'   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-#'   \item \code{tau} right endpoint of support \eqn{[0,\tau)}
+#'   \item \code{tau} right endpoint of support \eqn{[0, \tau)}
 #'   \item \code{x0} the working baseline covariates 
 #'   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
 #'   \item \code{convergence} an integer code. 0 indicates successful completion(the iteration is 
@@ -362,8 +355,8 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
         as.double(pval), as.integer(chpts), as.integer(conv), as.double(del))
     M<-res[[1]]
     k<-M[2]-M[1]
-    lk=res[[10]][1:(k+1)]
-    x0=res[[9]]
+    lk<-res[[10]][1:(k+1)]
+    x0<-res[[9]]
     egx0<-exp(sum(g*x0))
     m<-res[[3]][2]  
     llik<-lk[m-M[1]+1]
@@ -372,7 +365,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
     x0=x0, egx0=egx0, convergence=res[[20]],delta=res[[21]], xNames=Dta$xNames)
     if(k>0) {
         ans$M<-M; ans$lk<-lk; ans$lr<-res[[11]][1:k]; ans$pval<-res[[18]][1:(k+1)];
-        ans$chpts=res[[19]][1:(k+1)]+M[1];}
+        ans$chpts<-res[[19]][1:(k+1)]+M[1];}
     ans$model<-"maple.ph"
     ans$callText<-fmla
     ans$data.name<-data.name
@@ -387,13 +380,13 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #  ...: extra arguments of fn
 ##################################################################
 #' Mable fit based on one-sample interval censored data
-#' @param data a dataset either \code{data.frame} or an n x 2 matrix.
-#' @param M an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},  
-#'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+#' @param data a dataset either \code{data.frame} or an \code{n x 2} matrix.
+#' @param M an positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
+#'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.  
-#' @param pi0 Initial guess of \eqn{\pi=F(\tau_n)}. Without right censored data, \code{pi0=1}. See 'Details'.
-#' @param tau right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time
+#' @param pi0 Initial guess of \eqn{\pi = F(\tau_n)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
+#' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param IC information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are  
 #'  "aic" (Akaike information criterion) and/or 
 #'  "qhic" (Hannan–Quinn information criterion). 
@@ -401,39 +394,37 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
 #' @description Maximum approximate Bernstein/Beta likelihood estimation of density and 
-#'  cumulative/survival distributions functions  based on interal censored event time data
+#'  cumulative/survival distributions functions  based on interal censored event time data.
 #' @details
-#'  Let \eqn{f(t)} and \eqn{F(t)=1-S(t)} be the density and cumulative distribution
-#'  functions of the event time, respectively. Then \eqn{f(t)} on \eqn{[0,\tau_n]} can be
-#'  approximated by \eqn{fm(t; p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
-#'  where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1-p_{m+1}},
+#'  Let \eqn{f(t)} and \eqn{F(t) = 1 - S(t)} be the density and cumulative distribution
+#'  functions of the event time, respectively. Then \eqn{f(t)} on \eqn{[0, \tau_n]} can be
+#'  approximated by \eqn{f_m(t; p) = \tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
+#'  where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},
 #'  \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
-#'  \eqn{\tau_n} is the largest obs, either uncensored time, or right endpoint of 
+#'  \eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of 
 #'  interval/left censored, or left endpoint of right censored time. So we can approximate  
-#'  \eqn{S(t)} on \eqn{[0,\tau]} by \eqn{Sm(t; p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)},  
-#'  where  \eqn{\bar B_{mi}(u)}, \eqn{i=0,\ldots,m}, is the beta survival function with shapes 
-#'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t)=1}, \eqn{p_{m+1}=1-\pi}, and
-#'  \eqn{\pi=F(\tau_n)}. For data without right-censored time, \eqn{p_{m+1}=1-\pi=0}.  
+#'  \eqn{S(t)} on \eqn{[0, \tau]} by \eqn{S_m(t; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)},  
+#'  where  \eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
+#'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) = 1}, \eqn{p_{m+1} = 1 - \pi}, and
+#'  \eqn{\pi = F(\tau_n)}. For data without right-censored time, \eqn{p_{m+1} = 1-\pi=0}.  
 #'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}. 
 #' 
-#' Each row of \code{data}, \code{(l,u)}, is the interval containing the event time. 
+#' Each row of \code{data}, \code{(l, u)}, is the interval containing the event time. 
 #' Data is uncensored if \code{l = u}, right censored if \code{u = Inf} or \code{u = NA},  
-#' and left censored data if \code{l =0}.
+#' and left censored data if \code{l = 0}.
 #' @return a class '\code{mable}' object with components
 #' \itemize{ 
-#'   \item \code{p} 
-#a list of \code{p.cp} and \code{p.bic}, 
-#'    the estimated \code{p} with degree \code{m}
-#'     selected by the change-point method and BIC method, respectively
+#'   \item \code{p} the estimated \code{p} with degree \code{m}
+#'     selected by the change-point method 
 #'   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
+#'   \item \code{interval} support/truncation interval \code{(0, b)}
 #'   \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate when the search stoped
 #'   \item \code{m} the selected optimal degree by the method  of change-point 
-#and BIC
-#'   \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+#'   \item \code{lk} log-likelihoods evaluated at \eqn{m  \in  \{m_0, \ldots, m_1\}}
+#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
 #'   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-#'   \item \code{tau} right endpoint of support \eqn{[0,\tau)}
+#'   \item \code{tau} right endpoint of support \eqn{[0, \tau)}
 #'   \item \code{ic} a list containing the selected information criterion(s)
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
@@ -496,7 +487,7 @@ mable.ic<-function(data, M, pi0=NULL, tau=Inf, IC=c("none", "aic", "hqic", "all"
     lr<-rep(0, k)
     bic<-rep(0,k+1)
     pval<-rep(0,k+1)
-    level=controls$sig.level
+    level<-controls$sig.level
     chpts<-rep(0,k+1)
     eps<-c(controls$eps, .Machine$double.eps)
     convergent<-0
@@ -515,7 +506,7 @@ mable.ic<-function(data, M, pi0=NULL, tau=Inf, IC=c("none", "aic", "hqic", "all"
     lk<-res[[6]][1:(k+1)]
     m<-res[[15]]; 
     mllik<-lk[m-M[1]+1]
-    ans<-list(m=m, mloglik=mllik, tau.n=b, tau=tau, support=c(0, b), 
+    ans<-list(m=m, mloglik=mllik, tau.n=b, tau=tau, interval=c(0, b), 
         convergence=res[[17]], delta=res[[12]][k+1])
     if(k==0) ans$p<-res[[8]][1:(m[1]+2)]
     if(k>0){
@@ -601,14 +592,14 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
             xlb<-time[time<=tau.n]
             xgb<-time[time>tau.n]
             rate<-(m+1)*p[m+1]/p[m+2]/tau.n
-            Sb<-c(1-bern.poly(xlb, p=p[-(m+2)], c(0, tau.n), density=FALSE), p[m+2]*(1-pexp(xgb-tau.n,rate)))
-            fb<-c(bern.poly(xlb, p=p[-(m+2)], c(0, tau.n), density=TRUE), p[m+2]*dexp(xgb-tau.n, rate))
+            Sb<-c(1-pmixbeta(xlb, p=p[-(m+2)], c(0, tau.n)), p[m+2]*(1-pexp(xgb-tau.n,rate)))
+            fb<-c(dmixbeta(xlb, p=p[-(m+2)], c(0, tau.n)), p[m+2]*dexp(xgb-tau.n, rate))
             egxt<-as.vector(exp(sum(y[,1]*gama))/x$egx0)
             fbx<-egxt*fb*Sb^(egxt-1)              
             Sbx<-Sb^egxt}
         if(model == "aft"){	
-            Sbx<-1-bern.poly(time, p=p, c(0, tau), density=FALSE)
-            fbx<-bern.poly(time, p=p, c(0, tau), density=TRUE)
+            Sbx<-1-pmixbeta(time, p=p, c(0, tau))
+            fbx<-dmixbeta(time, p=p, c(0, tau))
             egxt<-as.vector(exp(sum(y[,1]*gama))/x$egx0)
             time<-time*egxt
             tau<-tau.n}
@@ -629,9 +620,9 @@ readingCall <- function(mf){
   mf <- mf[c(1L, m)]
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
-  mf$formula = quote(formula)
-  mf$data = quote(data)
-  mf$na.action = quote(na.pass)
+  mf$formula <- quote(formula)
+  mf$data <- quote(data)
+  mf$na.action <- quote(na.pass)
   mf <- eval(mf, parent.frame())
   mt <- attr(mf, "terms")
   ans <- list(mt = mt, mf = mf)
@@ -656,7 +647,7 @@ get.mableData<-function(formula, data){
         xNames <- as.character(formula[[3]])
         x<-matrix(x, ncol=1)}
     if ("(Intercept)" %in% colnames(x)) {
-        ind = which(colnames(x) == "(Intercept)")
+        ind <- which(colnames(x) == "(Intercept)")
         x <- x[, -ind]
         xNames <- xNames[-ind]
     } # This should not happen.
@@ -666,7 +657,7 @@ get.mableData<-function(formula, data){
     delta<-1*(y<y2)# rvar[,3]
     if (sum(is.na(x)) > 0) 
         stop("NA's not allowed in covariates")
-    callText = mf$formula
+    callText <- mf$formula
     out<-list(x=x, y=y, y2=y2, delta=delta, callText=callText, xNames=xNames)
     return(out)
 }
@@ -678,14 +669,14 @@ get.mableData<-function(formula, data){
 #' Using maximum approximate Bernstein/Beta likelihood
 #' estimation to fit semiparametric regression models: Cox ph model,
 #' proportional odds(po) model, accelerated failure time model, and so on.
-#' @param formula regression formula. Response must be of the form \code{cbind(l,u)}.  See 'Details'.
+#' @param formula regression formula. Response must be of the form \code{cbind(l, u)}.  See 'Details'.
 #' @param data a dataset
 #' @param model the model to fit. Current options are "\code{ph}"
 #'  (Cox PH) or "\code{aft}" (accelerated failure time model)
-#' @param M a vector \code{(m0,m1)} specifies the set of consective integers as candidate degrees
+#' @param M a vector \code{(m0, m1)} specifies the set of consective integers as candidate degrees
 #' @param g  an initial guess of the regression coefficients 
-#' @param pi0 Initial guess of \eqn{\pi(x_0)=F(\tau_n|x_0)}. Without right censored data, \code{pi0=1}. See 'Details'.
-#' @param tau right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time
+#' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
+#' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param x0 a working baseline covariate. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.

@@ -12,8 +12,8 @@ mable.aft(formula, data, M, g = NULL, tau = 1, x0 = NULL,
 
 \item{data}{a dataset}
 
-\item{M}{an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},
-then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
+then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
@@ -32,52 +32,52 @@ and other control options. Default is \code{\link{mable.ctrl}}.}
 A list with components
 \itemize{ 
   \item \code{m} the given or selected optimal degree \code{m}
-  \item \code{p} the estimate of \code{p=(p_0,\dots,p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
+  \item \code{p} the estimate of \code{p = (p_0, \dots, p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
   \item \code{coefficients} the estimated regression coefficients of the AFT model
   \item \code{SE} the standard errors of the estimated regression coefficients 
   \item \code{z} the z-scores of the estimated regression coefficients 
   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-  \item \code{tau} right endpoint of trucation interval \eqn{[0,\tau)}
+  \item \code{tau} right endpoint of trucation interval \eqn{[0, \tau)}
   \item \code{x0} the working baseline covariates 
   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
   \item \code{convergence} an integer code, 1 indicates either the EM-like iteration for finding 
     maximum likelihood reached the maximum iteration for at least one \code{m} or the search of 
     an optimal degree using change-point method reached the maximum candidate degree,
     2 indicates both occured, and 0 indicates a successful completion.  
-  \item \code{delta} the final \code{delta} if \code{m0=m1} or the final \code{pval} of the change-point 
+  \item \code{delta} the final \code{delta} if \code{m0 = m1} or the final \code{pval} of the change-point 
      for searching the optimal degree \code{m};
  }
  and, if \code{m0<m1},
 \itemize{
-  \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate when the search stoped
-  \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+  \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate when the search stoped
+  \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
   \item \code{chpts} the change-points chosen with the given candidate model degrees
 }
 }
 \description{
 Maximum approximate Bernstein/Beta likelihood estimation for
-accelerated failure time model based on interval censored data
+accelerated failure time model based on interval censored data.
 }
 \details{
 Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-\eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
-  Let \eqn{f(t|x)} and \eqn{F(t|x)=1-S(t|x)} be the density and cumulative distribution
-functions of the event time given \eqn{X=x}, respectively.
-Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0,\tau]} can be approximated by  
-\eqn{f_m(t|x_0, p)=\tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
-where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1},  
+\eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+  Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
+functions of the event time given \eqn{X = x}, respectively.
+Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
+\eqn{f_m(t|x_0; p) = \tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
+where \eqn{p_i\ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
-\eqn{\tau} is larger than the last obs, either uncensored time, or right endpoint of interval/left censored,
-or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0,\tau]} by
-\eqn{S_m(t|x_0;p)=\sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
+\eqn{\tau} is larger than the largest observed time, either uncensored time, or right endpoint of interval/left censored,
+or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
+\eqn{S_m(t|x_0; p) = \sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
 the beta survival function with shapes \eqn{i+1} and \eqn{m-i+1}.
 
 Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
 containing the event time. Data is uncensored if \code{l = u}, right censored 
-if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l =0}.
+if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 The truncation time \code{tau} and the baseline \code{x0} should chosen so that 
 \eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 all the observed \eqn{x}.

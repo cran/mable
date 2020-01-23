@@ -12,12 +12,12 @@ mable.group(x, breaks, M, interval = c(0, 1), IC = c("none", "aic",
 
 \item{breaks}{class interval end points}
 
-\item{M}{an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},
+\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
 then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
-where $\code{m1-m0>3}.}
+where \code{m1-m0>3}.}
 
-\item{interval}{a vector containing the endpoints of supporting/truncation interval}
+\item{interval}{a vector containing the endpoints of support/truncation interval}
 
 \item{IC}{information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 "aic" (Akaike information criterion) and/or
@@ -31,26 +31,26 @@ and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. S
 \value{
 A list with components
 \itemize{
-  \item \code{m} the selected/given optimal degree by the method of change-point #and BIC
-  \item \code{p} #a list of \code{p.cp} and \code{p.bic},
-     the estimated \code{p} with degree \code{m}
-    selected by the change-point method #and BIC method, respectively
+  \item \code{m} the given/selected optimal degree by the method of change-point
+  \item \code{p} the estimated \code{p} with degree \code{m}
   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
-  \item \code{support} supporting interval \code{(a,b)}
-  \item \code{convergence} An integer code. 0 indicates successful completion (all the EM iterations are convergent and an optimal degree
+  \item \code{interval} supporting interval \code{(a, b)}
+  \item \code{convergence} An integer code. 0 indicates successful completion
+   (all the EM iterations are convergent and an optimal degree
     is successfully selected in \code{M}). Possible error codes are
    \itemize{
-      \item 1, indicates that the iteration limit \code{maxit} had been reached in at least one EM iteration;
+      \item 1, indicates that the iteration limit \code{maxit} had been
+          reached in at least one EM iteration;
       \item 2, the search did not finish before \code{m1}.
     }
   \item \code{delta} the convergence criterion \code{delta} value
  }
  and, if \code{m0<m1},
 \itemize{
-  \item \code{M} the vector \code{(m0,m1)}, where \code{m1}, if greater than \code{m0} is the
+  \item \code{M} the vector \code{(m0, m1)}, where \code{m1}, if greater than \code{m0}, is the
      largest candidate when the search stoped
-  \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+  \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
   \item \code{ic} a list containing the selected information criterion(s)
   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
   \item \code{chpts} the change-points chosen with the given candidate model degrees
@@ -62,10 +62,10 @@ Maximum approximate Bernstein/Beta likelihood estimation based on
  or a preselected model degree \code{m}.
 }
 \details{
-Any continuous density function \eqn{f} on a known closed supporting interval \eqn{[a,b]} can be
- estimated by Bernstein polynomial \eqn{f_m(x; p)=\sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]},
- where \eqn{p=(p_0,\ldots,p_m}, \eqn{p_i\ge 0}, \eqn{\sum_{i=0}^m p_i=1} and
- \eqn{\beta_{mi}(u)=(m+1){m\choose i}u^i(1-x)^{m-i}}, \eqn{i=0,1,\ldots,m},
+Any continuous density function \eqn{f} on a known closed supporting interval \eqn{[a, b]} can be
+ estimated by Bernstein polynomial \eqn{f_m(x; p) = \sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]/(b-a)},
+ where \eqn{p = (p_0, \ldots, p_m)}, \eqn{p_i\ge 0}, \eqn{\sum_{i=0}^m p_i=1} and
+ \eqn{\beta_{mi}(u) = (m+1){m\choose i}u^i(1-x)^{m-i}}, \eqn{i = 0, 1, \ldots, m},
  is the beta density with shapes \eqn{(i+1, m-i+1)}.
  For each \code{m}, the MABLE of the coefficients \code{p}, the mixture proportions, are
  obtained using EM algorithm. The EM iteration for each candidate \code{m} stops if either
@@ -73,13 +73,13 @@ Any continuous density function \eqn{f} on a known closed supporting interval \e
  is smaller than \code{eps} or the maximum number of iterations \code{maxit} is reached.
 
  If \code{m0<m1}, an optimal model degree is selected as the change-point of the increments of
- log-likelihood, log likelihood ratios, for \eqn{m\in\{m_0,m_0+1,\ldots,m_1\}}. Alternatively,
+ log-likelihood, log likelihood ratios, for \eqn{m \in \{m_0, m_0+1, \ldots, m_1\}}. Alternatively,
  one can choose an optimal degree based on the BIC (Schwarz, 1978) which are evaluated at
- \eqn{m\in\{m_0,m_0+1,\ldots,m_1\}}. The search for optimal degree \code{m} is stoped if either
+ \eqn{m \in \{m_0, m_0+1, \ldots, m_1\}}. The search for optimal degree \code{m} is stoped if either
  \code{m1} is reached with a warning or the test for change-point results in a p-value \code{pval}
  smaller than \code{sig.level}.  The BIC for a given degree \code{m} is calculated as in
- Schwarz (1978) where the dimension of the model is \eqn{d=\#\{i: \hat p_i\ge\epsilon,
-  i=0,\ldots,m\}-1} and \eqn{\epsilon} is chosen as \code{.Machine$double.eps}.
+ Schwarz (1978) where the dimension of the model is \eqn{d=\#\{i: \hat p_i \ge \epsilon,
+ i = 0, \ldots, m\} - 1} and a default \eqn{\epsilon} is chosen as \code{.Machine$double.eps}.
 }
 \examples{
 \donttest{

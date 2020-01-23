@@ -12,16 +12,16 @@ maple.ph(formula, data, M, g, pi0 = NULL, tau = Inf, x0 = NULL,
 
 \item{data}{a dataset}
 
-\item{M}{an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},
-then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
+then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
 \item{g}{the given \eqn{d}-vector of regression coefficients}
 
-\item{pi0}{Initial guess of \eqn{\pi(x_0)=F(\tau_n|x_0)}. Without right censored data, \code{pi0=1}. See 'Details'.}
+\item{pi0}{Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.}
 
-\item{tau}{right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time}
+\item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
 \item{x0}{a working baseline covariate. See 'Details'.}
 
@@ -33,15 +33,15 @@ and other control options. Default is \code{\link{mable.ctrl}}.}
 \value{
 a class '\code{mable_reg}' object, a list with components
 \itemize{ 
-  \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate degree when the search stoped
+  \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate degree when the search stoped
   \item \code{m} the selected optimal degree \code{m}
-  \item \code{p} the estimate of \eqn{p=(p_0,\dots,p_m,p_{m+1})}, the coefficients of Bernstein polynomial of degree \code{m}
+  \item \code{p} the estimate of \eqn{p = (p_0, \dots, p_m,p_{m+1})}, the coefficients of Bernstein polynomial of degree \code{m}
   \item \code{coefficients} the given regression coefficients of the PH model
   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
-  \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+  \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-  \item \code{tau} right endpoint of support \eqn{[0,\tau)}
+  \item \code{tau} right endpoint of support \eqn{[0, \tau)}
   \item \code{x0} the working baseline covariates 
   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
   \item \code{convergence} an integer code. 0 indicates successful completion(the iteration is 
@@ -54,27 +54,27 @@ Maximum approximate profile likelihood estimation of Bernstein
  polynomial model in Cox's proportional hazards regression  based on interal 
  censored event time data with a given regression coefficients which are efficient
  estimates provided by other semiparametric methods. Select optimal degree with a 
- given regression coefficients
+ given regression coefficients.
 }
 \details{
 Consider Cox's PH model with covariate for interval-censored failure time data: 
-\eqn{S(t|x)=S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
-  Let \eqn{f(t|x)} and \eqn{F(t|x)=1-S(t|x)} be the density and cumulative distribution
-functions of the event time given \eqn{X=x}, respectively.
+\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+  Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
+functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
-\eqn{f_m(t|x_0, p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
-where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1-p_{m+1}},
+\eqn{f_m(t|x_0; p) = \tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
+where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},
 \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
-\eqn{\tau_n} is the largest obs, either uncensored time, or right endpoint of interval/left censored,
-or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0,\tau_n]} by
-\eqn{S_m(t|x_0;p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau_n)}, where 
-\eqn{\bar B_{mi}(u)}, \eqn{i=0,\ldots,m}, is the beta survival function with shapes 
- \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t)=1}, \eqn{p_{m+1}=1-\pi(x_0)}, and
-\eqn{\pi(x_0)=F(\tau_n|x_0)}. For data without right-censored time, \eqn{p_{m+1}=1-\pi(x_0)=0.}  
+\eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of interval/left censored,
+or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau_n]} by
+\eqn{S_m(t|x_0; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau_n)}, where 
+\eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
+ \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) =  1}, \eqn{p_{m+1} = 1-\pi(x_0)}, and
+\eqn{\pi(x_0) = F(\tau_n|x_0)}. For data without right-censored time, \eqn{p_{m+1} = 1-\pi(x_0) = 0.}  
 
-Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
+Response variable should be of the form \code{cbind(l, u)}, where \code{(l, u)} is the interval 
 containing the event time. Data is uncensored if \code{l = u}, right censored 
-if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l =0}.
+if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
 \eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x}.
 

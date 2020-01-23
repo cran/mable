@@ -14,10 +14,10 @@
 # R --arch x64 CMD SHLIB mable-decon.c
 ######################################################################################################
 #' Mable deconvolution with a known error density
-#' @param y observaed data
+#' @param y vector of observed data values
 #' @param gn error density function
 #' @param ... additional arguments to be passed to gn
-#' @param M a vector \code{(m0, m1)} specifies the set of consective candidate model degrees, \code{M=m0:m1}.
+#' @param M a vector \code{(m0, m1)} specifies the set of consective candidate model degrees, \code{M = m0:m1}.
 #' @param interval a finite vector containing the endpoints of supporting/truncation interval
 #' @param IC information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 #'  "aic" (Akaike information criterion) and/or
@@ -30,17 +30,17 @@
 #' @details
 #' Consider the additive measurement error model \eqn{Y = X + \epsilon}, where
 #' \eqn{X} has an unknown distribution \eqn{F}, \eqn{\epsilon} has a known distribution \eqn{G},
-#' and \eqn{X} and \eqn{\epsilon} are independent. We want to estimate density \eqn{f=F'}
-#' based on independent observations, \eqn{y_i = x_i + \epsilon_i}, \eqn{i=1,\ldots,n}, of \eqn{Y}.
+#' and \eqn{X} and \eqn{\epsilon} are independent. We want to estimate density \eqn{f = F'}
+#' based on independent observations, \eqn{y_i = x_i + \epsilon_i}, \eqn{i = 1, \ldots, n}, of \eqn{Y}.
 #' @return A \code{mable} class object with components
 #' \itemize{
-#'      \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate degree when the search stoped
+#'      \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate degree when the search stoped
 #'      \item \code{m} the selected optimal degree \code{m}
-#'      \item \code{p} the estimate of \code{p=(p_0,\dots,p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
-#'      \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-#'      \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+#'      \item \code{p} the estimate of \code{p = (p_0, \dots, p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
+#'      \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+#'      \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
 #'      \item \code{convergence} An integer code. 0 indicates an optimal degree
-#'        is successfully selected in \code{M}). 1 indicates that the search stoped at \code{m1}.
+#'        is successfully selected in \code{M}. 1 indicates that the search stoped at \code{m1}.
 #'       \item \code{ic} a list containing the selected information criterion(s)
 #'      \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'      \item \code{chpts} the change-points chosen with the given candidate model degrees
@@ -57,8 +57,8 @@
 #'  gn<-function(x) dnorm(x, 0, 1)
 #'  n<-50;
 #'  x<-rnorm(n, mu, sig); e<-rnorm(n); y<-x+e;
-#'  res<-mable.decon(y, gn, interval=c(a,b), M=c(5, 50))
-#'  op<-par(mfrow=c(2,2),lwd=2)
+#'  res<-mable.decon(y, gn, interval = c(a, b), M = c(5, 50))
+#'  op<-par(mfrow = c(2, 2),lwd = 2)
 #'  plot(res, which="likelihood")
 #'  plot(res, which="change-point", lgd.x="topright")
 #'  plot(xx<-seq(a, b, length=100), yy<-dnorm(xx, mu, sig), type="l", xlab="x",
@@ -93,13 +93,13 @@ mable.decon<-function(y, gn, ...,  M, interval=c(0, 1),
     y<-(y-a)/(b-a)
 #    gn<-function(x) (b-a)*gn(a+(b-a)*x,...)
     ff <- function(x) (b-a)*gn((b-a)*x,...)
-    level=controls$sig.level
+    level<-controls$sig.level
     ## Call mable_decon
     wk<-.External("mable_decon", ff, rho = environment(), as.double(y),
         as.integer(M), as.double(controls$eps), as.integer(controls$maxit),
         as.logical(progress), as.double(level), as.double(.Machine$double.eps))
     res <- wk[c("lk", "lr", "p", "m", "pval", "bic", "chpts", "M")]
-    res$support<-interval
+    res$interval<-interval
     m<-res$m
     lk<-res$lk
     bic<-res$bic

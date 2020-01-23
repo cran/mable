@@ -18,14 +18,14 @@
 Invisibly returns its argument, \code{object}.
 }
 \description{
-Produces a summary of a mable fit
+Produces a summary of a mable fit.
 }
 \examples{
 \donttest{
   # Vaal Rive Flow Data
   data(Vaal.Flow)
-  res<-mable(Vaal.Flow$Flow, M=c(2,100), interval=c(0, 3000),
-     controls =mable.ctrl(sig.level=1e-8, maxit=2000, eps=1.0e-9))
+  res<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000),
+     controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
   summary(res)
 }
 \donttest{

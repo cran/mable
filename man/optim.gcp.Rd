@@ -7,18 +7,18 @@
 optim.gcp(obj)
 }
 \arguments{
-\item{obj}{a class "mable" or 'mable_reg' object containig a vector \code{M=(m0,m1)}, \code{lk},
-loglikelihoods evaluated evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}}
+\item{obj}{a class "mable" or 'mable_reg' object containig a vector \code{M = (m0, m1)}, \code{lk},
+loglikelihoods evaluated evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}}
 }
 \value{
 a list with components
 \itemize{
   \item \code{m} the selected optimal degree \code{m}
-  \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate when the search stoped
+  \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate when the search stoped
   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
-  \item \code{support} supporting interval \code{(a,b)}
-  \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+  \item \code{interval} support/truncation interval \code{(a, b)}
+  \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
   \item \code{chpts} the change-points chosen with the given candidate model degrees
 }

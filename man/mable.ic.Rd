@@ -8,16 +8,16 @@ mable.ic(data, M, pi0 = NULL, tau = Inf, IC = c("none", "aic",
   "hqic", "all"), controls = mable.ctrl(), progress = TRUE)
 }
 \arguments{
-\item{data}{a dataset either \code{data.frame} or an n x 2 matrix.}
+\item{data}{a dataset either \code{data.frame} or an \code{n x 2} matrix.}
 
-\item{M}{an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},
-then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+\item{M}{an positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
+then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
-\item{pi0}{Initial guess of \eqn{\pi=F(\tau_n)}. Without right censored data, \code{pi0=1}. See 'Details'.}
+\item{pi0}{Initial guess of \eqn{\pi = F(\tau_n)}. Without right censored data, \code{pi0 = 1}. See 'Details'.}
 
-\item{tau}{right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time}
+\item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
 \item{IC}{information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 "aic" (Akaike information criterion) and/or 
@@ -31,16 +31,16 @@ and other control options. Default is \code{\link{mable.ctrl}}.}
 \value{
 a class '\code{mable}' object with components
 \itemize{ 
-  \item \code{p} 
-   the estimated \code{p} with degree \code{m}
-    selected by the change-point method and BIC method, respectively
+  \item \code{p} the estimated \code{p} with degree \code{m}
+    selected by the change-point method 
   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
+  \item \code{interval} support/truncation interval \code{(0, b)}
   \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate when the search stoped
   \item \code{m} the selected optimal degree by the method  of change-point 
-  \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+  \item \code{lk} log-likelihoods evaluated at \eqn{m  \in  \{m_0, \ldots, m_1\}}
+  \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-  \item \code{tau} right endpoint of support \eqn{[0,\tau)}
+  \item \code{tau} right endpoint of support \eqn{[0, \tau)}
   \item \code{ic} a list containing the selected information criterion(s)
   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
   \item \code{chpts} the change-points chosen with the given candidate model degrees
@@ -51,26 +51,26 @@ a class '\code{mable}' object with components
 }
 \description{
 Maximum approximate Bernstein/Beta likelihood estimation of density and 
- cumulative/survival distributions functions  based on interal censored event time data
+ cumulative/survival distributions functions  based on interal censored event time data.
 }
 \details{
-Let \eqn{f(t)} and \eqn{F(t)=1-S(t)} be the density and cumulative distribution
- functions of the event time, respectively. Then \eqn{f(t)} on \eqn{[0,\tau_n]} can be
- approximated by \eqn{fm(t; p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
- where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1-p_{m+1}},
+Let \eqn{f(t)} and \eqn{F(t) = 1 - S(t)} be the density and cumulative distribution
+ functions of the event time, respectively. Then \eqn{f(t)} on \eqn{[0, \tau_n]} can be
+ approximated by \eqn{f_m(t; p) = \tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)},
+ where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},
  \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
- \eqn{\tau_n} is the largest obs, either uncensored time, or right endpoint of 
+ \eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of 
  interval/left censored, or left endpoint of right censored time. So we can approximate  
- \eqn{S(t)} on \eqn{[0,\tau]} by \eqn{Sm(t; p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)},  
- where  \eqn{\bar B_{mi}(u)}, \eqn{i=0,\ldots,m}, is the beta survival function with shapes 
- \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t)=1}, \eqn{p_{m+1}=1-\pi}, and
- \eqn{\pi=F(\tau_n)}. For data without right-censored time, \eqn{p_{m+1}=1-\pi=0}.  
+ \eqn{S(t)} on \eqn{[0, \tau]} by \eqn{S_m(t; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)},  
+ where  \eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
+ \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) = 1}, \eqn{p_{m+1} = 1 - \pi}, and
+ \eqn{\pi = F(\tau_n)}. For data without right-censored time, \eqn{p_{m+1} = 1-\pi=0}.  
  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
  for change-point results in a p-value \code{pval} smaller than \code{sig.level}. 
 
-Each row of \code{data}, \code{(l,u)}, is the interval containing the event time. 
+Each row of \code{data}, \code{(l, u)}, is the interval containing the event time. 
 Data is uncensored if \code{l = u}, right censored if \code{u = Inf} or \code{u = NA},  
-and left censored data if \code{l =0}.
+and left censored data if \code{l = 0}.
 }
 \examples{
 \donttest{

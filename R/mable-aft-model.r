@@ -18,11 +18,11 @@
 #    dyn.load("mable-aft-model")
 #' Mable fit of Accelerated Failure Time Model
 #' @description Maximum approximate Bernstein/Beta likelihood estimation for
-#' accelerated failure time model based on interval censored data
+#' accelerated failure time model based on interval censored data.
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
 #' @param data a dataset
-#' @param M an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},  
-#'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
+#'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.  
 #' @param g initial guess of \eqn{d}-vector of regression coefficients.  See 'Details'. 
@@ -33,21 +33,21 @@
 #' @param progress if \code{TRUE} a text progressbar is displayed
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
-#'   Let \eqn{f(t|x)} and \eqn{F(t|x)=1-S(t|x)} be the density and cumulative distribution
-#' functions of the event time given \eqn{X=x}, respectively.
-#' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0,\tau]} can be approximated by  
-#' \eqn{f_m(t|x_0, p)=\tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
-#' where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1},  
+#' \eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+#'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
+#' functions of the event time given \eqn{X = x}, respectively.
+#' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
+#' \eqn{f_m(t|x_0; p) = \tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
+#' where \eqn{p_i\ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 #' \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
-#' \eqn{\tau} is larger than the last obs, either uncensored time, or right endpoint of interval/left censored,
-#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0,\tau]} by
-#' \eqn{S_m(t|x_0;p)=\sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
+#' \eqn{\tau} is larger than the largest observed time, either uncensored time, or right endpoint of interval/left censored,
+#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
+#' \eqn{S_m(t|x_0; p) = \sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
 #' the beta survival function with shapes \eqn{i+1} and \eqn{m-i+1}.
 #'
 #' Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
-#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l =0}.
+#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 #' The truncation time \code{tau} and the baseline \code{x0} should chosen so that 
 #' \eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 #' all the observed \eqn{x}.
@@ -62,27 +62,27 @@
 #' @return A list with components
 #' \itemize{ 
 #'   \item \code{m} the given or selected optimal degree \code{m}
-#'   \item \code{p} the estimate of \code{p=(p_0,\dots,p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
+#'   \item \code{p} the estimate of \code{p = (p_0, \dots, p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
 #'   \item \code{coefficients} the estimated regression coefficients of the AFT model
 #'   \item \code{SE} the standard errors of the estimated regression coefficients 
 #'   \item \code{z} the z-scores of the estimated regression coefficients 
 #'   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
 #'   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-#'   \item \code{tau} right endpoint of trucation interval \eqn{[0,\tau)}
+#'   \item \code{tau} right endpoint of trucation interval \eqn{[0, \tau)}
 #'   \item \code{x0} the working baseline covariates 
 #'   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
 #'   \item \code{convergence} an integer code, 1 indicates either the EM-like iteration for finding 
 #'     maximum likelihood reached the maximum iteration for at least one \code{m} or the search of 
 #'     an optimal degree using change-point method reached the maximum candidate degree,
 #'     2 indicates both occured, and 0 indicates a successful completion.  
-#'   \item \code{delta} the final \code{delta} if \code{m0=m1} or the final \code{pval} of the change-point 
+#'   \item \code{delta} the final \code{delta} if \code{m0 = m1} or the final \code{pval} of the change-point 
 #'      for searching the optimal degree \code{m};
 #'  }
 #'  and, if \code{m0<m1},
 #' \itemize{
-#'   \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate when the search stoped
-#'   \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+#'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate when the search stoped
+#'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
@@ -111,6 +111,7 @@
 #' @seealso \code{\link{maple.aft}}
 #' @importFrom aftgee aftsrr
 #' @importFrom stats coef reformulate terms
+#' @importFrom survival Surv
 #' @export
 mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,    
                    controls = mable.ctrl(), progress=TRUE){
@@ -121,7 +122,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
     if(is.null(g)){
         status<-1*(y2<Inf)
         Y<-y 
-        Y[y2<Inf]=(y[y2<Inf]+y2[y2<Inf])/2
+        Y[y2<Inf]<-(y[y2<Inf]+y2[y2<Inf])/2
         rtc.data<-data.frame(Y = Y, status = status, x=x)
         fmla<-reformulate(attr(terms(formula), "term.labels"), response="Surv(Y, status)")
         rkest<-aftsrr(fmla, data = rtc.data)
@@ -178,7 +179,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         ans$x0<-res[[8]]
         ans$coefficients<-res[[1]]
         ans$egx0<-exp(sum(res[[1]]*res[[8]]))
-        Sig=-n*matrix(res[[10]], nrow=d, ncol=d)
+        Sig<--n*matrix(res[[10]], nrow=d, ncol=d)
         ans$SE<-sqrt(diag(Sig)/n)
         ans$z<-res[[1]]/ans$SE 
         ans$convergence<-res[[14]]
@@ -231,10 +232,10 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' Mable fit of AFT model with given regression coefficients for AFT model
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
 #' @param data a dataset
-#' @param M an positive integer or a vector \code{(m0,m1)}. If \code{M=m} or \code{m0=m1=m},  
-#'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
+#'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
-#'   where \code{m1-m0>3}.  
+#'   where \code{m1-m0 > 3}.  
 #' @param g the given \eqn{d}-vector of regression coefficients 
 #' @param tau a truncation time greater than or equal to the maximum observed time \eqn{\tau}. See 'Details'. 
 #' @param x0 a working baseline covariate \eqn{x_0}. See 'Details'. 
@@ -245,26 +246,26 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #'  polynomial model in accelerated failure time based on interal 
 #'  censored event time data with a given regression coefficients which are efficient
 #'  estimates provided by other semiparametric methods. Select optimal degree with a 
-#'  given regression coefficients for AFT model
+#'  given regression coefficients for AFT model.
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
-#'   Let \eqn{f(t|x)} and \eqn{F(t|x)=1-S(t|x)} be the density and cumulative distribution
-#' functions of the event time given \eqn{X=x}, respectively.
-#' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0,\tau]} can be approximated by  
-#' \eqn{f_m(t|x_0, p)=\tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
-#' where \eqn{p_i\ge 0}, \eqn{i=0,\ldots,m}, \eqn{\sum_{i=0}^mp_i=1},  
+#' \eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+#'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
+#' functions of the event time given \eqn{X = x}, respectively.
+#' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
+#' \eqn{f_m(t|x_0; p) = \tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
+#' where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 #' \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
-#' \eqn{\tau} is larger than the last obs, either uncensored time, or right endpoint of interval/left censored,
-#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0,\tau]} by
-#' \eqn{S_m(t|x_0;p)=\sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
+#' \eqn{\tau} is larger than the largest observed time, either uncensored time, or right endpoint of interval/left censored,
+#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
+#' \eqn{S_m(t|x_0; p) = \sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
 #' the beta survival function with shapes \eqn{i+1} and \eqn{m-i+1}.
 #'
 #' Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
-#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l =0}.
+#' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 #' The truncation time \code{tau} and the baseline \code{x0} should chosen so that 
-#' \eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
+#' \eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 #' all the observed \eqn{x}.
 #'
 #'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
@@ -272,27 +273,27 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' @return A list with components
 #' \itemize{ 
 #'   \item \code{m} the selected optimal degree \code{m}
-#'   \item \code{p} the estimate of \code{p=(p_0,\dots,p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
+#'   \item \code{p} the estimate of \eqn{p=(p_0, \dots, p_m)}, the coefficients of Bernstein polynomial of degree \code{m}
 #'   \item \code{coefficients} the given regression coefficients of the AFT model
 #'   \item \code{SE} the standard errors of the estimated regression coefficients 
 #'   \item \code{z} the z-scores of the estimated regression coefficients 
 #'   \item \code{mloglik} the maximum log-likelihood at an optimal degree \code{m}
 #'   \item \code{tau.n} maximum observed time \eqn{\tau_n}
-#'   \item \code{tau} right endpoint of trucation interval \eqn{[0,\tau)}
+#'   \item \code{tau} right endpoint of trucation interval \eqn{[0, \tau)}
 #'   \item \code{x0} the working baseline covariates 
 #'   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
 #'   \item \code{convergence} an integer code, 1 indicates either the EM-like 
 #'     iteration for finding maximum likelihood reached the maximum iteration for at least one \code{m} 
 #'     or the search of an optimal degree using change-point method reached the maximum candidate degree,
 #'     2 indicates both occured, and 0 indicates a successful completion.  
-#'   \item \code{delta} the final \code{delta} if \code{m0=m1} or the final \code{pval} of the change-point 
+#'   \item \code{delta} the final \code{delta} if \code{m0 = m1} or the final \code{pval} of the change-point 
 #'      for searching the optimal degree \code{m};
 #' }
 #'  and, if \code{m0<m1},
 #' \itemize{
-#'   \item \code{M} the vector \code{(m0,m1)}, where \code{m1} is the last candidate when the search stoped
-#'   \item \code{lk} log-likelihoods evaluated at \eqn{m\in\{m_0,\ldots, m_1\}}
-#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m\in\{m_0+1,\ldots, m_1\}}
+#'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate when the search stoped
+#'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+#'   \item \code{lr} likelihood ratios for change-points evaluated at \eqn{m \in \{m_0+1, \ldots, m_1\}}
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
@@ -343,7 +344,7 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
     x<-x[ord,]; y<-y[ord]; y2<-y2[ord]
     if(missing(M) || length(M)==0) stop("'M' is missing.\n")
     else if(length(M)==1) M<-c(M,M)
-    else if(length(M)>=2) {
+    else if(length(M)>=2){
         M<-c(min(M), max(M))
     }
     k<-M[2]-M[1]
@@ -368,13 +369,13 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
         as.integer(conv), as.double(del))
     ans<-list()
     M<-res[[1]]
-    ans$x0=res[[8]]
+    ans$x0<-res[[8]]
     ans$egx0<-exp(sum(g*x0))
     ans$m<-res[[3]][2]
     ans$tau.n<-b
     ans$tau<-tau
     k<-M[2]-M[1]
-    lk=res[[9]][1:(k+1)]; 
+    lk<-res[[9]][1:(k+1)]; 
     ans$mloglik<-lk[ans$m-M[1]+1]
     ans$coefficients<-g
     mp1<-ans$m+1

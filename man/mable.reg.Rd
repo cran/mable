@@ -9,20 +9,20 @@ mable.reg(formula, data, model = c("ph", "aft"), M, g = NULL,
   progress = TRUE)
 }
 \arguments{
-\item{formula}{regression formula. Response must be of the form \code{cbind(l,u)}.  See 'Details'.}
+\item{formula}{regression formula. Response must be of the form \code{cbind(l, u)}.  See 'Details'.}
 
 \item{data}{a dataset}
 
 \item{model}{the model to fit. Current options are "\code{ph}"
 (Cox PH) or "\code{aft}" (accelerated failure time model)}
 
-\item{M}{a vector \code{(m0,m1)} specifies the set of consective integers as candidate degrees}
+\item{M}{a vector \code{(m0, m1)} specifies the set of consective integers as candidate degrees}
 
 \item{g}{an initial guess of the regression coefficients}
 
-\item{pi0}{Initial guess of \eqn{\pi(x_0)=F(\tau_n|x_0)}. Without right censored data, \code{pi0=1}. See 'Details'.}
+\item{pi0}{Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.}
 
-\item{tau}{right endpoint of support \eqn{[0,\tau)} must be greater than or equal to the maximum observed time}
+\item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
 \item{x0}{a working baseline covariate. See 'Details'.}
 
