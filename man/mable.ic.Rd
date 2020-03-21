@@ -81,10 +81,10 @@ and left censored data if \code{l = 0}.
  op<-par(mfrow=c(2,2),lwd=2)
  plot(bc.res0, which="change-point", lgd.x="right")
  plot(bc.res1, which="change-point", lgd.x="right")
- plot(bc.res0, which="survival", add=F, xlab="Months", ylim=c(0,1), main="Radiation Only")
+ plot(bc.res0, which="survival", add=FALSE, xlab="Months", ylim=c(0,1), main="Radiation Only")
  legend("topright", bty="n", lty=1:2, col=1:2, c(expression(hat(S)[CP]),
                expression(hat(S)[BIC])))
- plot(bc.res1, which="survival", add=F, xlab="Months", main="Radiation and Chemotherapy")
+ plot(bc.res1, which="survival", add=FALSE, xlab="Months", main="Radiation and Chemotherapy")
  legend("topright", bty="n", lty=1:2, col=1:2, c(expression(hat(S)[CP]),
                expression(hat(S)[BIC])))
  par(op)

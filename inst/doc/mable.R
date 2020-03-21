@@ -150,7 +150,8 @@ head(faithful, 3)
 
 ## ----results = "hide"---------------------------------------------------------
 a <- c(0, 40); b <- c(7, 110)
-faith2 <- mable.mvar(faithful, M = c(100,100), interval = cbind(a,b))
+#faith2 <- mable.mvar(faithful, M = c(70,50), interval = cbind(a,b))
+faith2 <- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
 
 ## ----fig.align='center', fig.cap="Density Estimate based on the Old Faithful Data\\label{fig:Old-Faithful-Data-plot}", fig.width=6, fig.height=6, warning = FALSE----
 plot(faith2, which = "density")

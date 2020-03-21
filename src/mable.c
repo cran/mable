@@ -829,6 +829,26 @@ void mable_approx(double *u, double *p, int *m, int *n, int *cdf){
     }
     Free(Bta);
 }
+/*//////////////////////////////////////////*/
+/*   Generating PRN from beta(i+1, m-i+1)   */
+/*  n: sample size,                         */
+/*  w: vector of i values between 0 and m   */
+/*  v: the generated variates               */
+/*//////////////////////////////////////////*/
+void rbeta_mi(int *n, int *m, int *w, double *v){
+    int i, j, mp2=*m+2;
+    double tmp1, tmp2;
+    for(j=0; j<*n; j++) {
+        tmp1 = 1.0;
+        tmp2 = 1.0;
+        for(i=0; i<w[j]+1; i++)
+            tmp1 *= unif_rand();
+        tmp2 *= tmp1;
+        for(i=w[j]+1; i<mp2; i++)
+            tmp2 *= unif_rand();
+        v[j] = log(tmp1)/log(tmp2);
+    }
+}
 // End of file "mable.c
 /*////////////////////////////////////////////////////////*/
 /*////////////////////////////////////////////////////////*/
@@ -2432,26 +2452,25 @@ SEXP mable_decon(SEXP args)
 /*////////////////////////////////////////////////////////////*/
 /* Multivariate Bernstein base polynomials */
 /* Multivar_Beta: Returns a K x n matrix, K=(m1+1)...(md+1) */
-/* km[1]=m1+1,km[2]=(m1+1)(m2+1),...,km[d]=(m1+1)...(md+1)=K,*/
+/* km[0]=1, km[1]=m1+1,km[2]=(m1+1)(m2+1),...,km[d]=(m1+1)...(md+1)=K,*/
+/*  Column-major layout  */
 /* beta(x1j, i1+1, m1+1-i1)...beta(xdj, id+1, md+1-id), 0<=ik<=mk, 1<=k<=d,  
          the (i1+km[1]*i2+...+km[d-1]*id,j)th element */
-void Multivar_dBeta(double *x, int *m, int n, int d, int *km, double *dBta) {
+void Multivar_dBeta(double *x, int *m, int n, int d, int *km, double *dBta){
     int i, j, jj, k, r, K, it;
-    K=km[d-1];
-    for(it=0; it<K; it++)
-        for(j=0; j<n; j++) dBta[it+K*j]=1.0; //get initial value of dBta of K*n metrix
+    K=km[d];
     for(j=0; j<n; j++){
-        for(k=0; k<d; k++){ //d-var desity function
-            it=0;
-            for(jj =1; jj*(m[k]+1)<=km[k]; jj++){
-               for(i=0; i<=m[k]; i++){
-                    for(r=1; r*km[k]<=K; r++){
-                        dBta[it+K*j]*=dbeta(x[j+n*k], i+1, m[k]+1-i, FALSE);
-//   Rprintf("it=%d, k=%d, i= %d, j= %d, x[%d,%d]=%f\n", it, k, i, j, j, k, x[j+n*k]);
-                        it+=1;
-                    }
-                }
+        for(it=0;it<K;it++){
+            dBta[it+K*j]=1.0;
+            r = it;
+            for(k=d-1; k>0; k--){
+                jj = r%km[k];
+                i = (r-jj)/km[k];
+                dBta[it+K*j]*=dbeta(x[j+n*k], i+1, m[k]+1-i, FALSE);
+                r = jj;
+                //Rprintf("it=%d, k=%d, i=%d\n",  it, k, i);
             }
+            dBta[it+K*j]*=dbeta(x[j], r+1, m[0]+1-r, FALSE); 
         }
     }
 }
@@ -2465,21 +2484,18 @@ void Multivar_dBeta(double *x, int *m, int n, int d, int *km, double *dBta) {
 void Multivar_pBeta(double *x, int *m, int n, int d, int *km, 
                 double *pBta) {
     int i, j, jj, k, r, K, it;
-    K=km[d-1];
-    for(it=0; it<K; it++)
-        for(j=0; j<n; j++) pBta[it+K*j]=1.0;
+    K=km[d];
     for(j=0; j<n; j++){
-        for(k=0; k<d; k++){
-            it=0;
-            for(jj =1; jj*(m[k]+1)<=km[k]; jj++){
-               for(i=0; i<=m[k]; i++){
-                    for(r=1; r*km[k]<=K; r++){
-                        pBta[it+K*j]*=pbeta(x[j+n*k], i+1, m[k]-i+1, TRUE, FALSE);
-//Rprintf("it=%d, k=%d, i= %d, j= %d, x[%d,%d]=%f\n", it, k, i, j, j, k, x[j+n*k]);
-                        it+=1;
-                    }
-                }
+        for(it=0;it<K;it++){
+            pBta[it+K*j]=1.0;
+            r = it;
+            for(k=d-1; k>0; k--){
+                jj = r%km[k];
+                i = (r-jj)/km[k];
+                pBta[it+K*j]*=pbeta(x[j+n*k], i+1, m[k]+1-i, TRUE, FALSE);
+                r = jj;
             }
+            pBta[it+K*j]*=pbeta(x[j], r+1, m[0]+1-r, TRUE, FALSE); 
         }
     }
 }
@@ -2493,15 +2509,15 @@ void Multivar_pBeta(double *x, int *m, int n, int d, int *km,
 /*//////////////////////////////////////////////////////*/
 double loglik_bern_multivar(double *p, int K, int n, double *Bta){
     int i,j;
-    double llik, fx;
-    llik = 1.0;
+    double lik, fx;
+    lik = 1.0;
     for(j=0; j<n; j++){
         fx = 0.0;
         for(i=0; i<K; i++) fx += p[i]*Bta[i+K*j];
-        llik *= fx;
+        lik *= fx;
     }
-//   Rprintf("  lik = %g\n", llik);
-    return(log(llik));
+//   Rprintf("  lik = %g\n", lik);
+    return(log(lik));
 }
 
 /*/////////////////////////////////////////////////////*/
@@ -2517,11 +2533,11 @@ void em_multivar_beta_mix(double *p, double *x, int *m,
     double  ttl;
     ttl=(double) maxit;
     conv[0] = 0;
-    K=km[d-1];
+    K=km[d];
 //    Rprintf("  d = %d\n", d);
-//    for(i=0; i<d;i++) Rprintf("  km[%d] = %d\n", i, km[i]);
+//    for(i=0; i<=d;i++) Rprintf("  km[%d] = %d\n", i, km[i]);
 //    Rprintf("  K = %d\n", K);
-//    for(i=0; i<d;i++) for(j=0; j<n;j++) Rprintf("x[%d,%d]=%f\n",  j, i, x[j+n*i]);
+//    for(i=0; i<d; i++) for(j=0; j<n;j++) Rprintf("x[%d,%d]=%f\n",  j, i, x[j+n*i]);
     Bta = Calloc(K*n, double);
     pBeta = Calloc(K*n, double);
     fp = Calloc(n, double);
@@ -2557,25 +2573,173 @@ void em_multivar_beta_mix(double *p, double *x, int *m,
         Rprintf("\n");}
     if(it==maxit){
         conv[0]+=1; 
-        warning("The maximum iteration has been reached \n with del %f.\n", del);}
+        if(progress==1) warning("\n The maximum iteration has been reached \n with del %f.\n", del);
+    }
     Free(Bta);
     Free(pBeta);
     Free(fp);
     Free(pnu);
 }
 /* end function em_beta_mix */
+/*////////////////////////////////////////////////////////////*/
+/* Calculate p with degree mt=m+e_k from p with degree m,     */
+/* where ek=(0,...,0,1,0,...,0), the unit vector on xk-axis   */
+/*   km[0] = 1,  km[1]=m1+1,  km[2]=(m1+1)(m2+1),...,         */
+/*          km[d]=(m1+1)...(md+1)=K,                          */
+/* p(i1, ..., id), 0<=ik<=mk, 1<=k<=d, are arranged by column-*/
+/* major order:   i1+km[1]*i2+...+km[d-1]*id                  */
+/*      For the p with m+ek, K1=K*(mk+2)/(mk+1)               */
+void pm2pmpe_k(double *p, double *pt, int *mt, int d, int *kmt, int k){
+    int i, j, l, r, K, K1, ii, ij, *I, itmp;
+    I = Calloc(d, int);
+    K1=kmt[d];
+    K = K1*mt[k]/(mt[k]+1);
+    for(i=0; i<K1; i++) p[i] = 0.0;
+    for(ii=K-1; ii>=0; ii--){
+        r = ii;
+        ij = 0;
+        for(l=d-1; l>k; l--){
+            itmp = kmt[l]*mt[k]/(mt[k]+1);
+            j = r%itmp;
+            I[l] = (r-j)/itmp;
+            ij += (r-j)*(mt[k]+1)/mt[k];
+            r = j;
+        }
+        for(l=k; l>=0; l--){
+            j = r%kmt[l];
+            I[l] = (r-j)/kmt[l];
+            ij += r-j;
+            r = j;
+        }
+        //Rprintf("i=%d, r=%d\n", i, r);
+        p[ij+kmt[k]] += (I[k]+1)*pt[ii]/(mt[k]+1);
+        p[ij] += (mt[k]-I[k])*pt[ii]/(mt[k]+1);
+        //if(I[k]==0) Rprintf("pt[%d]=%f\n", ii-i, pt[ii-i]);        
+        //else if(I[k]==mt[k]) Rprintf("pt[%d]=%f\n", ii-i-r, pt[ii-i-r]);
+        //else {
+        //    Rprintf("pt[%d]=%f\n", ii-i, pt[ii-i]);
+        //    Rprintf("pt[%d]=%f\n", ii-i-r, pt[ii-i-r]);
+        //}
+        //if(prnt) Rprintf("p[%d]=%f\n", ii, p[ii]);
+    }
+    Free(I);
+}
 
-void mable_mvar(int *m, int *n, int *d, int *km, double *p, double *x, 
-        int *maxit,  double *eps, double *llik, int *progress, int *conv){
+void mable_mvar(int *M, int *n, int *d, int *search, double *phat, double *x, 
+        int *maxit,  double *eps, double *lk, double *lr, double *pval,  
+        int *chpts, int *progress, int *conv, double *level){
+    int i, j, k, imx=1, *mt, *mhat, prgrs, kmax=0, *cp, *km, *m, K; 
+    double *res, *pt, *p, *p0, *llik, pct=0.0, ttl;
+    km = Calloc(*d+1, int);
+    mt = Calloc(*d, int);
+    mhat = Calloc(*d, int);
+    cp = Calloc(1, int);
+    res = Calloc(1, double);
+    llik = Calloc(1, double);
+    kmax = 0;
+    km[0] = 1;
+    // Rprintf("km[%d]=%d\n",0,km[0]);
+    for(i=1; i<=*d; i++){
+        kmax = kmax+M[i-1]-2;
+        km[i]=km[i-1]*(M[i-1]+1);
+        // Rprintf("km[%d]=%d\n",i,km[i]);
+    }
+    K = km[*d];
+    m = Calloc(*d, int);
+    p = Calloc(K, double);
+    p0 = Calloc(K, double);
+    pt = Calloc(K, double);
+    ttl=(double) kmax;
     Rprintf("\n Mable fit of multivariate data. This may take several minutes.\n\n");
-    em_multivar_beta_mix(p, x, m, *n, *d, km, *maxit, *eps, llik, *progress, conv);
+    if(*search==0){
+        if(*progress==1) prgrs=1;
+        else prgrs=0;
+        em_multivar_beta_mix(phat, x, M, *n, *d, km, *maxit, *eps, lk, prgrs, conv);
+    }
+    else{
+        prgrs=0;
+        for(i=0; i<*d; i++){
+            m[i] = 3;
+            mhat[i] =3;
+        }
+        km[0] =1;
+        for(i=1; i<=*d; i++) km[i]=km[i-1]*(m[i-1]+1);
+        K=km[*d];
+        for(j=0; j<K; j++) pt[j]=1.0/(double) K;
+        em_multivar_beta_mix(pt, x, m, *n, *d, km, *maxit, *eps, llik, prgrs, conv);
+        for(j=0; j<K; j++) phat[j]=pt[j];
+        lk[0] = llik[0];
+        pct += 1.0;
+        if(*progress==1) ProgressBar(pct/ttl,"");
+        pval[0]=1.0;
+        k = 0;
+        while(m[imx]<M[imx] && pval[k]>*level){
+            for(i=0; i<*d; i++){
+                for(j=0;j<*d;j++) mt[j]=m[j];
+                mt[i]=m[i]+1;
+                km[0] = 1;
+                for(j=1; j<=*d; j++) km[j]=km[j-1]*(mt[j-1]+1);
+                //for(j=0; j<km[*d]; j++) p[j]=1.0/(double) km[*d];
+                //recycle pt's????.  
+                pm2pmpe_k(p, pt, mt, *d, km, i);
+                for(j=0; j<km[*d]; j++) p[j]=(p[j]+.000001/(double) km[*d])/1.000001;
+                em_multivar_beta_mix(p, x, mt, *n, *d, km, *maxit, *eps, llik, prgrs, conv);
+                if(i==0){
+                    lk[k+1] = llik[0];
+                    imx = 0;
+                    K=km[*d];
+                    for(j=0; j<K; j++) p0[j]=p[j];
+                }
+                else if(lk[k+1]<llik[0]){
+                    lk[k+1] = llik[0];
+                    imx = i;
+                    K=km[*d];
+                    for(j=0; j<K; j++) p0[j]=p[j];
+                }
+            }
+            for(j=0; j<K; j++) pt[j]=p0[j];
+            m[imx] = m[imx]+1;
+            if(k>=3){
+                cp[0] = k+1;
+                chpt_exp(lk, lr, res, cp);
+                pval[k+1] = res[0];
+                chpts[k] = cp[0];
+            }
+            else{            
+                pval[k+1] = 1.0;
+                chpts[k] = k+1;
+            }
+            if(k>=3 && chpts[k]>chpts[k-1]){ 
+                for(j=0; j<K; j++) phat[j] = pt[j];
+                for(j=0;j<*d;j++) mhat[j] = m[j];
+            }
+            k+=1;
+            pct += 1.0;
+            if(*progress==1) ProgressBar(pct/ttl,"");
+        }
+        for(j=0;j<*d;j++) M[j]=mhat[j];
+        if(*progress==1){
+            ProgressBar(1.0,"");
+            Rprintf("\n");
+        }
+    }
+    Free(p);
+    Free(p0);
+    Free(pt);
+    Free(cp);
+    Free(km);
+    Free(m);
+    Free(mt);
+    Free(mhat);
+    Free(res);
+    Free(llik);
 }
 /* t=(t1,...,td) is in [0,1]^d*/
 void mable_mvdf(int *d, int *m, int *km, int *n, double *t, double *p, 
             double *mvdf, int *density){
     int i, j, K;
     double *tmp;
-    K=km[*d-1];
+    K=km[*d];
     tmp = Calloc((*n)*K, double);
     if(*density==0) Multivar_pBeta(t, m, *n, *d, km, tmp);
     if(*density==1) Multivar_dBeta(t, m, *n, *d, km, tmp);

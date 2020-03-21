@@ -98,8 +98,10 @@
 #'    op<-par(mfrow=c(2,2))
 #'    plot(ova, which = "likelihood")
 #'    plot(ova, which = "change-point")
-#'    plot(ova, y=data.frame(c(60)), which="survival", add=F, type="l", xlab="Days", main="Age = 60")
-#'    plot(ova, y=data.frame(c(65)), which="survival", add=F, type="l", xlab="Days", main="Age = 65")
+#'    plot(ova, y=data.frame(c(60)), which="survival", add=FALSE, type="l", 
+#'          xlab="Days", main="Age = 60")
+#'    plot(ova, y=data.frame(c(65)), which="survival", add=FALSE, type="l", 
+#'          xlab="Days", main="Age = 65")
 #'    par(op)
 #' }
 #' @keywords distribution models nonparametric regression smooth survival
@@ -289,11 +291,11 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'    par(op)
 #'    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, g=c(.5,-.5), tau=7)
 #'    op<-par(mfrow=c(1,2))
-#'    plot(res1, y=data.frame(c(0,0)), which="density", add=F, type="l", 
+#'    plot(res1, y=data.frame(c(0,0)), which="density", add=FALSE, type="l", 
 #'        xlab="Time", main="Desnity Function")
 #'    lines(xx<-seq(0, 7, len=512), dweibull(xx, 2,2), lty=2, col=2)
 #'    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
-#'    plot(res1, y=data.frame(c(0,0)), which="survival", add=F, type="l", 
+#'    plot(res1, y=data.frame(c(0,0)), which="survival", add=FALSE, type="l", 
 #'        xlab="Time", main="Survival Function")
 #'    lines(xx, 1-pweibull(xx, 2, 2), lty=2, col=2)
 #'    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
@@ -446,10 +448,10 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #'  op<-par(mfrow=c(2,2),lwd=2)
 #'  plot(bc.res0, which="change-point", lgd.x="right")
 #'  plot(bc.res1, which="change-point", lgd.x="right")
-#'  plot(bc.res0, which="survival", add=F, xlab="Months", ylim=c(0,1), main="Radiation Only")
+#'  plot(bc.res0, which="survival", add=FALSE, xlab="Months", ylim=c(0,1), main="Radiation Only")
 #'  legend("topright", bty="n", lty=1:2, col=1:2, c(expression(hat(S)[CP]),
 #'                expression(hat(S)[BIC])))
-#'  plot(bc.res1, which="survival", add=F, xlab="Months", main="Radiation and Chemotherapy")
+#'  plot(bc.res1, which="survival", add=FALSE, xlab="Months", main="Radiation and Chemotherapy")
 #'  legend("topright", bty="n", lty=1:2, col=1:2, c(expression(hat(S)[CP]),
 #'                expression(hat(S)[BIC])))
 #'  par(op)

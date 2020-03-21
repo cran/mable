@@ -18,9 +18,9 @@
 #'  of Multivariate Density Function
 #' @param x an \code{n x d} matrix or \code{data.frame} of multivariate sample of size \code{n}
 #' @param M a positive integer or a vector of \code{d} positive integers specify  
-#'    the maximum candidate or the given model degrees for marginal densities.
+#'    the maximum candidate or the given model degrees for the joint density.
 #' @param search logical, whether to search optimal degrees using \code{M} as maximum candidate 
-#'    degrees or not but use \code{M} as the given model degrees for marginal densities.
+#'    degrees or not but use \code{M} as the given model degrees for the joint density.
 #' @param interval a vector of two endpoints or a \code{d x 2} matrix, each row containing 
 #'    the endpoints of support/truncation interval for each marginal density.
 #'    If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.
@@ -33,20 +33,23 @@
 #'   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
 #'   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
 #'   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-#'   Because all the marginal densities can be approximated by Bernstein polynomials, 
-#'   we can choose optimal degree \eqn{m_i} based on the \eqn{i}-th column \code{x}. 
-#'   For the \code{i}-th marginal density, an optimal degree is selected using
-#'   \code{mable()} with \code{M=c(2, M[i])}. Then fit the data using EM algorithm 
-#'   with the selected optimal degrees \eqn{m=(m_1, \ldots, m_d)} to obtain \code{p},   
-#'   a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
-#'   lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
-#'   where \eqn{K=\prod_{i=1}^d (m_i+1)}. 
+#'   If \code{search=TRUE}, we start with \eqn{M_0}\code{=rep(2,d)} and select  
+#'   \eqn{M_1} which maximizes the likelohood with degrees \eqn{M_1=M_0+e_i}, where
+#'   \eqn{e_i}, \eqn{i=1,\ldots,d}, form the basis of \eqn{R^n}.  The above procedure
+#'   are repeated at least four times to \eqn{M_s} and loglikelihood \eqn{\ell_s}, 
+#'   \eqn{s=0, 1,\ldots,k}, and stop whenever the p-value of the change point of
+#'   \eqn{\ell_{s+1}-\ell_s} is small or a component of \eqn{M_k} reached its maximum 
+#'   value specified by \code{M}. For each \eqn{M_s+e_i} the data are fitted using 
+#'   EM algorithm and the multivariate Bernstein polynomial model with a vector of the    
+#'   mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
+#'   column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
+#'   where \eqn{K=\prod_{i=1}^d (m_i+1)}, to obtain likelihood.
 #' @return  A list with components
 #' \itemize{
 #'  \item \code{dim} the dimension \code{d} of the data
 #'  \item \code{m} a vector of the selected optimal degrees by the method of change-point
 #'  \item \code{p} a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
-#'    lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}.
+#'   column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}.
 #'  \item \code{mloglik}  the maximum log-likelihood at an optimal degree \code{m}
 #'  \item \code{pval}  the p-values of change-points for choosing the optimal degrees for the 
 #'    marginal densities
@@ -60,7 +63,8 @@
 #' ## Old Faithful Data
 #' \donttest{
 #'  a<-c(0, 40); b<-c(7, 110)
-#'  ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
+#'  #ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
+#'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
 #'  plot(ans, which="density") 
 #'  plot(ans, which="cumulative")
 #' }
@@ -80,8 +84,7 @@ mable.mvar<-function(x, M, search=TRUE, interval=NULL,
     if(is.null(xNames)) 
         for(i in 1:d) xNames[i]<-paste("x",i,sep='')
     x<-as.matrix(x)   
-    m<-rep(0,d)
-    pval<-c(0,d)
+    m<-rep(0, d)
     if(is.null(interval))  
         interval<-cbind(apply(x, 2, min), apply(x, 2, max))
     else if(is.matrix(interval)){
@@ -106,31 +109,27 @@ mable.mvar<-function(x, M, search=TRUE, interval=NULL,
         else stop("Invalide 'M'.\n")
     }
     else M<-M[1:d]
-    if(search){
-        Ord<-function(i){
-            if(any(1:3==i%%10) && !any(11:13==i)) switch(i%%10, "st", "nd", "rd")
-            else "th"}
-        for(i in 1:d){
-            cat("Finding optimal degree for the ",i, Ord(i), " marginal density.\n", sep='')
-            res<-mable(x[,i], M=c(2,M[i]), interval=c(0,1), IC="none")
-            m[i]<-res$m[1]
-            M[i]<-res$M[2]
-            pval[i]<-res$pval[M[i]-1]
-        }   
-    }
-    else m<-M
-    km<-cumprod(m+1)
-    K<-km[d]
-    llik<-0
+    kmax<-sum(M-2)
+    pval<-rep(0, kmax)
+    K<-prod(M+1)
+    lk<-rep(0, kmax+1)
+    lr<-rep(0, kmax)
+    chpts<-rep(0, kmax)
     p<-rep(1,K)/K
     convergence<-0
+    level<-controls$sig.level
     ## Call C mable_mvar
     res<-.C("mable_mvar",
-      as.integer(m), as.integer(n), as.integer(d), as.integer(km), as.double(p), 
-      as.double(x), as.integer(controls$maxit), as.double(controls$eps),   
-      as.double(llik), as.logical(progress), as.integer(convergence))
-    out<-list(p=res[[5]], mloglik=res[[9]], interval=interval, 
-        m=m, dim=d, xNames=xNames, pval=pval, M=M, convergence=res[[11]])
+      as.integer(M), as.integer(n), as.integer(d), as.integer(search), as.double(p), 
+      as.double(x), as.integer(controls$maxit), as.double(controls$eps), 
+      as.double(lk), as.double(lr), as.double(pval), as.integer(chpts), 
+      as.logical(progress), as.integer(convergence), as.double(level))
+      m<-res[[1]]
+      k<-sum(m-2)
+      K<-prod(m+1)
+    out<-list(p=res[[5]][1:K], mloglik=res[[9]][max(res[[12]][1:k])], lk=res[[9]][1:(k+1)], 
+        lr=res[[10]][1:k], pval=res[[11]][1:k], chpts=res[[12]][1:k], interval=interval, 
+        m=m, dim=d, xNames=xNames,  convergence=res[[14]])
     out$data.type<-"mvar"
     class(out)<-"mable"
     return(out)
@@ -156,7 +155,7 @@ mable.mvar<-function(x, M, search=TRUE, interval=NULL,
 #'  on \eqn{[a, b]}, \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},   
 #'  with coefficients \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}, where
 #'  \eqn{[a, b] = [a_1, b_1] \times \cdots \times [a_d, b_d]} is a hyperrectangle, and the  
-#'  coefficients are arranged in the lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, 
+#'  coefficients are arranged in the column-major order of \eqn{j = (j_1, \ldots, j_d)}, 
 #'  \eqn{p_0, \ldots, p_{K-1}},  where \eqn{K = \prod_{i=1}^d (m_i+1)}. 
 #'  \code{pmixmvbeta()} returns a linear combination \eqn{F_m} of the distribution
 #'  functions of \eqn{d}-variate beta distribution.
@@ -168,10 +167,10 @@ mable.mvar<-function(x, M, search=TRUE, interval=NULL,
 dmixmvbeta<-function(x, p, m, interval=NULL){
     d<-length(m)
     if(any(m-floor(m)!=0) || d==0) stop("Invalid argument 'm'.\n")
-    km<-cumprod(m+1)
+    km<-c(1,cumprod(m+1))
     K<-length(p)
     if(K==0) stop("Missing mixture proportions 'p' without default.")
-    if(K!=km[d]) stop("Invalid argument 'p': length must equal to 'prod(m+1)'.\n")
+    if(K!=km[d+1]) stop("Invalid argument 'p': length must equal to 'prod(m+1)'.\n")
     if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
     #else if(abs(sum(p)-1)>.Machine$double.eps)
     #    warning("Sum of 'p's is not 1.\n")
@@ -190,8 +189,8 @@ dmixmvbeta<-function(x, p, m, interval=NULL){
     if(is.matrix(x)){
         nx<-nrow(x)
         if(d!=ncol(x)) stop("Wrong dim of 'x'.\n")
-        if(any(x-matrix(rep(int[,1],nx), ncol=d, byrow=T)<0) 
-            || any(x-matrix(rep(int[,2],nx), ncol=d, byrow=T)>0))
+        if(any(x-matrix(rep(int[,1],nx), ncol=d, byrow=TRUE)<0) 
+            || any(x-matrix(rep(int[,2],nx), ncol=d, byrow=TRUE)>0))
             stop("'x' must be in the hyperrectangle 'interval'.\n")
         for(i in 1:d) x[,i]<-(x[,i]-int[i,1])/(int[i,2]-int[i,1])
     }
@@ -213,10 +212,10 @@ dmixmvbeta<-function(x, p, m, interval=NULL){
 pmixmvbeta<-function(x, p, m, interval=NULL){
     d<-length(m)
     if(any(m-floor(m)!=0) || d==0) stop("Invalid argument 'm'.\n")
-    km<-cumprod(m+1)
+    km<-c(1,cumprod(m+1))
     K<-length(p)
     if(K==0) stop("Missing mixture proportions 'p' without default.")
-    if(K!=km[d]) stop("Invalid argument 'p': length must equal to prod(m+1).\n")
+    if(K!=km[d+1]) stop("Invalid argument 'p': length must equal to prod(m+1).\n")
     if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
     #else if(abs(sum(p)-1)>.Machine$double.eps)
     #    warning("Sum of 'p's is not 1.\n")
@@ -235,8 +234,8 @@ pmixmvbeta<-function(x, p, m, interval=NULL){
     if(is.matrix(x)){
         nx<-nrow(x)
         if(d!=ncol(x)) stop("Wrong dim of 'x'.\n")
-        if(any(x-matrix(rep(int[,1],nx), ncol=d, byrow=T)<0) 
-            || any(x-matrix(rep(int[,2],nx), ncol=d, byrow=T)>0))
+        if(any(x-matrix(rep(int[,1],nx), ncol=d, byrow=TRUE)<0) 
+            || any(x-matrix(rep(int[,2],nx), ncol=d, byrow=TRUE)>0))
             stop("'x' must be in the hyperrectangle 'interval'.\n")
         for(i in 1:d) x[,i]<-(x[,i]-int[i,1])/(int[i,2]-int[i,1])
     }
@@ -283,10 +282,10 @@ rmixmvbeta<-function(n, p, m, interval=NULL){
     if(d==1) x<-rmixbeta(n, p, interval)
     else{
         km<-cumprod(m+1)
-        # dictionary order
+        # column-major order
         ii<-matrix(0, nrow=K, ncol=d)
-        for(k in 1:d) ii[,k]<-rep(0:m[k], each=K/km[k])
-        w<-sample(1:K, n, replace = T, prob = p)
+        for(k in 1:d) ii[,k]<-rep(0:m[k], each=km[k]/(m[k]+1))
+        w<-sample(1:K, n, replace = TRUE, prob = p)
         x<-rep(NULL, d)
         for(i in 1:n){
             tmp<-rbeta(d, shape1 = ii[w[i],]+1, shape2 = m-ii[w[i],]+1)

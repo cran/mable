@@ -103,8 +103,10 @@ This process takes longer than \code{\link{maple.ph}} to select an optimal degre
    op<-par(mfrow=c(2,2))
    plot(ova, which = "likelihood")
    plot(ova, which = "change-point")
-   plot(ova, y=data.frame(c(60)), which="survival", add=F, type="l", xlab="Days", main="Age = 60")
-   plot(ova, y=data.frame(c(65)), which="survival", add=F, type="l", xlab="Days", main="Age = 65")
+   plot(ova, y=data.frame(c(60)), which="survival", add=FALSE, type="l", 
+         xlab="Days", main="Age = 60")
+   plot(ova, y=data.frame(c(65)), which="survival", add=FALSE, type="l", 
+         xlab="Days", main="Age = 65")
    par(op)
 }
 }

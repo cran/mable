@@ -39,7 +39,7 @@ mixture of multivariate beta distributions, with given mixture proportions
  on \eqn{[a, b]}, \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},   
  with coefficients \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}, where
  \eqn{[a, b] = [a_1, b_1] \times \cdots \times [a_d, b_d]} is a hyperrectangle, and the  
- coefficients are arranged in the lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, 
+ coefficients are arranged in the column-major order of \eqn{j = (j_1, \ldots, j_d)}, 
  \eqn{p_0, \ldots, p_{K-1}},  where \eqn{K = \prod_{i=1}^d (m_i+1)}. 
  \code{pmixmvbeta()} returns a linear combination \eqn{F_m} of the distribution
  functions of \eqn{d}-variate beta distribution.

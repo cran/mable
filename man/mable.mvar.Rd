@@ -12,10 +12,10 @@ mable.mvar(x, M, search = TRUE, interval = NULL,
 \item{x}{an \code{n x d} matrix or \code{data.frame} of multivariate sample of size \code{n}}
 
 \item{M}{a positive integer or a vector of \code{d} positive integers specify
-the maximum candidate or the given model degrees for marginal densities.}
+the maximum candidate or the given model degrees for the joint density.}
 
 \item{search}{logical, whether to search optimal degrees using \code{M} as maximum candidate 
-degrees or not but use \code{M} as the given model degrees for marginal densities.}
+degrees or not but use \code{M} as the given model degrees for the joint density.}
 
 \item{interval}{a vector of two endpoints or a \code{d x 2} matrix, each row containing 
 the endpoints of support/truncation interval for each marginal density.
@@ -32,7 +32,7 @@ A list with components
  \item \code{dim} the dimension \code{d} of the data
  \item \code{m} a vector of the selected optimal degrees by the method of change-point
  \item \code{p} a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
-   lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}.
+  column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}.
  \item \code{mloglik}  the maximum log-likelihood at an optimal degree \code{m}
  \item \code{pval}  the p-values of change-points for choosing the optimal degrees for the 
    marginal densities
@@ -53,20 +53,24 @@ A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a, b]
   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-  Because all the marginal densities can be approximated by Bernstein polynomials, 
-  we can choose optimal degree \eqn{m_i} based on the \eqn{i}-th column \code{x}. 
-  For the \code{i}-th marginal density, an optimal degree is selected using
-  \code{mable()} with \code{M=c(2, M[i])}. Then fit the data using EM algorithm 
-  with the selected optimal degrees \eqn{m=(m_1, \ldots, m_d)} to obtain \code{p},   
-  a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
-  lexicographical order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
-  where \eqn{K=\prod_{i=1}^d (m_i+1)}.
+  If \code{search=TRUE}, we start with \eqn{M_0}\code{=rep(2,d)} and select  
+  \eqn{M_1} which maximizes the likelohood with degrees \eqn{M_1=M_0+e_i}, where
+  \eqn{e_i}, \eqn{i=1,\ldots,d}, form the basis of \eqn{R^n}.  The above procedure
+  are repeated at least four times to \eqn{M_s} and loglikelihood \eqn{\ell_s}, 
+  \eqn{s=0, 1,\ldots,k}, and stop whenever the p-value of the change point of
+  \eqn{\ell_{s+1}-\ell_s} is small or a component of \eqn{M_k} reached its maximum 
+  value specified by \code{M}. For each \eqn{M_s+e_i} the data are fitted using 
+  EM algorithm and the multivariate Bernstein polynomial model with a vector of the    
+  mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
+  column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
+  where \eqn{K=\prod_{i=1}^d (m_i+1)}, to obtain likelihood.
 }
 \examples{
 ## Old Faithful Data
 \donttest{
  a<-c(0, 40); b<-c(7, 110)
- ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
+ #ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
+ ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
  plot(ans, which="density") 
  plot(ans, which="cumulative")
 }

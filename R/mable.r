@@ -439,10 +439,6 @@ dmixbeta<-function(x, p, interval=c(0, 1)){
     if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
     if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
-    #else if(abs(sum(p)-1)>.Machine$double.eps){
-    #    if(sum(p)<1) warning("Sum of 'p's is less than 1.\n")
-    #    else warning("Sum of 'p's is bigger than 1.\n")
-    #}
     m<-length(p)-1
     if(m==0) y<-dunif(x, a, b)
     else{
@@ -464,10 +460,6 @@ pmixbeta<-function(x, p, interval=c(0, 1)){
     if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
     if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
-    #else if(abs(sum(p)-1)>.Machine$double.eps){
-    #    if(sum(p)<1) warning("Sum of 'p's is less than 1.\n")
-    #    else warning("Sum of 'p's is bigger than 1. \n")
-    #}
     m<-length(p)-1
     if(m==0) y<-punif(x, a, b)
     else{
@@ -491,17 +483,13 @@ qmixbeta<-function(u, p, interval=c(0, 1)){
     if(any(u<0) || any(u>1)) stop("Argument 'u' must be in [0,1].\n")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
     if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
-    #else if(abs(sum(p)-1)>.Machine$double.eps){
-    #    if(sum(p)<1) warning("Sum of 'p's is less than 1.\n")
-    #    else warning("Sum of 'p's is bigger than 1. \n")
-    #}
     m<-length(p)-1
     if(m==0) Q<-qunif(u, a, b)
     else{
         n<-length(u)
         Q<-u
-        for(i in 2:(n-1)){
-            fn<-function(x) pmixbeta(x, p=p)-1+u[i]
+        for(i in 1:n){
+            fn<-function(x) pmixbeta(x, p)-u[i]
             Q[i]<-uniroot(fn, c(0,1))$root
         }
         Q<-a+(b-a)*Q
@@ -524,11 +512,14 @@ rmixbeta<-function(n, p, interval=c(0, 1)){
             p<-p/sum(p)
     }
     m<-length(p)-1
+    x<-rep(0,n)
     if(m==0) x<-runif(n, a, b)
     else{
-        w<-sample(0:m, n, replace = T, prob = p)
+        w<-sample(0:m, n, replace = TRUE, prob = p)
         x<-rbeta(n, shape1 = w+1, shape2 = m-w+1)
         x<-a+(b-a)*x
+        #res<-.C("rbeta_mi", as.integer(n), as.integer(m), as.integer(w), as.double(x))
+        #x<-a+(b-a)*res[[4]]
     }
     return(x)
 }
@@ -617,7 +608,7 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
         }
         if(any(which=="all")) op<-par(mfrow=c(2,1))
         if(any(which=="density")||any(which=="all")){
-            fn<-function(x1, x2) dmixmvbeta(cbind(x1, x2), phat, m, support)
+            fn<-function(x1, x2) dmixmvbeta(cbind(x1, x2), phat, m, interval=support)
             x1 <- seq(a[1], b[1], length= 40)
             x2 <- seq(a[2], b[2], length= 40)
             z1 <- outer(x1, x2, fn)
@@ -626,7 +617,7 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
               xlab = x$xNames[1], ylab = x$xNames[2], zlab = "Joint Density")
         }
         if(any(which=="cumulative")||any(which=="all")){
-            fn<-function(x1, x2) pmixmvbeta(cbind(x1, x2), phat, m, support)
+            fn<-function(x1, x2) pmixmvbeta(cbind(x1, x2), phat, m, interval=support)
             x1 <- seq(a[1], b[1], length= 40)
             x2 <- seq(a[2], b[2], length= 40)
             z2 <- outer(x1, x2, fn)
@@ -670,16 +661,10 @@ summary.mable<-function(object, ...){
     else ans$m<-obj$m
     ans$mloglik<-obj$mloglik
     ans$interval<-obj$interval
-    if(is.null(obj$dim)){
-        ans$dim<-1
-        ans$p<-obj$p
-        ans$pval<-obj$pval[length(obj$pval)]
-    }
-    else {
-        ans$dim<-obj$dim
-        ans$p<-obj$p
-        ans$pval<-obj$pval
-    }
+    if(is.null(obj$dim)) ans$dim<-1
+    else  ans$dim<-obj$dim
+    ans$p<-obj$p
+    ans$pval<-obj$pval[length(obj$pval)]
     switch(obj$data.type,
         raw=cat("Call: mable() for raw data"),
         grp=cat("Call: mable.group() for grouped data"),
@@ -691,19 +676,16 @@ summary.mable<-function(object, ...){
     cat("Dimension of data:", ans$dim,"\n")
     if(obj$data.type=="mvar"){
         cat("Optimal degrees:\n")
-        prnt<-cbind(ans$m, ans$pval)
-        colnames(prnt)<-c("m", "P-value")
-        rownames(prnt)<-obj$xNames
+        prnt<-matrix(ans$m, nrow=1)
+        rownames(prnt)<-"m"
+        colnames(prnt)<-obj$xNames
         printCoefmat(prnt)
-#        cat("Optimal degrees m:", ans$m,"\n")
-#        cat("P-values of Change-points:", ans$pval,"\n")
     }
-    else{
-        cat("Optimal degree m:", ans$m,"\n")
-        cat("P-value of Change-point:", ans$pval,"\n")}
+    else cat("Optimal degree m:", ans$m,"\n")
+    cat("P-value of Change-point:", ans$pval,"\n")
     cat("Maximum loglikelihood:", ans$mloglik,"\n")
     cat("MABLE of p: can be retrieved using name 'p' \n")
-    cat("Note: the optimal model degree is selected by the method of change-point.\n")
+    cat("Note: the optimal model degrees are selected by the method of change-point.\n")
     invisible(ans)
 }
 #' @rdname summary.mable

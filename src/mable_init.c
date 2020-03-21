@@ -21,8 +21,10 @@ void mable_optim_group(int *M, int *N, double *p, double *t, int *n, int *maxit,
     int *progress, int *convergence, double *delta, double *tini, double *bic, 
     double *pval, int *chpts, double *level);
 void mable_approx(double *u, double *p, int *m, int *n, int *cdf);
-void mable_mvar(int *m, int *n, int *d, int *km, double *p, double *x, 
-        int *maxit,  double *eps, double *llik, int *progress, int *conv);
+void rbeta_mi(int *n, int *m, int *w, double *v);
+void mable_mvar(int *M, int *n, int *d, int *search, double *phat, double *x, 
+        int *maxit,  double *eps, double *lk, double *lr, double *pval,  
+        int *chpts, int *progress, int *conv, double *level);
 void mable_mvdf(int *d, int *m, int *km, int *n, double *t, double *p, 
             double *mvdf, int *density);
 void optim_gcp(int *M, double *lk, double *lr, int *m, double *pval, int *chpts);
@@ -39,9 +41,10 @@ static R_NativePrimitiveArgType optim_group_t[] = {
     INTSXP, LGLSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP};
 static R_NativePrimitiveArgType approx_t[] = {
     REALSXP, REALSXP, INTSXP, INTSXP, LGLSXP};
+static R_NativePrimitiveArgType rbeta_t[] = {INTSXP, INTSXP, INTSXP, REALSXP};
 static R_NativePrimitiveArgType mvar_t[] = {
     INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, 
-    LGLSXP, INTSXP};
+    REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP};
 static R_NativePrimitiveArgType mvdf_t[] = {
     INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP, LGLSXP};
 static R_NativePrimitiveArgType gcp_t[] = {
@@ -107,7 +110,8 @@ static const R_CMethodDef cMethods[] = {
    {"mable_optim", (DL_FUNC) &mable_optim, 17, optim_t},
    {"mable_optim_group", (DL_FUNC) &mable_optim_group, 18, optim_group_t},
    {"mable_approx", (DL_FUNC) &mable_approx, 5, approx_t},
-   {"mable_mvar", (DL_FUNC) &mable_mvar, 11, mvar_t},
+   {"rbeta_mi", (DL_FUNC) &rbeta_mi, 4, rbeta_t},
+   {"mable_mvar", (DL_FUNC) &mable_mvar, 15, mvar_t},
    {"mable_mvdf", (DL_FUNC) &mable_mvdf, 8, mvdf_t},
    {"optim_gcp", (DL_FUNC) &optim_gcp, 6, gcp_t},
    {"mable_ph", (DL_FUNC) &mable_ph, 20, ph_t},
