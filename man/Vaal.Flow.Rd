@@ -4,7 +4,9 @@
 \name{Vaal.Flow}
 \alias{Vaal.Flow}
 \title{Vaal River Annual Flow Data}
-\format{The format is: int [1:65] 222 1094 452 1298 882 988 276 216 103 490 ...}
+\format{
+The format is: int [1:65] 222 1094 452 1298 882 988 276 216 103 490 ...
+}
 \usage{
 data(Vaal.Flow)
 }

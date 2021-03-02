@@ -4,8 +4,15 @@
 \alias{mable.ic}
 \title{Mable fit based on one-sample interval censored data}
 \usage{
-mable.ic(data, M, pi0 = NULL, tau = Inf, IC = c("none", "aic",
-  "hqic", "all"), controls = mable.ctrl(), progress = TRUE)
+mable.ic(
+  data,
+  M,
+  pi0 = NULL,
+  tau = Inf,
+  IC = c("none", "aic", "hqic", "all"),
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{data}{a dataset either \code{data.frame} or an \code{n x 2} matrix.}
@@ -74,10 +81,10 @@ and left censored data if \code{l = 0}.
 }
 \examples{
 \donttest{
- library(interval) 
- data(bcos)
- bc.res0<-mable.ic(bcos[bcos$treatment=="Rad",1:2], M=c(1,50), IC="none")
- bc.res1<-mable.ic(bcos[bcos$treatment=="RadChem",1:2], M=c(1,50), IC="none")
+ library(coxinterval) 
+ bcos=cosmesis
+ bc.res0<-mable.ic(bcos[bcos$treat=="RT",1:2], M=c(1,50), IC="none")
+ bc.res1<-mable.ic(bcos[bcos$treat=="RCT",1:2], M=c(1,50), IC="none")
  op<-par(mfrow=c(2,2),lwd=2)
  plot(bc.res0, which="change-point", lgd.x="right")
  plot(bc.res1, which="change-point", lgd.x="right")

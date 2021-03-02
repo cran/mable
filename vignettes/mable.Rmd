@@ -1,28 +1,31 @@
 ---
-title: Maximum Approximate Bernstein/Beta Likelihood Estimation in R package  'mable'
-  v2.0
+title: "Maximum Approximate Bernstein/Beta Likelihood Estimation in R package 'mable'"
 author: "Zhong Guan"
-date: "12/31/2019"
+date: "02/08/2021"
 output:
   pdf_document:
     number_sections: yes
     toc: yes
     toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Maximum Approximate Bernstein/Beta Likelihood Estimation in R package 'mable'}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+header-includes: \usepackage{bm}
 link-citations: yes
 bibliography:
 - bernstein.bib
 - por-model.bib
 - chpt.bib
+- wieand.bib
 biblio-style: chicago
-vignette: >
-  %\VignetteIndexEntry{Maximum Approximate Bernstein/Beta Likelihood Estimation in R package 'mable' v2.0} 
-  %\VignetteEngine{knitr::rmarkdown} 
-  %\VignettEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+
 \setcounter{section}{0}
 # Introduction
 
@@ -48,7 +51,7 @@ data(Vaal.Flow)
 head(Vaal.Flow, 3)
 ```
 we want to estimate the density and the distribution functions of annual flow
-```{r results = "hide", warning = FALSE}
+```{r results = "hide", warning = FALSE, message=FALSE}
 vaal<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000), IC = "all",
        controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
 ```
@@ -200,25 +203,25 @@ par(op)
 
 When data are interval censored, the ``\texttt{interval2}'' type observations are of the form $(l,u)$ which is the interval containing the event time. Data is uncensored if $l = u$, right censored if $u =$ \texttt{Inf}  or $u =$ \texttt{NA}, and  left censored data if $l =0$.  
 
-Let $f(t)$ and $F(t)=1-S(t)$ be the density and cumulative distribution functions of the event time, respectively, on $(0, \tau)$, where $\tau\le \infty$. If $\tau$ is unknown or $\tau=\infty$, then  $f(t)$ on $[0,\tau_n]$ can be approximated by $fm(t; p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)$, where $p_i\ge 0$, $i=0,\ldots,m$, $\sum_{i=0}^mp_i=1-p_{m+1}$, and $\tau_n$ is the largest observation, either uncensored time, or right endpoint of interval/left censored, or left endpoint of right censored time. So we can approximate $S(t)$ on $[0,\tau]$ by $Sm(t; p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)$, where  $\bar B_{mi}(u)=1-\int_0^u\beta_{mj}(t)dt$, $i=0,\ldots,m$, is the beta survival function with shapes $(i+1,m-i+1)$, $\bar B_{m,m+1}(t)=1$, $p_{m+1}=1-\pi$, and $\pi=F(\tau_n)$. For data without right-censored time, $p_{m+1}=1-\pi=0$. The search for optimal degree $m$ among \texttt{M=c(m0,m1)} using the method of change-point is stopped if either \texttt{m1} is reached or the test for change-point results in a p-value \texttt{pval} smaller than \texttt{sig.level}. @Guan-arXiv-2019 proposed a method, as a special case of a semiparametric regression model, for estimating $p$ with an optimal degree $m$. The method is implemented in R function \texttt{mable.ic()}.  
+Let $f(t)$ and $F(t)=1-S(t)$ be the density and cumulative distribution functions of the event time, respectively, on $(0, \tau)$, where $\tau\le \infty$. If $\tau$ is unknown or $\tau=\infty$, then  $f(t)$ on $[0,\tau_n]$ can be approximated by $fm(t; p)=\tau_n^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau_n)$, where $p_i\ge 0$, $i=0,\ldots,m$, $\sum_{i=0}^mp_i=1-p_{m+1}$, and $\tau_n$ is the largest observation, either uncensored time, or right endpoint of interval/left censored, or left endpoint of right censored time. So we can approximate $S(t)$ on $[0,\tau]$ by $Sm(t; p)=\sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)$, where  $\bar B_{mi}(u)=1-\int_0^u\beta_{mj}(t)dt$, $i=0,\ldots,m$, is the beta survival function with shapes $(i+1,m-i+1)$, $\bar B_{m,m+1}(t)=1$, $p_{m+1}=1-\pi$, and $\pi=F(\tau_n)$. For data without right-censored time, $p_{m+1}=1-\pi=0$. The search for optimal degree $m$ among \texttt{M=c(m0,m1)} using the method of change-point is stopped if either \texttt{m1} is reached or the test for change-point results in a p-value \texttt{pval} smaller than \texttt{sig.level}. @Guan-SIM-2020 proposed a method, as a special case of a semiparametric regression model, for estimating $p$ with an optimal degree $m$. The method is implemented in R function \texttt{mable.ic()}.  
 
 ### Example: The Breast Cosmesis Data
 Consider the breast cosmesis data as described in @Finkelstein-and-Wolfe-1985-biom is used to study the cosmetic effects of cancer therapy. The time-to-breast-retractions in months ($T$) were  subject to interval censoring and were measured for 94 women among them 46 received radiation only ($X=0$) (25 right-censored, 3 left-censored and 18 interval censored) and 48 received radiation plus chemotherapy ($X=1$)  (13 right-censored, 2 left-censored and 33 interval censored). The right-censored event times were for those women who did not experienced cosmetic deterioration.   
 
-Load package \texttt{interval} to access Breast Cosmesis Data. We fit the two-sample data separately.
+Load package \texttt{coxinterval} to access Breast Cosmesis Data. We fit the two-sample data separately.
 ```{r results = "hide", warning = FALSE}
-library(interval) 
+library(coxinterval) 
 ```
 ```{r}
-data(bcos)
+bcos=cosmesis
 head(bcos, 3)
 ```
 ```{r results = "hide"}
-bc.res0 <- mable.ic(bcos[bcos$treatment == "Rad",1:2], M = c(1,50), IC = "none")
-bc.res1 <- mable.ic(bcos[bcos$treatment == "RadChem",1:2], M = c(1,50), IC = "none")
+bc.res0 <- mable.ic(bcos[bcos$treat == "RT",1:2], M = c(1,50), IC = "none")
+bc.res1 <- mable.ic(bcos[bcos$treat == "RCT",1:2], M = c(1,50), IC = "none")
 ```
 As the warning message suggested, we check the \texttt{pval}. The \texttt{pval} when the search stopped is `r round(bc.res0$pval[length(bc.res0$pval)],4)`. 
-```{r  fig.align='center', fig.cap="Breast Cosmesis Data\\label{fig:Breast-Cosmesis-Data-plot}", fig.width=7, fig.height=7, warning = FALSE}
+```{r message=FALSE, warning=FALSE, fig.align='center', fig.cap="Breast Cosmesis Data\\label{fig:Breast-Cosmesis-Data-plot}", fig.width=7, fig.height=7, warning = FALSE}
 op <- par(mfrow = c(2,2),lwd = 2)
 plot(bc.res0, which = "change-point", lgd.x = "right")
 plot(bc.res1, which = "change-point", lgd.x = "right")
@@ -236,9 +239,9 @@ A $d$-variate density $f$ on a hyperrectangle $[a,b]=[a_1,b_1]\times \cdots\time
 data(faithful)
 head(faithful, 3)
 ```
-```{r results = "hide"}
+```{r message=FALSE, warning=FALSE, results = "hide"}
 a <- c(0, 40); b <- c(7, 110)
-#faith2 <- mable.mvar(faithful, M = c(70,50), interval = cbind(a,b))
+#faith2 <- mable.mvar(faithful, M = c(60,30), interval = cbind(a,b))
 faith2 <- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
 ```
 ```{r fig.align='center', fig.cap="Density Estimate based on the Old Faithful Data\\label{fig:Old-Faithful-Data-plot}", fig.width=6, fig.height=6, warning = FALSE}
@@ -269,7 +272,7 @@ It is true that $\tau$ is independent of $x_0$, $0<\tau\le\infty$, and $f(t |  x
 Let $(x_i, y_i)=(x_i, (y_{i1}, y_{j2}])$, $i=1,\dots,n$, be independent observations of $(X, Y)$ and
 $\tau_n\ge y_{(n)}=\max\{y_{i1}, y_{j2}: y_{j2}<\infty;\, i,j=1,\dots,n\}$. 
 Given any $x_0$, denote $\pi=\pi(x_0)=1-S_0(\tau_n)$. For integer $m\ge 1$ we define $\mathbb{S}_m\equiv \{(u_0,\ldots,u_m)^T\in \mathbb{R}^{m+1}: u_i\ge 0, \sum_{i=0}^m u_i=1.\}.$
-@Guan-arXiv-2019 propose to approximate $f_0(t)$   on $[0,\tau_n]$  by $f_m(t; p) = \tau_n^{-1}\sum_{i=0}^{m} p_i\beta_{mi}(t/\tau_n)$, where $p=p(x_0)=(p_0,\ldots,p_{m+1})$  are subject to constraints   $p\in \mathbb{S}_{m+1}$ and $p_{m+1}=1-\pi$.
+@Guan-SIM-2020 propose to approximate $f_0(t)$   on $[0,\tau_n]$  by $f_m(t; p) = \tau_n^{-1}\sum_{i=0}^{m} p_i\beta_{mi}(t/\tau_n)$, where $p=p(x_0)=(p_0,\ldots,p_{m+1})$  are subject to constraints   $p\in \mathbb{S}_{m+1}$ and $p_{m+1}=1-\pi$.
  Here the dependence of $\pi$ and $p$ on $x_0$ will be suppressed.
 If $\pi< 1$,  although we cannot estimate the values of $f_0(t)$  on $(\tau_n,\infty)$, we can put an arbitrary guess on them such as
 $f_m(t; p)=  p_{m+1} \alpha(t-\tau_n)$, $t\in (\tau_n,\infty)$, where  $\alpha(\cdot)$ is a density on $[0,\infty)$ such that $(1-\pi)\alpha(0)=(m+1)p_m/\tau_n$ so that $f_m(t; p)$ is continuous at $t=\tau_n$, e.g., $\alpha(t)=\alpha(0)\exp[-\alpha(0)t]$.  If $\tau$ is finite and known we choose $\tau_n=\tau$ and specify $p_{m+1}=0$. Otherwise,  we choose $\tau_n=y_{(n)}$. For data without right-censoring or covariate
@@ -280,21 +283,20 @@ The above method is implemented in function \texttt{mable.ph()} which returns ma
 The \texttt{plot} method \texttt{plot.mable\_reg()} for class \texttt{mable\_reg} object returned by all the above functions produces graphs of the loglikelihoods at $m$ in a set \texttt{M[1]:M[2]} of consecutive candidate model degrees, the likelihood ratios of change-point at $m$ in \texttt{(M[1]+1):M[2]},  estimated density and survival function on the truncated \texttt{support}=$[0,\tau_n]$.
 
 ### Example: Ovarian Cancer Survival Data
-The Ovarian Cancer Survival Data is included in package \texttt{interval}.
+The Ovarian Cancer Survival Data is included in package \texttt{survival}.
 ```{r}
-library(interval)
 futime2 <- ovarian$futime
 futime2[ovarian$fustat==0] <- Inf
 ovarian2 <- data.frame(age = ovarian$age, futime1 = ovarian$futime, futime2 = futime2)
 head(ovarian2, 3)
 ```
-```{r results = "hide", warning = FALSE}
-ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35), g = .16)
+```{r results = "hide", warning = FALSE, message=FALSE}
+ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35), g = .16, x0=35)
 ```
 ```{r}
 summary(ova)
 ```
-```{r fig.align='center', fig.cap="Ovarian Cancer Data\\label{fig:ovarian-Data-plot}", fig.width=7, fig.height=7, warning = FALSE}
+```{r fig.align='center', fig.cap="Ovarian Cancer Data\\label{fig:ovarian-Data-plot}", fig.width=7, fig.height=7, warning = FALSE, message=FALSE}
 op <- par(mfrow = c(2,2))
 plot(ova, which = "likelihood")
 plot(ova, which = "change-point")
@@ -342,16 +344,13 @@ S_m(t\mid x;\gamma,p)&=S_m\Big(te^{-\gamma^T {x}}; p\Big)\\
 @Guan-2019-mable-aft's proposal is implemented by functions \texttt{mable.aft()} and \texttt{maple.aft()}.
 
 ### Example: Breast Cosmesis Data
-```{r results = "hide", warning = FALSE}
-library(interval) 
-```
+
 ```{r}
-data(bcos)
-bcos2 <- data.frame(bcos[,1:2], x = 1*(bcos$treatment == "RadChem"))
+bcos2 <- data.frame(bcos[,1:2], x = 1*(bcos$treat == "RCT"))
 ```
-```{r results = "hide"}
-g <- -0.41 # Hanson and Johnson 2004, JCGS
-aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g, tau =100, x0=1)
+```{r results = "hide", warning=FALSE, message=FALSE}
+g <- 0.41 # Hanson and Johnson 2004, JCGS
+aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g,  tau =100, x0=1)
 ```
 ```{r}
 summary(aft.res)
@@ -371,5 +370,84 @@ Alternatively we can use \texttt{mable.reg()}.
 aft.res1 <- mable.reg(cbind(left, right) ~ x, data = bcos2, 'aft', M = c(1, 30), 
       tau=100, x0=1)
 ```
+
+# Two-sample Data
+
+## Density Ratio Model
+
+Two-sample density ratio(DR) model
+(see for example, @QinZhang1997 and @Qin-and-Zhang-2005) is useful for fitting case-control data.
+ Suppose that the densities $f_0$ and $f_1$ of $X_0$ and $X_1$, respectively, satisfy the following density ratio model (see @CHENG-and-CHU-Bernoulli-2004 and @Qin-and-Zhang-2005, for example)
+\begin{equation}\label{eq: exponential tilting model}
+f_1(x)=f(x;\bm\alpha)=f_0(x)\exp\{\bm\alpha^T \tilde r(x)\},
+\end{equation}
+where $\bm\alpha=(\alpha_0,\ldots,\alpha_d)^T \in\mathcal{A}\subset R^{d+1}$, and $\tilde r(x)=(1, r^T(x))^T$ with linearly independent components. @Guan-arXiv-2021-mable-dr-model proposed to approximate the \emph{baseline} density $f_0$ by Bernstein polynomial and to estimate $f_0$ and $\bm\alpha$ using the maximum approximate Bernstein/Beta likelihood estimation. This method is implemented by function \texttt{mable.dr()} and \texttt{maple.dr()} in which $\bm\alpha$ is a given estimated value such as the one obtained by the logistic regression as described in @QinZhang1997 and @Qin-and-Zhang-2005.
+
+### Example: Coronary Heart Disease Data 
+```{r message=FALSE, warning = FALSE, results = "hide"}
+# Hosmer and Lemeshow (1989):                                           
+# ages and the status of coronary disease (CHD) of 100 subjects         
+x<-c(20, 23, 24, 25, 26, 26, 28, 28, 29, 30, 30, 30, 30, 30, 32,        
+32, 33, 33, 34, 34, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39,         
+40, 41, 41, 42, 42, 42, 43, 43, 44, 44, 45, 46, 47, 47, 48, 49,         
+49, 50, 51, 52, 55, 57, 57, 58, 60, 64)                                 
+y<-c(25, 30, 34, 36, 37, 39, 40, 42, 43, 44, 44, 45, 46, 47, 48,        
+48, 49, 50, 52, 53, 53, 54, 55, 55, 56, 56, 56, 57, 57, 57, 57,         
+58, 58, 59, 59, 60, 61, 62, 62, 63, 64, 65, 69) 
+a<-20; b<-70
+regr<-function(x) cbind(1,x)                                            
+chd.mable<-mable.dr(x, y, M=c(1, 15), regr, interval = c(a,b))   
+```
+```{r fig.align='center', fig.cap="DR Model Fit for Coronary Heart Disease  Data\\label{fig:CHD-data-plot}", fig.width=7, fig.height=4, warning = FALSE}
+z<-seq(a,b,length=512)
+f0hat<-dmixbeta(z, p=chd.mable$p, interval=c(a, b))
+rf<-function(x) chd.mable$regr((x-a)/(b-a))
+f1hat<-dtmixbeta(z, p=chd.mable$p, alpha=chd.mable$alpha, 
+                 interval=c(a, b), regr=rf)
+op<-par(mfrow=c(1,2),lwd=1.2, cex=.7, mar=c(5,4,1,1))
+hist(x, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b), ylim=c(0,.055), main="Control")
+lines(z, f0hat, lty=1, col=1)
+hist(y, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b), ylim=c(0,.055), main="Case")
+lines(z, f1hat, lty=1, col=1)
+par(op)
+```
+
+
+### Example: Pancreatic Cancer Biomarker Data
+For the logarithmic levels of CA 19-9 of the Pancreatic Cancer Data (@Wieand-et-al-1989-bka), the control group is used as baseline because the optimal model degree is smaller that the one using case as baseline.  
+```{r message=FALSE, warning = FALSE, results = "hide"}
+data(pancreas)
+head(pancreas,3)
+x<-log(pancreas$ca199[pancreas$status==0])
+y<-log(pancreas$ca199[pancreas$status==1])
+a<-min(x,y); b<-max(x,y)
+M<-c(1,29)
+regr<-function(x) cbind(1,x,x^2)                                            
+m=maple.dr(x, y, M, regr=regr, interval=c(a,b), controls=mable.ctrl(sig.level=.001))$m
+pc.mable<-mable.dr(x, y, M=m, regr=regr, interval=c(a,b),
+                   controls=mable.ctrl(sig.level=1/length(c(x,y))))
+#pc.mable   
+```
+```{r fig.align='center', fig.cap="DR Model Fit for Pancreatic Cancer Biomarker Data\\label{fig:pcb-data-plot}", fig.width=7, fig.height=3, warning = FALSE}
+z<-seq(a,b,length=512)
+# baseline is "case"
+f1hat<-dmixbeta(z, p=pc.mable$p, interval=c(a, b))
+rf<-function(x) pc.mable$regr((x-a)/(b-a))
+f0hat<-dtmixbeta(z, p=pc.mable$p, alpha=pc.mable$alpha, 
+                 interval=c(a, b), regr=rf)
+op<-par(mfrow=c(1,2),lwd=1.2, cex=.7, mar=c(5,4,1,1))
+hist(x, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b),  main="Control")
+lines(z, f0hat, lty=1, col=1)
+hist(y, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b), ylim=c(0,.5), main="Case")
+lines(z, f1hat, lty=1, col=1)
+par(op)
+```
+
+
+
 
 ## References

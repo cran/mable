@@ -17,13 +17,21 @@
 #' Maximum Approximate Bernstein Likelihood Estimate
 #'  of Multivariate Density Function
 #' @param x an \code{n x d} matrix or \code{data.frame} of multivariate sample of size \code{n}
+#' @param M0 a positive integer or a vector of \code{d} positive integers specify
+#'    starting candidate degrees for searching optimal degrees.  
 #' @param M a positive integer or a vector of \code{d} positive integers specify  
 #'    the maximum candidate or the given model degrees for the joint density.
-#' @param search logical, whether to search optimal degrees using \code{M} as maximum candidate 
-#'    degrees or not but use \code{M} as the given model degrees for the joint density.
+#' @param search logical, whether to search optimal degrees between \code{M0} and \code{M} 
+#'    or not but use \code{M} as the given model degrees for the joint density.
 #' @param interval a vector of two endpoints or a \code{d x 2} matrix, each row containing 
 #'    the endpoints of support/truncation interval for each marginal density.
 #'    If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.
+#' @param use.mar.deg logical, if TRUE, the optimal degrees are selected based  
+#'    on marginal data, otherwise, the optimal degrees are those minimize the maximum
+#'    L2 distance between marginal cdf or pdf estimated based on marginal data and the
+#'    joint data. See details.   
+#' @param criterion either cdf or pdf should be used for selecting optimal degrees.
+#'    Default is "cdf"
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
 #' and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.
 #' @param progress if TRUE a text progressbar is displayed
@@ -33,17 +41,14 @@
 #'   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
 #'   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
 #'   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-#'   If \code{search=TRUE}, we start with \eqn{M_0}\code{=rep(2,d)} and select  
-#'   \eqn{M_1} which maximizes the likelohood with degrees \eqn{M_1=M_0+e_i}, where
-#'   \eqn{e_i}, \eqn{i=1,\ldots,d}, form the basis of \eqn{R^n}.  The above procedure
-#'   are repeated at least four times to \eqn{M_s} and loglikelihood \eqn{\ell_s}, 
-#'   \eqn{s=0, 1,\ldots,k}, and stop whenever the p-value of the change point of
-#'   \eqn{\ell_{s+1}-\ell_s} is small or a component of \eqn{M_k} reached its maximum 
-#'   value specified by \code{M}. For each \eqn{M_s+e_i} the data are fitted using 
-#'   EM algorithm and the multivariate Bernstein polynomial model with a vector of the    
-#'   mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
-#'   column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
-#'   where \eqn{K=\prod_{i=1}^d (m_i+1)}, to obtain likelihood.
+#'   Let \eqn{\tilde f_i} be an estimate with degree \eqn{\tilde m_i} of the i-th 
+#'   marginal density based on marginal data \code{x[,i]}, \eqn{i=1, \ldots, d}. 
+#'   If \code{search=TRUE} and \code{use.marginal=TRUE}, then the optimal degrees
+#'   are \eqn{(\tilde m_1,\ldots,\tilde m_d)}. If \code{search=TRUE} and 
+#'   \code{use.marginal=FALSE}, then the optimal degrees \eqn{(\hat m_1,\ldots,\hat m_d)}
+#'   are those that minimize the maximum of \eqn{L_2}-distance between \eqn{\tilde f_i}
+#'   and the estimate of \eqn{f_i} based on the joint data with degrees 
+#'   \eqn{m=(m_1,\ldots,m_d)} for all \eqn{m} between \eqn{M_0} and \eqn{M}.  
 #' @return  A list with components
 #' \itemize{
 #'  \item \code{dim} the dimension \code{d} of the data
@@ -63,7 +68,7 @@
 #' ## Old Faithful Data
 #' \donttest{
 #'  a<-c(0, 40); b<-c(7, 110)
-#'  #ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
+#'  #ans<-mable.mvar(faithful, M = c(60, 40), interval = cbind(a, b))
 #'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
 #'  plot(ans, which="density") 
 #'  plot(ans, which="cumulative")
@@ -75,16 +80,16 @@
 #' @references Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density,    
 #'    \emph{Statistics}, Vol. 53, no. 2, 321-338  
 #' @export
-mable.mvar<-function(x, M, search=TRUE, interval=NULL,  
-        controls = mable.ctrl(), progress=TRUE){
+mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=FALSE, 
+        criterion=c("cdf", "pdf"), controls = mable.ctrl(), progress=TRUE){
     data.name<-deparse(substitute(x))
     n<-nrow(x)
     d<-ncol(x)
     xNames<-names(x)
+    criterion <- match.arg(criterion)
     if(is.null(xNames)) 
         for(i in 1:d) xNames[i]<-paste("x",i,sep='')
     x<-as.matrix(x)   
-    m<-rep(0, d)
     if(is.null(interval))  
         interval<-cbind(apply(x, 2, min), apply(x, 2, max))
     else if(is.matrix(interval)){
@@ -99,6 +104,7 @@ mable.mvar<-function(x, M, search=TRUE, interval=NULL,
         else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
     }
     for(i in 1:d) x[,i]<-(x[,i]-interval[i,1])/(interval[i,2]-interval[i,1])
+    if(any(x<0) || any(x>1)) stop("All data values must be contained in 'interval'.")
     if(missing(M) || length(M)==0) stop("'M' is missing.\n")
     else if(length(M)==1) M<-rep(M,d)
     else if(length(M)!=d){
@@ -109,30 +115,83 @@ mable.mvar<-function(x, M, search=TRUE, interval=NULL,
         else stop("Invalide 'M'.\n")
     }
     else M<-M[1:d]
-    kmax<-sum(M-2)
-    pval<-rep(0, kmax)
+    if(length(M0)==1) M0<-rep(M0,d)
+    else if(length(M0)!=d){
+        if(search){
+            if(min(M0)<max(M)) 
+                warning("Length of 'M0' does not match 'ncol(x)'. Use least 'M0'.\n")
+            else stop("'M0' are too big for searching optimal degrees.\n")
+            M0<-rep(max(M0),d)}
+    }
+    m<-rep(0, d)
     K<-prod(M+1)
-    lk<-rep(0, kmax+1)
-    lr<-rep(0, kmax)
-    chpts<-rep(0, kmax)
     p<-rep(1,K)/K
+    Kn<-prod(M)
+    if(search) lk<-rep(0, Kn)
+    else lk<-0
+    mlik<-0    
     convergence<-0
-    level<-controls$sig.level
+    cdf<-ifelse(criterion=="cdf", TRUE, FALSE)
+    D<-0
+    Ord<-function(i){
+        if(any(1:3==i%%10) && !any(11:13==i)) switch(i%%10, "st", "nd", "rd")
+        else "th"}
+    mar<-list()# estimates based on marginal data
+    k<-1
+    for(i in 1:d){
+        if(search) {
+            cat("mable fit of the ",i, Ord(i), " marginal data.\n", sep='')
+            res<-mable(x[,i], M=c(1,M[i]), c(0,1), controls=controls, progress = TRUE)
+            pval<-res$pval
+            m1<-res$M[2]
+            cat("m[",i,"]=", res$m," with p-value ",  pval[length(pval)],"\n", sep='')
+        }
+        else{
+            cat("mable fit of the ",i, Ord(i), " marginal data with the given degree m[",i,"]=",M[i],".\n", sep='')
+            res<-mable(x[,i], M=M[i], c(0,1), controls=controls, progress = TRUE) 
+        }
+        m[i]<-res$m
+        p[k+(0:m[i])]<-res$p
+        k<-k+m[i]+1
+        mar$m[i]<-res$m
+        mar$p[[i]]<-res$p
+    }
+    if(search && use.mar.deg){
+        M<-m
+        search=FALSE
+    }
+    else if(search) M<-2*m
     ## Call C mable_mvar
     res<-.C("mable_mvar",
-      as.integer(M), as.integer(n), as.integer(d), as.integer(search), as.double(p), 
-      as.double(x), as.integer(controls$maxit), as.double(controls$eps), 
-      as.double(lk), as.double(lr), as.double(pval), as.integer(chpts), 
-      as.logical(progress), as.integer(convergence), as.double(level))
-      m<-res[[1]]
-      k<-sum(m-2)
+      as.integer(M0), as.integer(M), as.integer(n), as.integer(d), as.integer(search), 
+      as.double(p), as.integer(m), as.double(x), as.integer(controls$maxit), 
+      as.double(controls$eps), as.double(lk), as.logical(progress), 
+      as.integer(convergence), as.double(D), as.double(mlik), as.logical(cdf))
+      m<-res[[7]]
       K<-prod(m+1)
-    out<-list(p=res[[5]][1:K], mloglik=res[[9]][max(res[[12]][1:k])], lk=res[[9]][1:(k+1)], 
-        lr=res[[10]][1:k], pval=res[[11]][1:k], chpts=res[[12]][1:k], interval=interval, 
-        m=m, dim=d, xNames=xNames,  convergence=res[[14]])
+      cat("\n MABLE for ", d,"-dimensional data:\n",sep='')
+      if(search){
+        cat("Optimal degrees m = (", m[1], sep='')
+        for(i in 2:d) cat(", ",m[i],sep='')
+        cat(") are selected between M0 and M, inclusive, where \n",sep='')
+        cat("M0 = ", M0, "\nM = ",M,"\n")
+        out<-list(p=res[[6]][1:K], mloglik=res[[15]][1], 
+        lk=res[[11]][1:Kn], interval=interval, M0=M0, M=M,
+            m=m, dim=d, xNames=xNames,  convergence=res[[13]], D=res[[14]])
+      }
+      else{
+        if(use.mar.deg){
+            cat("Optimal degrees m = (", m[1], sep='')
+                for(i in 2:d) cat(", ",m[i],sep='')
+            cat(") are selected based on marginal data m=", m, "\n")
+        }
+        else cat("Model degrees are specified: M=", m, "\n")
+        out<-list(p=res[[6]][1:K], mloglik=res[[11]][1], interval=interval, 
+             m=m, dim=d, xNames=xNames,  convergence=res[[13]], D=res[[14]])
+      }
     out$data.type<-"mvar"
     class(out)<-"mable"
-    return(out)
+    invisible(out)
 }
 #########################################################
 #' Multivariate Mixture Beta Distribution
@@ -253,7 +312,7 @@ pmixmvbeta<-function(x, p, m, interval=NULL){
     return(fb)
 }
 #########################################################
-# generating prn from mixture of multivariate beta 
+# Generating prn from mixture of multivariate beta 
 #   with degrees m=(m1,...,md)
 #' @rdname dmixmvbeta
 #' @export
@@ -294,3 +353,31 @@ rmixmvbeta<-function(n, p, m, interval=NULL){
     }
     return(x)
 }
+#########################################################
+#' The mixing proportions of marginal distribution from the mixture of 
+#' multivariate beta distribution
+#' @param p the mixing proportions of the mixture of multivariate beta distribution
+#' @param m the model  degrees \code{m=(m1,...,md)} of the mixture of 
+#'  multivariate beta distribution
+#' @return a list of mixing proportions of all the marginal distributions
+#' @export
+marginal.p<-function(p, m){
+    d<-length(m)
+    km<-c(1,cumprod(m+1))
+    mp<-list()
+    K <- km[d+1] 
+    for(j in 1:d) mp[[j]]<-rep(0,m[j]+1) 
+    it<-0 
+    while(it<K){
+        r <- it 
+        for(k in (d-1):1){
+            jj <- r%%km[k+1] 
+            i <- (r-jj)/km[k+1] 
+            mp[[k+1]][i+1] <- mp[[k+1]][i+1]+p[it+1]
+            r <- jj 
+        }
+        mp[[1]][r+1] <- mp[[1]][r+1]+p[it+1]
+        it<-it+1
+    }
+    mp
+} 

@@ -41,7 +41,7 @@ mixture of beta distributions, with shapes \eqn{(i+1, m-i+1)}, \eqn{i = 0, \ldot
 }
 \details{
 The density of the mixture beta distribution on an interval \eqn{[a, b]} can be written as a
- Bernstein polynomial \eqn{f_m(x; p) = \sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]/(b-a)},
+ Bernstein polynomial \eqn{f_m(x; p) = (b-a)^{-1}\sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]/(b-a)},
  where \eqn{p = (p_0, \ldots, p_m)}, \eqn{p_i\ge 0}, \eqn{\sum_{i=0}^m p_i=1} and
  \eqn{\beta_{mi}(u) = (m+1){m\choose i}u^i(1-x)^{m-i}}, \eqn{i = 0, 1, \ldots, m},
  is the beta density with shapes \eqn{(i+1, m-i+1)}. The cumulative distribution
@@ -52,9 +52,11 @@ function is \eqn{F_m(x; p) = \sum_{i=0}^m p_i B_{mi}[(x-a)/(b-a)]}, where
  \eqn{F_m/\pi}. The argument \code{p} may be any numeric vector of \code{m+1}
  values when \code{pmixbeta()} and and \code{qmixbeta()} return the integral
  function \eqn{F_m(x; p)} and its inverse, respectively, and \code{dmixbeta()}
- returns a Bernstein polynomial \eqn{f_m(x; p)}.
+ returns a Bernstein polynomial \eqn{f_m(x; p)}. If components of \code{p} are not
+ all nonnegative or do not sum to one, warning message will be returned.
 }
 \examples{
+\donttest{
 # classical Bernstein polynomial approximation
 a<--4; b<-4; m<-200
 x<-seq(a,b,len=512)
@@ -64,7 +66,7 @@ plot(x, dnorm(x), type="l")
 lines(x, (b-a)*dmixbeta(x, p, c(a, b))/(m+1), lty=2, col=2)
 legend(a, dnorm(0), lty=1:2, col=1:2, c(expression(f(x)==phi(x)),
                expression(B^{f}*(x))))
-
+}
 }
 \references{
 Bernstein, S.N. (1912), Demonstration du theoreme de Weierstrass fondee sur le calcul des probabilities,

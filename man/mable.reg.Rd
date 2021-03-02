@@ -4,9 +4,18 @@
 \alias{mable.reg}
 \title{Mable fit of semiparametric regression model based on interval censored data}
 \usage{
-mable.reg(formula, data, model = c("ph", "aft"), M, g = NULL,
-  pi0 = NULL, tau = Inf, x0 = NULL, controls = mable.ctrl(),
-  progress = TRUE)
+mable.reg(
+  formula,
+  data,
+  model = c("ph", "aft"),
+  M,
+  g = NULL,
+  pi0 = NULL,
+  tau = Inf,
+  x0 = NULL,
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{formula}{regression formula. Response must be of the form \code{cbind(l, u)}.  See 'Details'.}

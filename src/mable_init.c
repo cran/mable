@@ -15,16 +15,16 @@ void mable_em_group(int *m, int *n, int *N, double *p, double *t, int *maxit,
     double *eps, double *llik, int *convergence, double *delta);
 void mable_optim(int *M, int *n, double *p, double *x, int *maxit, double *eps,  
     double *lk, double *lr, int *optim, double *pval, double *bic, int *chpts, 
-    double *tini, int *progress, int *convergence, double *delta, double *level);
+    double *tini, int *progress, int *convergence, double *delta, double *level, int *vb);
 void mable_optim_group(int *M, int *N, double *p, double *t, int *n, int *maxit, 
     double *eps, double *lk, double *lr, int *optim, 
     int *progress, int *convergence, double *delta, double *tini, double *bic, 
-    double *pval, int *chpts, double *level);
+    double *pval, int *chpts, double *level, int *vb);
 void mable_approx(double *u, double *p, int *m, int *n, int *cdf);
 void rbeta_mi(int *n, int *m, int *w, double *v);
-void mable_mvar(int *M, int *n, int *d, int *search, double *phat, double *x, 
-        int *maxit,  double *eps, double *lk, double *lr, double *pval,  
-        int *chpts, int *progress, int *conv, double *level);
+void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat,  
+        int *mhat, double *x, int *maxit,  double *eps, double *lk, int *progress,   
+        int *conv, double *D, double *mlk, int *cdf);
 void mable_mvdf(int *d, int *m, int *km, int *n, double *t, double *p, 
             double *mvdf, int *density);
 void optim_gcp(int *M, double *lk, double *lr, int *m, double *pval, int *chpts);
@@ -35,16 +35,16 @@ static R_NativePrimitiveArgType em_group_t[] = {
     INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, LGLSXP, REALSXP};
 static R_NativePrimitiveArgType optim_t[] = {
     INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP, 
-    REALSXP, INTSXP, REALSXP, LGLSXP, INTSXP, REALSXP, REALSXP};
+    REALSXP, INTSXP, REALSXP, LGLSXP, INTSXP, REALSXP, REALSXP, INTSXP};
 static R_NativePrimitiveArgType optim_group_t[] = {
     INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP,  
-    INTSXP, LGLSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP};
+    INTSXP, LGLSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP, INTSXP};
 static R_NativePrimitiveArgType approx_t[] = {
     REALSXP, REALSXP, INTSXP, INTSXP, LGLSXP};
 static R_NativePrimitiveArgType rbeta_t[] = {INTSXP, INTSXP, INTSXP, REALSXP};
 static R_NativePrimitiveArgType mvar_t[] = {
-    INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, 
-    REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP};
+    INTSXP, INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,  
+    REALSXP, REALSXP, LGLSXP, INTSXP, REALSXP, REALSXP, LGLSXP};
 static R_NativePrimitiveArgType mvdf_t[] = {
     INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP, LGLSXP};
 static R_NativePrimitiveArgType gcp_t[] = {
@@ -107,11 +107,11 @@ static R_NativePrimitiveArgType aft_gamma_t[] = {
 static const R_CMethodDef cMethods[] = {
    {"mable_em", (DL_FUNC) &mable_em, 9, em_t},
    {"mable_em_group", (DL_FUNC) &mable_em_group, 10, em_group_t},
-   {"mable_optim", (DL_FUNC) &mable_optim, 17, optim_t},
-   {"mable_optim_group", (DL_FUNC) &mable_optim_group, 18, optim_group_t},
+   {"mable_optim", (DL_FUNC) &mable_optim, 18, optim_t},
+   {"mable_optim_group", (DL_FUNC) &mable_optim_group, 19, optim_group_t},
    {"mable_approx", (DL_FUNC) &mable_approx, 5, approx_t},
    {"rbeta_mi", (DL_FUNC) &rbeta_mi, 4, rbeta_t},
-   {"mable_mvar", (DL_FUNC) &mable_mvar, 15, mvar_t},
+   {"mable_mvar", (DL_FUNC) &mable_mvar, 16, mvar_t},
    {"mable_mvdf", (DL_FUNC) &mable_mvdf, 8, mvdf_t},
    {"optim_gcp", (DL_FUNC) &optim_gcp, 6, gcp_t},
    {"mable_ph", (DL_FUNC) &mable_ph, 20, ph_t},
@@ -123,12 +123,27 @@ static const R_CMethodDef cMethods[] = {
    {"mable_aft_gamma", (DL_FUNC) &mable_aft_gamma, 20, aft_gamma_t},
    {NULL, NULL, 0, NULL}
 };
-
+/* Deconvolution*/
 SEXP mable_decon(SEXP args);
-//static R_NativePrimitiveArgType decon_t[] = {SEXP};
+SEXP optim_decon(SEXP args);
+SEXP optim_decon_old(SEXP args);
+
+/* Density Ratio */
+SEXP C_mable_dr(SEXP args);
+SEXP maple_dr(SEXP args);
+SEXP C_mable_dr_group(SEXP args);
+SEXP maple_dr_group(SEXP args);
+SEXP mixtbeta_cdf(SEXP args);
+
 /* Register .External */
 static const R_ExternalMethodDef externalMethods[] = {
    {"mable_decon", (DL_FUNC) &mable_decon, 9},
+   {"optim_decon", (DL_FUNC) &optim_decon, 11},
+   {"C_mable_dr", (DL_FUNC) &C_mable_dr, 19},
+   {"C_mable_dr_group", (DL_FUNC) &C_mable_dr_group, 19},
+   {"maple_dr", (DL_FUNC) &maple_dr, 19},
+   {"maple_dr_group", (DL_FUNC) &maple_dr_group, 19},
+   {"mixtbeta_cdf", (DL_FUNC) &mixtbeta_cdf, 8},
    {NULL, NULL, 0}
 };
 

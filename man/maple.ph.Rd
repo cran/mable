@@ -4,8 +4,17 @@
 \alias{maple.ph}
 \title{Mable fit of the PH model with given regression coefficients}
 \usage{
-maple.ph(formula, data, M, g, pi0 = NULL, tau = Inf, x0 = NULL,
-  controls = mable.ctrl(), progress = TRUE)
+maple.ph(
+  formula,
+  data,
+  M,
+  g,
+  pi0 = NULL,
+  tau = Inf,
+  x0 = NULL,
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{formula}{regression formula. Response must be \code{cbind}.  See 'Details'.}
@@ -46,7 +55,9 @@ a class '\code{mable_reg}' object, a list with components
   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
   \item \code{convergence} an integer code. 0 indicates successful completion(the iteration is 
    convergent). 1 indicates that the maximum candidate degree had been reached in the calculation;
-  \item \code{delta} the final \code{pval} of the change-point for selecting the optimal degree \code{m};
+  \item \code{delta} the final convergence criterion for EM iteration;
+  \item \code{chpts} the change-points among the candidate degrees;
+  \item \code{pom} the p-value of the selected optimal degree \code{m} as a change-point;
  }
 }
 \description{
@@ -93,7 +104,8 @@ The associated covariate contains \eqn{d} columns. The baseline \code{x0} should
    op<-par(mfrow=c(1,2))
    plot(res0,  which=c("likelihood","change-point"))
    par(op)
-   res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, g=c(.5,-.5), tau=7)
+   res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, 
+      g=c(.5,-.5), tau=7)
    op<-par(mfrow=c(1,2))
    plot(res1, y=data.frame(c(0,0)), which="density", add=FALSE, type="l", 
        xlab="Time", main="Desnity Function")

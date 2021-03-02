@@ -4,8 +4,15 @@
 \alias{mable}
 \title{Mable fit of one-sample raw data with an optimal or given degree.}
 \usage{
-mable(x, M, interval = c(0, 1), IC = c("none", "aic", "hqic", "all"),
-  controls = mable.ctrl(), progress = TRUE)
+mable(
+  x,
+  M,
+  interval = c(0, 1),
+  IC = c("none", "aic", "hqic", "all"),
+  vb = 0,
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{x}{a (non-empty) numeric vector of data values.}
@@ -15,11 +22,14 @@ then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
-\item{interval}{a vector containing the endpoints of supporting/truncation interval}
+\item{interval}{a vector containing the endpoints of supporting/truncation interval \code{c(a,b)}}
 
 \item{IC}{information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 "aic" (Akaike information criterion) and/or
 "qhic" (Hannan–Quinn information criterion).}
+
+\item{vb}{code for vanishing boundary constraints, -1: f0(a)=0 only, 
+1: f0(b)=0 only, 2: both, 0: none (default).}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
 and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.}
@@ -29,7 +39,7 @@ and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. S
 \value{
 A list with components
 \itemize{
-  \item \code{m} the selected/given optimal degree by methods of change-point
+  \item \code{m} the given or a selected degree by method of change-point
   \item \code{p} the estimated vector of mixture proportions \eqn{p = (p_0, \ldots, p_m)}
       with the selected/given optimal degree \code{m}
   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}

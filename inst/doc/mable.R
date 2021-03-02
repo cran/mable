@@ -8,7 +8,7 @@ library(mable)
 data(Vaal.Flow)
 head(Vaal.Flow, 3)
 
-## ----results = "hide", warning = FALSE----------------------------------------
+## ----results = "hide", warning = FALSE, message=FALSE-------------------------
 vaal<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000), IC = "all",
        controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
 
@@ -126,17 +126,17 @@ legend("bottomright", bty = "n", lty = c(1,2), col = c(1,2), c(expression(F),
 par(op)
 
 ## ----results = "hide", warning = FALSE----------------------------------------
-library(interval) 
+library(coxinterval) 
 
 ## -----------------------------------------------------------------------------
-data(bcos)
+bcos=cosmesis
 head(bcos, 3)
 
 ## ----results = "hide"---------------------------------------------------------
-bc.res0 <- mable.ic(bcos[bcos$treatment == "Rad",1:2], M = c(1,50), IC = "none")
-bc.res1 <- mable.ic(bcos[bcos$treatment == "RadChem",1:2], M = c(1,50), IC = "none")
+bc.res0 <- mable.ic(bcos[bcos$treat == "RT",1:2], M = c(1,50), IC = "none")
+bc.res1 <- mable.ic(bcos[bcos$treat == "RCT",1:2], M = c(1,50), IC = "none")
 
-## ----fig.align='center', fig.cap="Breast Cosmesis Data\\label{fig:Breast-Cosmesis-Data-plot}", fig.width=7, fig.height=7, warning = FALSE----
+## ----message=FALSE, warning=FALSE, fig.align='center', fig.cap="Breast Cosmesis Data\\label{fig:Breast-Cosmesis-Data-plot}", fig.width=7, fig.height=7, warning = FALSE----
 op <- par(mfrow = c(2,2),lwd = 2)
 plot(bc.res0, which = "change-point", lgd.x = "right")
 plot(bc.res1, which = "change-point", lgd.x = "right")
@@ -148,9 +148,9 @@ par(op)
 data(faithful)
 head(faithful, 3)
 
-## ----results = "hide"---------------------------------------------------------
+## ----message=FALSE, warning=FALSE, results = "hide"---------------------------
 a <- c(0, 40); b <- c(7, 110)
-#faith2 <- mable.mvar(faithful, M = c(70,50), interval = cbind(a,b))
+#faith2 <- mable.mvar(faithful, M = c(60,30), interval = cbind(a,b))
 faith2 <- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
 
 ## ----fig.align='center', fig.cap="Density Estimate based on the Old Faithful Data\\label{fig:Old-Faithful-Data-plot}", fig.width=6, fig.height=6, warning = FALSE----
@@ -160,19 +160,18 @@ plot(faith2, which = "density")
 summary(faith2)
 
 ## -----------------------------------------------------------------------------
-library(interval)
 futime2 <- ovarian$futime
 futime2[ovarian$fustat==0] <- Inf
 ovarian2 <- data.frame(age = ovarian$age, futime1 = ovarian$futime, futime2 = futime2)
 head(ovarian2, 3)
 
-## ----results = "hide", warning = FALSE----------------------------------------
-ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35), g = .16)
+## ----results = "hide", warning = FALSE, message=FALSE-------------------------
+ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35), g = .16, x0=35)
 
 ## -----------------------------------------------------------------------------
 summary(ova)
 
-## ----fig.align='center', fig.cap="Ovarian Cancer Data\\label{fig:ovarian-Data-plot}", fig.width=7, fig.height=7, warning = FALSE----
+## ----fig.align='center', fig.cap="Ovarian Cancer Data\\label{fig:ovarian-Data-plot}", fig.width=7, fig.height=7, warning = FALSE, message=FALSE----
 op <- par(mfrow = c(2,2))
 plot(ova, which = "likelihood")
 plot(ova, which = "change-point")
@@ -183,16 +182,12 @@ par(op)
 ## ----results = "hide", warning = FALSE----------------------------------------
 ova1 <- mable.reg(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35))
 
-## ----results = "hide", warning = FALSE----------------------------------------
-library(interval) 
-
 ## -----------------------------------------------------------------------------
-data(bcos)
-bcos2 <- data.frame(bcos[,1:2], x = 1*(bcos$treatment == "RadChem"))
+bcos2 <- data.frame(bcos[,1:2], x = 1*(bcos$treat == "RCT"))
 
-## ----results = "hide"---------------------------------------------------------
-g <- -0.41 # Hanson and Johnson 2004, JCGS
-aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g, tau =100, x0=1)
+## ----results = "hide", warning=FALSE, message=FALSE---------------------------
+g <- 0.41 # Hanson and Johnson 2004, JCGS
+aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g,  tau =100, x0=1)
 
 ## -----------------------------------------------------------------------------
 summary(aft.res)
@@ -210,4 +205,62 @@ par(op)
 ## ----results = "hide"---------------------------------------------------------
 aft.res1 <- mable.reg(cbind(left, right) ~ x, data = bcos2, 'aft', M = c(1, 30), 
       tau=100, x0=1)
+
+## ----message=FALSE, warning = FALSE, results = "hide"-------------------------
+# Hosmer and Lemeshow (1989):                                           
+# ages and the status of coronary disease (CHD) of 100 subjects         
+x<-c(20, 23, 24, 25, 26, 26, 28, 28, 29, 30, 30, 30, 30, 30, 32,        
+32, 33, 33, 34, 34, 34, 34, 35, 35, 36, 36, 37, 37, 38, 38, 39,         
+40, 41, 41, 42, 42, 42, 43, 43, 44, 44, 45, 46, 47, 47, 48, 49,         
+49, 50, 51, 52, 55, 57, 57, 58, 60, 64)                                 
+y<-c(25, 30, 34, 36, 37, 39, 40, 42, 43, 44, 44, 45, 46, 47, 48,        
+48, 49, 50, 52, 53, 53, 54, 55, 55, 56, 56, 56, 57, 57, 57, 57,         
+58, 58, 59, 59, 60, 61, 62, 62, 63, 64, 65, 69) 
+a<-20; b<-70
+regr<-function(x) cbind(1,x)                                            
+chd.mable<-mable.dr(x, y, M=c(1, 15), regr, interval = c(a,b))   
+
+## ----fig.align='center', fig.cap="DR Model Fit for Coronary Heart Disease  Data\\label{fig:CHD-data-plot}", fig.width=7, fig.height=4, warning = FALSE----
+z<-seq(a,b,length=512)
+f0hat<-dmixbeta(z, p=chd.mable$p, interval=c(a, b))
+rf<-function(x) chd.mable$regr((x-a)/(b-a))
+f1hat<-dtmixbeta(z, p=chd.mable$p, alpha=chd.mable$alpha, 
+                 interval=c(a, b), regr=rf)
+op<-par(mfrow=c(1,2),lwd=1.2, cex=.7, mar=c(5,4,1,1))
+hist(x, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b), ylim=c(0,.055), main="Control")
+lines(z, f0hat, lty=1, col=1)
+hist(y, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b), ylim=c(0,.055), main="Case")
+lines(z, f1hat, lty=1, col=1)
+par(op)
+
+## ----message=FALSE, warning = FALSE, results = "hide"-------------------------
+data(pancreas)
+head(pancreas,3)
+x<-log(pancreas$ca199[pancreas$status==0])
+y<-log(pancreas$ca199[pancreas$status==1])
+a<-min(x,y); b<-max(x,y)
+M<-c(1,29)
+regr<-function(x) cbind(1,x,x^2)                                            
+m=maple.dr(x, y, M, regr=regr, interval=c(a,b), controls=mable.ctrl(sig.level=.001))$m
+pc.mable<-mable.dr(x, y, M=m, regr=regr, interval=c(a,b),
+                   controls=mable.ctrl(sig.level=1/length(c(x,y))))
+#pc.mable   
+
+## ----fig.align='center', fig.cap="DR Model Fit for Pancreatic Cancer Biomarker Data\\label{fig:pcb-data-plot}", fig.width=7, fig.height=3, warning = FALSE----
+z<-seq(a,b,length=512)
+# baseline is "case"
+f1hat<-dmixbeta(z, p=pc.mable$p, interval=c(a, b))
+rf<-function(x) pc.mable$regr((x-a)/(b-a))
+f0hat<-dtmixbeta(z, p=pc.mable$p, alpha=pc.mable$alpha, 
+                 interval=c(a, b), regr=rf)
+op<-par(mfrow=c(1,2),lwd=1.2, cex=.7, mar=c(5,4,1,1))
+hist(x, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b),  main="Control")
+lines(z, f0hat, lty=1, col=1)
+hist(y, freq=F, col = "light grey", border = "white", xlab="Age", 
+  ylab="Density", xlim=c(a,b), ylim=c(0,.5), main="Case")
+lines(z, f1hat, lty=1, col=1)
+par(op)
 

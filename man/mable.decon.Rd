@@ -4,24 +4,39 @@
 \alias{mable.decon}
 \title{Mable deconvolution with a known error density}
 \usage{
-mable.decon(y, gn, ..., M, interval = c(0, 1), IC = c("none", "aic",
-  "hqic", "all"), controls = mable.ctrl(maxit = 50000, eps = 1e-07),
-  progress = TRUE)
+mable.decon(
+  y,
+  gn = NULL,
+  ...,
+  M,
+  interval = c(0, 1),
+  IC = c("none", "aic", "hqic", "all"),
+  vanished = TRUE,
+  controls = mable.ctrl(maxit.em = 1e+05, eps.em = 1e-05, maxit.nt = 100, eps.nt =
+    1e-10),
+  progress = TRUE
+)
 }
 \arguments{
 \item{y}{vector of observed data values}
 
-\item{gn}{error density function}
+\item{gn}{error density function if known, default is NULL if unknown}
 
 \item{...}{additional arguments to be passed to gn}
 
-\item{M}{a vector \code{(m0, m1)} specifies the set of consective candidate model degrees, \code{M = m0:m1}.}
+\item{M}{a vector \code{(m0, m1)} specifies the set of consective candidate model degrees, \code{M = m0:m1}.
+ If \code{gn} is unknown then \code{M} a 2 x 2 matrix whose rows \code{(m0,m1)} and \code{(k0,k1)}
+specify lower and upper bounds for degrees \code{m} and \code{k}, respectively.}
 
-\item{interval}{a finite vector containing the endpoints of supporting/truncation interval}
+\item{interval}{a finite vector \code{(a,b)}, the endpoints of supporting/truncation interval
+if \code{gn} is known. Otherwise, it is a 2 x 2 matrix whose rows \code{(a,b)} and \code{(a1,b1)}
+specify supporting/truncation intervals of \code{X} and \eqn{\epsilon}, respectively. See Details.}
 
 \item{IC}{information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 "aic" (Akaike information criterion) and/or
 "qhic" (Hannan–Quinn information criterion).}
+
+\item{vanished}{logical whether the unknown error density vanishes at both end-points of \code{[a1,b1]}}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
 and other control options. Default is \code{\link{mable.ctrl}}.}
@@ -29,7 +44,7 @@ and other control options. Default is \code{\link{mable.ctrl}}.}
 \item{progress}{if \code{TRUE} a text progressbar is displayed}
 }
 \value{
-A \code{mable} class object with components
+A \code{mable} class object with components, if \eqn{g} is known,
 \itemize{
      \item \code{M} the vector \code{(m0, m1)}, where \code{m1} is the last candidate degree when the search stoped
      \item \code{m} the selected optimal degree \code{m}
@@ -42,6 +57,26 @@ A \code{mable} class object with components
      \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
      \item \code{chpts} the change-points chosen with the given candidate model degrees
 }
+if \eqn{g} is unknown,
+\itemize{
+     \item \code{M} the 2 x 2 matrix with rows \code{(m0, m1)} and \code{(k0,k1)}
+     \item \code{nu_aic} the selected optimal degrees \code{(m,k)} using AIC method
+     \item \code{p_aic} the estimate of \code{p = (p_0, \dots, p_m)}, the coefficients
+      of Bernstein polynomial model for \eqn{f} of degree \code{m} as in \code{nu_aic}
+     \item \code{q_aic} the estimate of \code{q = (q_0, \dots, q_k)}, the coefficients
+      of Bernstein polynomial model for \eqn{g} of degree \code{k} as in \code{nu_aic}
+     \item \code{nu_bic} the selected optimal degrees \code{(m,k)} using BIC method
+     \item \code{p_bic} the estimate of \code{p = (p_0, \dots, p_m)}, the coefficients
+      of Bernstein polynomial model for \eqn{f} of degree \code{m} as in \code{nu_bic}
+     \item \code{q_bic} the estimate of \code{q = (q_0, \dots, q_k)}, the coefficients
+      of Bernstein polynomial model for \eqn{g} of degree \code{k} as in \code{nu_bic}
+     \item \code{lk} matrix of log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
+          and \eqn{k \in \{k_0, \ldots, k_1\}}
+     \item \code{aic} a matrix containing the Akaike information criterion(s) at
+       \eqn{m \in \{m_0, \ldots, m_1\}} and \eqn{k \in \{k_0, \ldots, k_1\}}
+     \item \code{bic} a matrix containing the Bayesian information criterion(s) at
+       \eqn{m \in \{m_0, \ldots, m_1\}} and \eqn{k \in \{k_0, \ldots, k_1\}}
+}
 }
 \description{
 Maximum approximate Bernstein/Beta likelihood estimation in additive density deconvolution model
@@ -49,9 +84,13 @@ with a known error density.
 }
 \details{
 Consider the additive measurement error model \eqn{Y = X + \epsilon}, where
-\eqn{X} has an unknown distribution \eqn{F}, \eqn{\epsilon} has a known distribution \eqn{G},
+\eqn{X} has an unknown distribution \eqn{F} on a known support \code{[a,b]}, \eqn{\epsilon} has a known or unknown distribution \eqn{G},
 and \eqn{X} and \eqn{\epsilon} are independent. We want to estimate density \eqn{f = F'}
 based on independent observations, \eqn{y_i = x_i + \epsilon_i}, \eqn{i = 1, \ldots, n}, of \eqn{Y}.
+We approximate \eqn{f} by a Bernstein polynomial model on \code{[a,b]}. If \eqn{g=G'} is unknown on
+a known support \code{[a1,b1]}, then we approximate \eqn{g} by a Bernstein polynomial model on
+\code{[a1,b1]}, \eqn{a1<0<b1}. We assume \eqn{E(\epsilon)=0}. AIC and BIC methods are used to
+select model degrees \code{(m,k)}.
 }
 \examples{
 \donttest{

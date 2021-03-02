@@ -4,10 +4,12 @@
 \name{chicken.embryo}
 \alias{chicken.embryo}
 \title{Chicken Embryo Data}
-\format{The format is:
+\format{
+The format is:
 List of 2: 
 day: int [1:21] 1 2 3 4 5 6 7 8 9 10 ...; 
-nT : int [1:21] 6 5 11 2 2 3 0 0 0 0 ...}
+nT : int [1:21] 6 5 11 2 2 3 0 0 0 0 ...
+}
 \source{
 Jassim, E. W., Grossman, M., Koops, W. J. And Luykx, R. A. J. (1996). Multi-phasic analysis of embryonic
 mortality in chickens. \emph{Poultry Sci.} 75, 464-71.

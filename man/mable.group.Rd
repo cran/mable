@@ -4,8 +4,16 @@
 \alias{mable.group}
 \title{Mable fit of one-sample grouped data by an optimal or a preselected model degree}
 \usage{
-mable.group(x, breaks, M, interval = c(0, 1), IC = c("none", "aic",
-  "hqic", "all"), controls = mable.ctrl(), progress = TRUE)
+mable.group(
+  x,
+  breaks,
+  M,
+  interval = c(0, 1),
+  IC = c("none", "aic", "hqic", "all"),
+  vb = 0,
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{x}{vector of frequencies}
@@ -23,6 +31,9 @@ where \code{m1-m0>3}.}
 "aic" (Akaike information criterion) and/or
 "qhic" (Hannan–Quinn information criterion).}
 
+\item{vb}{code for vanishing boundary constraints, -1: f0(a)=0 only, 
+1: f0(b)=0 only, 2: both, 0: none (default).}
+
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
 and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.}
 
@@ -31,7 +42,7 @@ and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. S
 \value{
 A list with components
 \itemize{
-  \item \code{m} the given/selected optimal degree by the method of change-point
+  \item \code{m} the given or a selected degree by method of change-point
   \item \code{p} the estimated \code{p} with degree \code{m}
   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
   \item \code{interval} supporting interval \code{(a, b)}

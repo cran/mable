@@ -14,10 +14,12 @@
 #'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.
-#' @param interval a vector containing the endpoints of supporting/truncation interval
+#' @param interval a vector containing the endpoints of supporting/truncation interval \code{c(a,b)}
 #' @param IC information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 #'  "aic" (Akaike information criterion) and/or
 #'  "qhic" (Hannan–Quinn information criterion).
+#' @param vb code for vanishing boundary constraints, -1: f0(a)=0 only, 
+#'     1: f0(b)=0 only, 2: both, 0: none (default).
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
 #' and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.
 #' @param progress if TRUE a text progressbar is displayed
@@ -45,7 +47,7 @@
 #'   i = 0, \ldots, m\} - 1} and a default \eqn{\epsilon} is chosen as \code{.Machine$double.eps}.
 #' @return  A list with components
 #' \itemize{
-#'   \item \code{m} the selected/given optimal degree by methods of change-point
+#'   \item \code{m} the given or a selected degree by method of change-point
 #'   \item \code{p} the estimated vector of mixture proportions \eqn{p = (p_0, \ldots, p_m)}
 #'       with the selected/given optimal degree \code{m}
 #'   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
@@ -133,14 +135,15 @@
 # @useDynLib mable, .registration = TRUE
 #' @export
 mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
-        controls = mable.ctrl(), progress = TRUE){
+        vb=0, controls = mable.ctrl(), progress = TRUE){
     IC <- match.arg(IC, several.ok = TRUE)
     n<-length(x)
     xName<-deparse(substitute(x))
     a<-interval[1]
     b<-interval[2]
-    if(a>=b) stop("a must be smaller than b")
+    if(a>=b) stop("Invalid 'interval'.")
     x<-(x-a)/(b-a)
+    if(any(x<0) || any(x>1)) stop("All data must be contained in 'interval'.")
     convergent<-0
     del<-controls$eps
     eps<-c(controls$eps, .Machine$double.eps)
@@ -150,19 +153,32 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
     else if(length(M)>=2) {
         M<-c(min(M), max(M))
     }
+    xbar<-mean(x); s2<-var(x); 
+    m0<-max(0,ceiling(xbar*(1-xbar)/s2-3)-2)
+    if(M[1]<m0){
+      message("Replace M[1]=",M[1]," by the recommended ", m0,".")
+      M[1]=m0; M[2]=max(m0,M[2])}
     k<-M[2]-M[1]
-    if(k>0 && k<=3) stop("Too few candidate model degrees.")
+    if(k>0 && k<=3){
+      message("Too few candidate model degrees. Add 5 more.")
+      M[2]<-M[2]+5; k<-M[2]-M[1]}
     if(k==0){
         m<-M[1]
-        p<-rep(1,m+1)/(m+1)
+        if(m<3 || vb==0) p<-rep(1,m+1)/(m+1)
+        else{
+          p<-rep(1,m+1-abs(vb))/(m+1-abs(vb))
+          if(vb==-1 || vb==2) p[1]=0
+          if(vb== 1 || vb==2) p[m+1]=0
+        }
         ## Call C mable_em
         res<-.C("mable_em",
-          as.integer(m), as.integer(n), as.double(p), as.double(x), as.integer(controls$maxit),
-          as.double(controls$eps),  as.double(llik), as.logical(convergent), as.double(del))
-        ans<-list(p=res[[3]], m=m, mloglik=res[[7]], interval=c(a,b), convergent=!res[[8]], del=res[[9]])
+          as.integer(m), as.integer(n), as.double(p), as.double(x), 
+          as.integer(controls$maxit), as.double(controls$eps),  as.double(llik), 
+          as.logical(convergent), as.double(del))
+        ans<-list(p=res[[3]], m=m, mloglik=res[[7]], interval=c(a,b), 
+        convergent=!res[[8]], del=res[[9]])
     }
     else{
-        #p<-rep(1, 2*M[2]+2)
         p<-rep(1, M[2]+1)
         lk<-rep(0, k+1)
         lr<-rep(0,k)
@@ -170,13 +186,14 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
         pval<-rep(0,k+1)
         level<-controls$sig.level
         chpts<-rep(0,k+1)
-        optim<-0#c(0,0)
+        optim<-0 
         ## Call C mable_optim
         res<-.C("mable_optim",
-          as.integer(M), as.integer(n), as.double(p), as.double(x), as.integer(controls$maxit),
-          as.double(eps), as.double(lk), as.double(lr), as.integer(optim),
-          as.double(pval), as.double(bic), as.integer(chpts), as.double(controls$tini),
-          as.logical(progress), as.integer(convergent), as.double(del), as.double(level))
+          as.integer(M), as.integer(n), as.double(p), as.double(x), 
+          as.integer(controls$maxit), as.double(eps), as.double(lk), 
+          as.double(lr), as.integer(optim), as.double(pval), as.double(bic), 
+          as.integer(chpts), as.double(controls$tini), as.logical(progress), 
+          as.integer(convergent), as.double(del), as.double(level), as.integer(vb))
         M<-res[[1]]; k<-M[2]-M[1]
         m<-res[[9]]
         mloglik<-res[[7]][m-M[1]+1]
@@ -217,6 +234,8 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
 #' @param IC information criterion(s) in addition to Bayesian information criterion (BIC). Current choices are
 #'  "aic" (Akaike information criterion) and/or
 #'  "qhic" (Hannan–Quinn information criterion).
+#' @param vb code for vanishing boundary constraints, -1: f0(a)=0 only, 
+#'     1: f0(b)=0 only, 2: both, 0: none (default).
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
 #' and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.
 #' @param progress if TRUE a text progressbar is displayed
@@ -244,7 +263,7 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
 #'  i = 0, \ldots, m\} - 1} and a default \eqn{\epsilon} is chosen as \code{.Machine$double.eps}.
 #' @return A list with components
 #' \itemize{
-#'   \item \code{m} the given/selected optimal degree by the method of change-point
+#'   \item \code{m} the given or a selected degree by method of change-point
 #'   \item \code{p} the estimated \code{p} with degree \code{m}
 #'   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
 #'   \item \code{interval} supporting interval \code{(a, b)}
@@ -300,7 +319,7 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
 #' @seealso \code{\link{mable.ic}}
 #' @export
 mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic", "all"),
-            controls = mable.ctrl(), progress=TRUE){
+       vb=0, controls = mable.ctrl(), progress=TRUE){
     IC <- match.arg(IC, several.ok=TRUE)
     N<-length(x)
     xName<-deparse(substitute(x))
@@ -310,10 +329,19 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
         M<-c(min(M), max(M))
     }
     k<-M[2]-M[1]
-    if(k>0 && k<=3) stop("Too few candidate model degrees.")
+    if(k>0 && k<=3){
+      message("Too few candidate model degrees. Add 5 more.")
+      M[2]<-M[2]+5; k<-M[2]-M[1]}
     a<-interval[1]
     b<-interval[2]
+    if(a>=b) stop("Invalid 'interval'.")
     t<-(breaks-a)/(b-a)
+    x1<-rep.int((t[-N]+t[-1])/2,times=x)
+    xbar<-mean(x1); s2<-var(x1); 
+    m0<-max(0,ceiling(xbar*(1-xbar)/s2-3)-2)
+    if(M[1]<m0){
+      message("Replace M[1]=",M[1]," by the recommended ", m0,".")
+      M[1]=m0; M[2]=max(m0,M[2])}
     if(any(t<0) | any(t>1)) stop("'breaks' must be in 'interval'")
     convergence<-0
     del<-controls$eps
@@ -321,13 +349,19 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
     if(k==0){
         llik<-0
         m<-M[1]
-        p<-rep(1,m+1)/(m+1)
+        if(m<3 || vb==0) p<-rep(1,m+1)/(m+1)
+        else{
+          p<-rep(1,m+1-abs(vb))/(m+1-abs(vb))
+          if(vb==-1 || vb==2) p[1]=0
+          if(vb== 1 || vb==2) p[m+1]=0
+        }
         ## Call C mable_em_group
         res<-.C("mable_em_group",
           as.integer(m), as.integer(x), as.integer(N), as.double(p), as.double(t),
           as.integer(controls$maxit), as.double(controls$eps),  as.double(llik),
           as.logical(convergence), as.double(del))
-        ans<-list(p=res[[4]], m=m, mloglik=res[[8]], interval=c(a,b), convergence=!res[[9]], del=res[[10]])
+        ans<-list(p=res[[4]], m=m, mloglik=res[[8]], interval=c(a,b), 
+          convergence=!res[[9]], del=res[[10]])
     }
     else{
         lk<-rep(0, k+1)
@@ -346,7 +380,7 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
           as.integer(controls$maxit), as.double(eps), as.double(lk),
           as.double(lr), as.integer(optim), as.logical(progress),
           as.integer(convergence), as.double(del), as.double(controls$tini),
-          as.double(bic), as.double(pval), as.integer(chpts), as.double(level))
+          as.double(bic), as.double(pval), as.integer(chpts), as.double(level), as.integer(vb))
         M<-res[[1]]
         k<-M[2]-M[1]
         optim<-res[[10]]
@@ -394,7 +428,7 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
 #' \code{rmixbeta}  generates pseudo random numbers.
 #' @details
 #'  The density of the mixture beta distribution on an interval \eqn{[a, b]} can be written as a
-#'  Bernstein polynomial \eqn{f_m(x; p) = \sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]/(b-a)},
+#'  Bernstein polynomial \eqn{f_m(x; p) = (b-a)^{-1}\sum_{i=0}^m p_i\beta_{mi}[(x-a)/(b-a)]/(b-a)},
 #'  where \eqn{p = (p_0, \ldots, p_m)}, \eqn{p_i\ge 0}, \eqn{\sum_{i=0}^m p_i=1} and
 #'  \eqn{\beta_{mi}(u) = (m+1){m\choose i}u^i(1-x)^{m-i}}, \eqn{i = 0, 1, \ldots, m},
 #'  is the beta density with shapes \eqn{(i+1, m-i+1)}. The cumulative distribution
@@ -405,7 +439,8 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
 #'  \eqn{F_m/\pi}. The argument \code{p} may be any numeric vector of \code{m+1}
 #'  values when \code{pmixbeta()} and and \code{qmixbeta()} return the integral
 #'  function \eqn{F_m(x; p)} and its inverse, respectively, and \code{dmixbeta()}
-#'  returns a Bernstein polynomial \eqn{f_m(x; p)}.
+#'  returns a Bernstein polynomial \eqn{f_m(x; p)}. If components of \code{p} are not
+#'  all nonnegative or do not sum to one, warning message will be returned.
 #' @author Zhong Guan <zguan@iusb.edu>
 #' @references
 #' Bernstein, S.N. (1912), Demonstration du theoreme de Weierstrass fondee sur le calcul des probabilities,
@@ -419,6 +454,7 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
 #' @concept Mixture beta distribution
 #' @seealso \code{\link{mable}}
 #' @examples
+#' \donttest{
 #' # classical Bernstein polynomial approximation
 #' a<--4; b<-4; m<-200
 #' x<-seq(a,b,len=512)
@@ -428,7 +464,7 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
 #' lines(x, (b-a)*dmixbeta(x, p, c(a, b))/(m+1), lty=2, col=2)
 #' legend(a, dnorm(0), lty=1:2, col=1:2, c(expression(f(x)==phi(x)),
 #'                expression(B^{f}*(x))))
-#'
+#' }
 #' @importFrom stats dunif punif qunif runif uniroot rbeta
 #' @export
 dmixbeta<-function(x, p, interval=c(0, 1)){
@@ -438,7 +474,8 @@ dmixbeta<-function(x, p, interval=c(0, 1)){
     if(a>=b) stop("a must be smaller than b")
     if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
+    if(any(p<0) || abs(sum(p)-1)>sqrt(.Machine$double.eps)) 
+      message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) y<-dunif(x, a, b)
     else{
@@ -459,7 +496,8 @@ pmixbeta<-function(x, p, interval=c(0, 1)){
     if(a>=b) stop("a must be smaller than b")
     if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
+    if(any(p<0) || abs(sum(p)-1)>sqrt(.Machine$double.eps)) 
+      message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) y<-punif(x, a, b)
     else{
@@ -474,15 +512,16 @@ pmixbeta<-function(x, p, interval=c(0, 1)){
 #' @rdname dmixbeta
 #' @export
 #########################################################
-# another method is Newton-Raphson as 'mable-roc.r'
+# another method is Newton-Raphson as in 'mable-roc.r'
 #########################################################
 qmixbeta<-function(u, p, interval=c(0, 1)){
     a<-interval[1]
     b<-interval[2]
     if(a>=b) stop("a must be smaller than b")
-    if(any(u<0) || any(u>1)) stop("Argument 'u' must be in [0,1].\n")
+    if(any(u<0) || any(u>1)) stop("Argument 'u' must be in [0,1].")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0)) warning("Argument 'p' has negative component(s).\n")
+    if(any(p<0) || abs(sum(p)-1)>sqrt(.Machine$double.eps)) 
+      message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) Q<-qunif(u, a, b)
     else{
@@ -506,10 +545,10 @@ rmixbeta<-function(n, p, interval=c(0, 1)){
     b<-interval[2]
     if(a>=b) stop("a must be smaller than b")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0)) stop("Negative component(s) of argument 'p'is not allowed.\n")
-    if(abs(sum(p)-1)>.Machine$double.eps){
-        warning("Sum of 'p's is not 1. Dividing 'p's by the total.\n")
-            p<-p/sum(p)
+    if(any(p<0)) stop("Negative component(s) of argument 'p'is not allowed.")
+    if(abs(sum(p)-1)>sqrt(.Machine$double.eps)){
+        message("Sum of 'p's is not 1. Dividing 'p's by the total.")
+        p<-p/sum(p)
     }
     m<-length(p)-1
     x<-rep(0,n)
@@ -536,6 +575,7 @@ rmixbeta<-function(n, p, interval=c(0, 1)){
 #' @param nx  number of evaluations of density, or cumulative distribution curve to be plotted.
 #' @param ...  additional arguments to be passed to the base plot function
 #' @importFrom graphics axis lines plot segments points title legend par persp
+#' @return The data used for 'plot()', 'lines()', or 'persp()' are returned invisibly.
 #' @export
 plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood",
                 "change-point", "all"), add = FALSE,
@@ -551,34 +591,36 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
     if(dim==1){
         a<-support[1]
         b<-support[2]
-        xx<-seq(a, b,len=nx)
+        xx<-seq(a, b, len=nx)
         if(any(which=="all")){
             add=FALSE
             op<-par(mfrow=c(2,2))}
-    if(any(which=="likelihood")|| any(which=="all")) {
-        if(is.null(x$lk)) stop("Cannot plot 'likelihood'.")
+    if(any(which=="likelihood")|| any(which=="all")){
+        if(is.null(x$lk)) message("Cannot plot 'likelihood'.")
         M<-x$M[1]:x$M[2]
         if(!add) plot(M, x$lk, type="p", xlab="m",ylab="Loglikelihood",
             main="Loglikelihood")
         else points(M, x$lk, pch=1)
         segments(x$m, min(x$lk), x$m, x$mloglik, lty=2, col=1:2)
         axis(1, x$m,  as.character(x$m))
+        out<-list(x=M, y=x$lk)
     }
     if(any(which=="change-point")||any(which=="all")) {
-        if(is.null(x$lr)) stop("Cannot plot 'likelihood ratios'.")
+        if(is.null(x$lr)) message("Cannot plot 'likelihood ratios'.")
         M<-x$M[1]:x$M[2]
         ymin<-min(x$lr)
         ymax<-max(x$lr)
         if(!add){
             plot(M, 0*M, type="n", xlab="m", ylab="", ylim=c(ymin,ymax))
             points(M[-1], x$lr, col=1, pch=1, ylab="Likelihood Ratio")
-            segments(m, ymin, m, max(x$lr), lty=2, col=1)
+            segments(m, ymin, m, ymax, lty=2, col=1)
             axis(1, m,  as.character(m), col=1)
             title("LR of Change-Point")}
         else{
             points(M[-1], x$lr, ...)
             segments(m, ymin, m, max(x$lr), ...)
             axis(1, m,  as.character(m), ...)}
+        out<-list(x=M[-1], y=x$lr)
     }
     if(any(which=="density")||any(which=="all")){
         yy<-dmixbeta(xx, phat[1:(m+1)], c(a, b))
@@ -586,6 +628,7 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
             plot(xx, yy, type="l",  ylab="Density", xlim=c(a, b), ...)
         else
             lines(xx, yy, ...)
+        out<-list(x=xx, y=yy)
     }
     if(any(which=="cumulative")||any(which=="survival")||any(which=="all")){
         if(any(which=="survival")||any(which=="all"))
@@ -596,8 +639,10 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
             if(any(which=="survival")||any(which=="all")) plot(xx, yy,
                 type="l", ylab="Survival Probability", xlim=c(a,b), col=1, ...)
             else plot(xx, yy, type="l", ylab="Cumulative Probability", xlim=c(a,b), col=1, ...)}
-        else lines(xx, yy, ...)}
+        else lines(xx, yy, ...)
+        out<-list(x=xx, y=yy)}
         if(any(which=="all")) par(op)
+        #out<-list(x=xx, y=yy)
     }
     else{
         a<-support[,1]
@@ -611,22 +656,25 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
             fn<-function(x1, x2) dmixmvbeta(cbind(x1, x2), phat, m, interval=support)
             x1 <- seq(a[1], b[1], length= 40)
             x2 <- seq(a[2], b[2], length= 40)
-            z1 <- outer(x1, x2, fn)
-            persp(x1, x2, z1, theta = 30, phi = 20, expand = 0.5, col = "lightblue",
+             z <- outer(x1, x2, fn)
+            persp(x1, x2, z, theta = 30, phi = 20, expand = 0.5, col = "lightblue",
               ltheta = 90, shade = 0.1, ticktype = "detailed", main = expression(paste("MABLE ",hat(f))),
               xlab = x$xNames[1], ylab = x$xNames[2], zlab = "Joint Density")
+            out<-list(x1=x1,x2=x2,z=z)
         }
         if(any(which=="cumulative")||any(which=="all")){
             fn<-function(x1, x2) pmixmvbeta(cbind(x1, x2), phat, m, interval=support)
             x1 <- seq(a[1], b[1], length= 40)
             x2 <- seq(a[2], b[2], length= 40)
-            z2 <- outer(x1, x2, fn)
-            persp(x1, x2, z2, theta = 30, phi = 20, expand = 0.5, col = "lightblue",
+            z  <- outer(x1, x2, fn)
+            persp(x1, x2, z, theta = 30, phi = 20, expand = 0.5, col = "lightblue",
               ltheta = 90, shade = 0.1, ticktype = "detailed", main = expression(paste("MABLE ",hat(F))),
               xlab = x$xNames[1], ylab = x$xNames[2], zlab = "Joint CDF")
+            out<-list(x1=x1,x2=x2,z=z)
         }
         if(any(which=="all")) par(op)
     }
+    invisible(out)
 }
 ##############################################
 #' Summary mathods for classes 'mable' and 'mable_reg'
@@ -645,9 +693,9 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
 #' }
 #' \donttest{
 #' ## Breast Cosmesis Data
-#'   require(interval)
-#'   data(bcos)
-#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treatment=="RadChem"))
+#'   require(coxinterval)
+#'   bcos=cosmesis
+#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), tau=100, x0=1)
 #'   summary(aft.res)
 #' }
@@ -771,5 +819,26 @@ optim.gcp<-function(obj){
     ans<-list(m=res[[4]], M=M, mloglik=lk[res[[4]]-M[1]+1], lk=lk, lr=res[[3]],
         interval=obj$interval, pval=res[[5]], chpts=res[[6]]+M[1])
     class(ans)<-"mable"
+    return(ans)
+}
+####################################################
+#' Control parameters for mable fit
+#' @param sig.level the sigificance level for change-point method of choosing
+#'   optimal model degree
+#' @param eps convergence criterion for iteration involves EM like and Newton-Raphson iterations
+#' @param maxit maximum number of iterations involve EM like and Newton-Raphson iterations
+#' @param eps.em convergence criterion for EM like iteration
+#' @param maxit.em maximum number of EM like iterations
+#' @param eps.nt convergence criterion for Newton-Raphson iteration
+#' @param maxit.nt maximum number of Newton-Raphson iterations
+#' @param tini a small positive number used to make sure initial \code{p} 
+#'    is in the interior of the simplex
+#' @author Zhong Guan <zguan@iusb.edu>
+#' @return a list of the arguments' values
+#' @export
+mable.ctrl<-function(sig.level=1.0e-2, eps = 1.0e-7, maxit = 5000, eps.em = 1.0e-7, maxit.em = 5000,
+    eps.nt = 1.0e-7, maxit.nt = 1000, tini=1e-4){
+    ans<-list(sig.level=sig.level, eps = eps, maxit = maxit, eps.em = eps.em,
+            maxit.em = maxit.em, eps.nt = eps.nt, maxit.nt = maxit.nt, tini=tini)
     return(ans)
 }

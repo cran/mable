@@ -33,7 +33,7 @@
 #' @param progress if \code{TRUE} a text progressbar is displayed
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+#' \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
@@ -48,8 +48,8 @@
 #' Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
 #' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
-#' The truncation time \code{tau} and the baseline \code{x0} should chosen so that 
-#' \eqn{S(t|x)=S(t \exp(-\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
+#' The truncation time \code{tau} and the baseline \code{x0} should be chosen so that 
+#' \eqn{S(t|x)=S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 #' all the observed \eqn{x}.
 #'
 #' The missing \code{g} is imputed by the rank estimate \code{aftsrr()} of package \code{aftgee} 
@@ -92,10 +92,10 @@
 #' arXiv:1911.07087.
 #' @examples \donttest{
 #' ## Breast Cosmesis Data
-#'   require(interval) 
-#'   data(bcos)
-#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treatment=="RadChem"))
-#'   g<--0.41 #Hanson and  Johnson 2004, JCGS
+#'   require(coxinterval) 
+#'   bcos=cosmesis
+#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
+#'   g <- 0.41 #Hanson and  Johnson 2004, JCGS
 #'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g, tau=100, x0=1)
 #'   op<-par(mfrow=c(1,2), lwd=1.5)
 #'   plot(x=aft.res, which="likelihood")
@@ -126,7 +126,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         rtc.data<-data.frame(Y = Y, status = status, x=x)
         fmla<-reformulate(attr(terms(formula), "term.labels"), response="Surv(Y, status)")
         rkest<-aftsrr(fmla, data = rtc.data)
-        g<-as.numeric(coef(rkest))      
+        g<--as.numeric(coef(rkest))      
     }
     delta<-Dta$delta
     b<-max(y2[y2<Inf], y);
@@ -169,7 +169,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         p<-rep(1,m+1)/(m+1)
         ## Call C mable_aft_m
         res<-.C("mable_aft_m",
-            as.double(g), as.double(p), as.integer(dm), as.double(x), as.double(y),  
+            as.double(-g), as.double(p), as.integer(dm), as.double(x), as.double(y),  
             as.double(y2), as.integer(N), as.double(x0), as.double(ell), 
             as.double(ddell), as.double(Eps), as.integer(MaxIt), 
             as.logical(progress), as.integer(conv), as.double(del))
@@ -194,7 +194,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         p<-rep(0, M[2]+1)
         ## Call C mable_aft
         res<-.C("mable_aft",
-            as.integer(M), as.double(g), as.integer(dm), as.double(p), as.double(x),  
+            as.integer(M), as.double(-g), as.integer(dm), as.double(p), as.double(x),  
             as.double(y), as.double(y2), as.integer(N), as.double(x0), as.double(lk), 
             as.double(lr), as.double(ddell), as.double(Eps), as.integer(MaxIt), 
             as.logical(progress), as.double(pval), as.integer(chpts), as.double(level), 
@@ -219,6 +219,8 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         ans$convergence<-res[[19]]
         ans$delta<-res[[16]][k+1]   
     }
+    ans$coefficients<--ans$coefficients
+    ans$egx0<-1/ans$egx0
     ans$model<-"mable.aft"
     ans$callText<-fmla
     ans$data.name<-data.name
@@ -249,7 +251,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #'  given regression coefficients for AFT model.
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+#' \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
@@ -264,8 +266,8 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} is the interval 
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
 #' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
-#' The truncation time \code{tau} and the baseline \code{x0} should chosen so that 
-#' \eqn{S(t|x) = S(t \exp(-\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
+#' The truncation time \code{tau} and the baseline \code{x0} should be chosen so that 
+#' \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 #' all the observed \eqn{x}.
 #'
 #'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
@@ -303,10 +305,10 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' arXiv:1911.07087.
 #' @examples \donttest{
 #' ## Breast Cosmesis Data
-#'   require(interval) 
-#'   data(bcos)
-#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treatment=="RadChem"))
-#'   g<--0.41 #Hanson and  Johnson 2004, JCGS, 
+#'   require(coxinterval) 
+#'   bcos=cosmesis
+#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
+#'   g<-0.41 #Hanson and  Johnson 2004, JCGS, 
 #'   res1<-maple.aft(cbind(left, right)~x, data=bcos2, M=c(1,30),  g, tau=100, x0=1)
 #'   op<-par(mfrow=c(1,2), lwd=1.5)
 #'   plot(x=res1, which="likelihood")
@@ -362,7 +364,7 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
     del<-0
     ## Call C mable_aft_gamma
     res<-.C("mable_aft_gamma",
-        as.integer(M), as.double(g), as.integer(dm), as.double(x), as.double(y),  
+        as.integer(M), as.double(-g), as.integer(dm), as.double(x), as.double(y),  
         as.double(y2), as.integer(N), as.double(x0), as.double(lk), as.double(lr), 
         as.double(p), as.double(ddell), as.double(controls$eps), as.integer(controls$maxit), 
         as.logical(progress), as.double(pval), as.integer(chpts), as.double(level), 

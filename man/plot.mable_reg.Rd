@@ -4,9 +4,16 @@
 \alias{plot.mable_reg}
 \title{Plot mathod for class 'mable_reg'}
 \usage{
-\method{plot}{mable_reg}(x, y, newdata = NULL, ntime = 512,
-  xlab = "Time", which = c("survival", "likelihood", "change-point",
-  "density", "all"), add = FALSE, ...)
+\method{plot}{mable_reg}(
+  x,
+  y,
+  newdata = NULL,
+  ntime = 512,
+  xlab = "Time",
+  which = c("survival", "likelihood", "change-point", "density", "all"),
+  add = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{a class 'mable_reg' object return by functions such as \code{mable.ph} which contains 

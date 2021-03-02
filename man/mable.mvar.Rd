@@ -5,21 +5,41 @@
 \title{Maximum Approximate Bernstein Likelihood Estimate
  of Multivariate Density Function}
 \usage{
-mable.mvar(x, M, search = TRUE, interval = NULL,
-  controls = mable.ctrl(), progress = TRUE)
+mable.mvar(
+  x,
+  M0 = 1,
+  M,
+  search = TRUE,
+  interval = NULL,
+  use.mar.deg = FALSE,
+  criterion = c("cdf", "pdf"),
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{x}{an \code{n x d} matrix or \code{data.frame} of multivariate sample of size \code{n}}
 
+\item{M0}{a positive integer or a vector of \code{d} positive integers specify
+starting candidate degrees for searching optimal degrees.}
+
 \item{M}{a positive integer or a vector of \code{d} positive integers specify
 the maximum candidate or the given model degrees for the joint density.}
 
-\item{search}{logical, whether to search optimal degrees using \code{M} as maximum candidate 
-degrees or not but use \code{M} as the given model degrees for the joint density.}
+\item{search}{logical, whether to search optimal degrees between \code{M0} and \code{M} 
+or not but use \code{M} as the given model degrees for the joint density.}
 
 \item{interval}{a vector of two endpoints or a \code{d x 2} matrix, each row containing 
 the endpoints of support/truncation interval for each marginal density.
 If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
+
+\item{use.mar.deg}{logical, if TRUE, the optimal degrees are selected based
+on marginal data, otherwise, the optimal degrees are those minimize the maximum
+L2 distance between marginal cdf or pdf estimated based on marginal data and the
+joint data. See details.}
+
+\item{criterion}{either cdf or pdf should be used for selecting optimal degrees.
+Default is "cdf"}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
 and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.}
@@ -53,23 +73,20 @@ A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a, b]
   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-  If \code{search=TRUE}, we start with \eqn{M_0}\code{=rep(2,d)} and select  
-  \eqn{M_1} which maximizes the likelohood with degrees \eqn{M_1=M_0+e_i}, where
-  \eqn{e_i}, \eqn{i=1,\ldots,d}, form the basis of \eqn{R^n}.  The above procedure
-  are repeated at least four times to \eqn{M_s} and loglikelihood \eqn{\ell_s}, 
-  \eqn{s=0, 1,\ldots,k}, and stop whenever the p-value of the change point of
-  \eqn{\ell_{s+1}-\ell_s} is small or a component of \eqn{M_k} reached its maximum 
-  value specified by \code{M}. For each \eqn{M_s+e_i} the data are fitted using 
-  EM algorithm and the multivariate Bernstein polynomial model with a vector of the    
-  mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
-  column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{p_0, \ldots, p_{K-1}}, 
-  where \eqn{K=\prod_{i=1}^d (m_i+1)}, to obtain likelihood.
+  Let \eqn{\tilde f_i} be an estimate with degree \eqn{\tilde m_i} of the i-th 
+  marginal density based on marginal data \code{x[,i]}, \eqn{i=1, \ldots, d}. 
+  If \code{search=TRUE} and \code{use.marginal=TRUE}, then the optimal degrees
+  are \eqn{(\tilde m_1,\ldots,\tilde m_d)}. If \code{search=TRUE} and 
+  \code{use.marginal=FALSE}, then the optimal degrees \eqn{(\hat m_1,\ldots,\hat m_d)}
+  are those that minimize the maximum of \eqn{L_2}-distance between \eqn{\tilde f_i}
+  and the estimate of \eqn{f_i} based on the joint data with degrees 
+  \eqn{m=(m_1,\ldots,m_d)} for all \eqn{m} between \eqn{M_0} and \eqn{M}.
 }
 \examples{
 ## Old Faithful Data
 \donttest{
  a<-c(0, 40); b<-c(7, 110)
- #ans<-mable.mvar(faithful, M = c(100, 100), interval = cbind(a, b))
+ #ans<-mable.mvar(faithful, M = c(60, 40), interval = cbind(a, b))
  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
  plot(ans, which="density") 
  plot(ans, which="cumulative")

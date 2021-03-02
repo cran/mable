@@ -4,9 +4,15 @@
 \alias{plot.mable}
 \title{Plot mathod for class 'mable'}
 \usage{
-\method{plot}{mable}(x, which = c("density", "cumulative", "survival",
-  "likelihood", "change-point", "all"), add = FALSE, lgd.x = NULL,
-  lgd.y = NULL, nx = 512, ...)
+\method{plot}{mable}(
+  x,
+  which = c("density", "cumulative", "survival", "likelihood", "change-point", "all"),
+  add = FALSE,
+  lgd.x = NULL,
+  lgd.y = NULL,
+  nx = 512,
+  ...
+)
 }
 \arguments{
 \item{x}{Class "mable" object return by \code{mablem}, \code{mable}, \code{mablem.group} or \code{mable.group} functions
@@ -23,6 +29,9 @@ which contains \code{p}, \code{mloglik}, and \code{M = m0:m1}, \code{lk}, \code{
 \item{nx}{number of evaluations of density, or cumulative distribution curve to be plotted.}
 
 \item{...}{additional arguments to be passed to the base plot function}
+}
+\value{
+The data used for 'plot()', 'lines()', or 'persp()' are returned invisibly.
 }
 \description{
 Plot mathod for class 'mable'

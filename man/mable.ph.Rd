@@ -4,8 +4,17 @@
 \alias{mable.ph}
 \title{Mable fit of Cox's proportional hazards regression model}
 \usage{
-mable.ph(formula, data, M, g = NULL, pi0 = NULL, tau = Inf,
-  x0 = NULL, controls = mable.ctrl(), progress = TRUE)
+mable.ph(
+  formula,
+  data,
+  M,
+  g = NULL,
+  pi0 = NULL,
+  tau = Inf,
+  x0 = NULL,
+  controls = mable.ctrl(),
+  progress = TRUE
+)
 }
 \arguments{
 \item{formula}{regression formula. Response must be \code{cbind}.  See 'Details'.}
@@ -98,8 +107,10 @@ This process takes longer than \code{\link{maple.ph}} to select an optimal degre
    require(survival)
    futime2<-ovarian$futime
    futime2[ovarian$fustat==0]<-Inf
-   ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, futime2=futime2)
-   ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M=c(2,35), g=.16)
+   ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, 
+        futime2=futime2)
+   ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, 
+        M=c(2,35), g=.16, x0=35)
    op<-par(mfrow=c(2,2))
    plot(ova, which = "likelihood")
    plot(ova, which = "change-point")
@@ -111,8 +122,8 @@ This process takes longer than \code{\link{maple.ph}} to select an optimal degre
 }
 }
 \references{
-Guan, Z. (2019) Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
-arXiv:1906.08882 .
+Guan, Z. Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
+Statistics in Medicine. 2020; 1–21. https://doi.org/10.1002/sim.8801.
 }
 \seealso{
 \code{\link{maple.ph}}

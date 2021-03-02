@@ -85,16 +85,18 @@
 #' }
 #' @author Zhong Guan <zguan@iusb.edu>
 #' @references 
-#' Guan, Z. (2019) Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
-#' arXiv:1906.08882 .
+#' Guan, Z. Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
+#' Statistics in Medicine. 2020; 1–21. https://doi.org/10.1002/sim.8801.
 #' @examples
 #' \donttest{
 #'    # Ovarian Cancer Survival Data
 #'    require(survival)
 #'    futime2<-ovarian$futime
 #'    futime2[ovarian$fustat==0]<-Inf
-#'    ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, futime2=futime2)
-#'    ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M=c(2,35), g=.16)
+#'    ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, 
+#'         futime2=futime2)
+#'    ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, 
+#'         M=c(2,35), g=.16, x0=35)
 #'    op<-par(mfrow=c(2,2))
 #'    plot(ova, which = "likelihood")
 #'    plot(ova, which = "change-point")
@@ -271,7 +273,9 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'   \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
 #'   \item \code{convergence} an integer code. 0 indicates successful completion(the iteration is 
 #'    convergent). 1 indicates that the maximum candidate degree had been reached in the calculation;
-#'   \item \code{delta} the final \code{pval} of the change-point for selecting the optimal degree \code{m};
+#'   \item \code{delta} the final convergence criterion for EM iteration;
+#'   \item \code{chpts} the change-points among the candidate degrees;
+#'   \item \code{pom} the p-value of the selected optimal degree \code{m} as a change-point;
 #'  }  
 #' @author Zhong Guan <zguan@iusb.edu>   
 #' @references 
@@ -289,7 +293,8 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'    op<-par(mfrow=c(1,2))
 #'    plot(res0,  which=c("likelihood","change-point"))
 #'    par(op)
-#'    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, g=c(.5,-.5), tau=7)
+#'    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, 
+#'       g=c(.5,-.5), tau=7)
 #'    op<-par(mfrow=c(1,2))
 #'    plot(res1, y=data.frame(c(0,0)), which="density", add=FALSE, type="l", 
 #'        xlab="Time", main="Desnity Function")
@@ -343,7 +348,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
     chpts<-rep(0,k+1)
     dm<-c(d,0)
     conv<-0
-    del<-0
+    del<-c(0,0)
     p<-rep(0, M[2]+2) 
     if(is.null(x0)) 
         for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
@@ -364,10 +369,10 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
     llik<-lk[m-M[1]+1]
     mp2<-m+2
     ans<-list(m=m, mloglik=llik, tau.n=b, tau=tau, p=res[[12]][1:mp2], coefficients=g, 
-    x0=x0, egx0=egx0, convergence=res[[20]],delta=res[[21]], xNames=Dta$xNames)
-    if(k>0) {
+    x0=x0, egx0=egx0, convergence=res[[20]],delta=res[[21]][1], xNames=Dta$xNames)
+    if(k>0){
         ans$M<-M; ans$lk<-lk; ans$lr<-res[[11]][1:k]; ans$pval<-res[[18]][1:(k+1)];
-        ans$chpts<-res[[19]][1:(k+1)]+M[1];}
+        ans$chpts<-res[[19]][1:(k+1)]+M[1]; ans$pom<-res[[21]][2];}
     ans$model<-"maple.ph"
     ans$callText<-fmla
     ans$data.name<-data.name
@@ -441,10 +446,10 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #' arXiv:1906.08882 .
 #' @examples
 #' \donttest{
-#'  library(interval) 
-#'  data(bcos)
-#'  bc.res0<-mable.ic(bcos[bcos$treatment=="Rad",1:2], M=c(1,50), IC="none")
-#'  bc.res1<-mable.ic(bcos[bcos$treatment=="RadChem",1:2], M=c(1,50), IC="none")
+#'  library(coxinterval) 
+#'  bcos=cosmesis
+#'  bc.res0<-mable.ic(bcos[bcos$treat=="RT",1:2], M=c(1,50), IC="none")
+#'  bc.res1<-mable.ic(bcos[bcos$treat=="RCT",1:2], M=c(1,50), IC="none")
 #'  op<-par(mfrow=c(2,2),lwd=2)
 #'  plot(bc.res0, which="change-point", lgd.x="right")
 #'  plot(bc.res1, which="change-point", lgd.x="right")
@@ -559,7 +564,7 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
         which=c("survival", "likelihood", "change-point", "density", "all"), add=FALSE,...){
     which <- match.arg(which, several.ok=TRUE)
     model<-substr(x$model, 7,9) 
-    if(any(which=="likelihood")||which=="all") {
+    if(any(which=="likelihood")||any(which=="all")) {
         if(is.null(x$lk)) stop("Cannot plot 'likelihood'.")
         if(!add) plot(x$M[1]:x$M[2], x$lk, type="p", xlab="m",ylab="Loglikelihood",
             main="Loglikelihood")
@@ -567,7 +572,7 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
         segments(x$m[1], min(x$lk), x$m[1], x$mloglik[1], lty=2)
         axis(1, x$m[1], as.character(x$m[1]), col=2)
     }
-    if(any(which=="change-point")||which=="all") {
+    if(any(which=="change-point")||any(which=="all")) {
         if(is.null(x$lr)) stop("Cannot plot 'likelihood ratios'.")
         if(!add) plot((x$M[1]+1):x$M[2], x$lr, type="p", xlab="m",ylab="Loglikelihood Ratio",
             main="Change-Point")
@@ -575,7 +580,7 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
         segments(x$m[1], 0, x$m[1], max(x$lr), lty=2)
         axis(1, x$m[1], as.character(x$m[1]), col=2)
     }
-    if(any(which=="density")||any(which=="survival")||which=="all") {
+    if(any(which=="density")||any(which=="survival")||any(which=="all")) {
         if(missing(y) && is.null(newdata)) {
             y<-data.frame(rep(0,length(x$x0)))
             warning("missing y and newdata, assigned as rep(0,d)")}
@@ -603,14 +608,14 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
             Sbx<-1-pmixbeta(time, p=p, c(0, tau))
             fbx<-dmixbeta(time, p=p, c(0, tau))
             egxt<-as.vector(exp(sum(y[,1]*gama))/x$egx0)
-            time<-time*egxt
+            time<-time/egxt
             tau<-tau.n}
-        if(any(which=="density")||which=="all")
+        if(any(which=="density")||any(which=="all"))
             if(!add) plot(time, fbx, xlab=xlab, ylab="Density", xlim=c(0,tau),...)
             else lines(time, fbx, xlab=xlab, ylab="Density",  xlim=c(0,tau), ...)
-        if(any(which=="survival")||which=="all") # default is "survival" for plotting "all" 
-            if(!add) plot(time, Sbx, xlab=xlab, ylab="Survival Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
-            else lines(time, Sbx, xlab=xlab, ylab="Survival Probability",xlim=c(0,tau),  ylim=c(0,1),...)
+        if(any(which=="survival")||any(which=="all")) # default is "survival" for plotting "all" 
+            if(!add) plot(time, Sbx, xlab=xlab, ylab="Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
+            else lines(time, Sbx, xlab=xlab, ylab="Probability",xlim=c(0,tau),  ylim=c(0,1),...)
     }
 }
 ######################
@@ -707,23 +712,3 @@ mable.reg<-function(formula, data, model=c("ph","aft"), M, g=NULL, pi0=NULL, tau
     class(out)<-"mable_reg" # 
     return(out)
 } 
-#' Control parameters for mable fit
-#' @param sig.level the sigificance level for change-point method of choosing
-#'   optimal model degree
-#' @param eps convergence criterion for iteration involves EM like and Newton-Raphson iterations
-#' @param maxit maximum number of iterations involve EM like and Newton-Raphson iterations
-#' @param eps.em convergence criterion for EM like iteration
-#' @param maxit.em maximum number of EM like iterations
-#' @param eps.nt convergence criterion for Newton-Raphson iteration
-#' @param maxit.nt maximum number of Newton-Raphson iterations
-#' @param tini a small positive number used to make sure \code{p} 
-#'    is in the interior of the simplex
-#' @author Zhong Guan <zguan@iusb.edu>
-#' @return a list of the arguments' values
-#' @export
-mable.ctrl<-function(sig.level=1.0e-4, eps = 1.0e-7, maxit = 5000, eps.em = 1.0e-7, maxit.em = 5000,
-    eps.nt = 1.0e-7, maxit.nt = 1000, tini=1e-4){
-    ans<-list(sig.level=sig.level, eps = eps, maxit = maxit, eps.em = eps.em, 
-            maxit.em = maxit.em, eps.nt = eps.nt, maxit.nt = maxit.nt, tini=tini)
-    return(ans)
-}
