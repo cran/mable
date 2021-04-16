@@ -20,9 +20,12 @@
 \code{M}, \code{coefficients}, \code{p}, \code{m}, \code{x0}, \code{tau.n}, \code{tau} 
 \code{lk}, \code{lr}.}
 
-\item{y}{a new data.frame}
+\item{y}{a new data.frame of covariate value(s) as row(s), whose columns are
+arranged in the same order as in the \code{formula} called by the function
+that returned the object \code{x}.}
 
-\item{newdata}{a new data.frame (ignored if \code{y} is included)}
+\item{newdata}{a new data.frame (ignored if \code{y} is included), imputed
+by the working baseline \code{x0} if both missing.}
 
 \item{ntime}{number of evaluations of density, survival or cumulative distribution
 curve to be plotted.}

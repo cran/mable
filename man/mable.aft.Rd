@@ -90,12 +90,8 @@ The truncation time \code{tau} and the baseline \code{x0} should be chosen so th
 \eqn{S(t|x)=S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 all the observed \eqn{x}.
 
-The missing \code{g} is imputed by the rank estimate \code{aftsrr()} of package \code{aftgee} 
-for right-censored data. For general interval censored observations, we keep the 
-right-censored but replace the finite interval with its midpoint and fit the data by 
-\code{aftsrr()} as a right-censored data. 
 
- The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+ The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 }
 \examples{
@@ -105,7 +101,7 @@ right-censored but replace the finite interval with its midpoint and fit the dat
   bcos=cosmesis
   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
   g <- 0.41 #Hanson and  Johnson 2004, JCGS
-  aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g, tau=100, x0=1)
+  aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=g, tau=100, x0=1)
   op<-par(mfrow=c(1,2), lwd=1.5)
   plot(x=aft.res, which="likelihood")
   plot(x=aft.res, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 

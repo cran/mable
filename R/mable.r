@@ -474,7 +474,7 @@ dmixbeta<-function(x, p, interval=c(0, 1)){
     if(a>=b) stop("a must be smaller than b")
     if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0) || abs(sum(p)-1)>sqrt(.Machine$double.eps)) 
+    if(any(p<0) || abs(sum(p)-1)>.Machine$double.eps^.25) 
       message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) y<-dunif(x, a, b)
@@ -496,7 +496,7 @@ pmixbeta<-function(x, p, interval=c(0, 1)){
     if(a>=b) stop("a must be smaller than b")
     if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0) || abs(sum(p)-1)>sqrt(.Machine$double.eps)) 
+    if(any(p<0) || abs(sum(p)-1)>.Machine$double.eps^.25) 
       message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) y<-punif(x, a, b)
@@ -520,7 +520,7 @@ qmixbeta<-function(u, p, interval=c(0, 1)){
     if(a>=b) stop("a must be smaller than b")
     if(any(u<0) || any(u>1)) stop("Argument 'u' must be in [0,1].")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p<0) || abs(sum(p)-1)>sqrt(.Machine$double.eps)) 
+    if(any(p<0) || abs(sum(p)-1)>.Machine$double.eps^.25) 
       message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) Q<-qunif(u, a, b)
@@ -546,7 +546,7 @@ rmixbeta<-function(n, p, interval=c(0, 1)){
     if(a>=b) stop("a must be smaller than b")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
     if(any(p<0)) stop("Negative component(s) of argument 'p'is not allowed.")
-    if(abs(sum(p)-1)>sqrt(.Machine$double.eps)){
+    if(abs(sum(p)-1)>.Machine$double.eps^.25){
         message("Sum of 'p's is not 1. Dividing 'p's by the total.")
         p<-p/sum(p)
     }
@@ -696,7 +696,8 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
 #'   require(coxinterval)
 #'   bcos=cosmesis
 #'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
-#'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), tau=100, x0=1)
+#'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=.41, 
+#'        tau=100, x0=1)
 #'   summary(aft.res)
 #' }
 #' @importFrom stats printCoefmat

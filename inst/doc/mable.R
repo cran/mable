@@ -175,8 +175,8 @@ summary(ova)
 op <- par(mfrow = c(2,2))
 plot(ova, which = "likelihood")
 plot(ova, which = "change-point")
-plot(ova, y=data.frame(c(60)), which="survival", type="l", xlab="Days", main="Age = 60")
-plot(ova, y=data.frame(c(65)), which="survival", type="l", xlab="Days", main="Age = 65")
+plot(ova, y=data.frame(age=60), which="survival", type="l", xlab="Days", main="Age = 60")
+plot(ova, y=data.frame(age=65), which="survival", type="l", xlab="Days", main="Age = 65")
 par(op)
 
 ## ----results = "hide", warning = FALSE----------------------------------------
@@ -187,7 +187,7 @@ bcos2 <- data.frame(bcos[,1:2], x = 1*(bcos$treat == "RCT"))
 
 ## ----results = "hide", warning=FALSE, message=FALSE---------------------------
 g <- 0.41 # Hanson and Johnson 2004, JCGS
-aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g,  tau =100, x0=1)
+aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g=.41,  tau =100, x0=1)
 
 ## -----------------------------------------------------------------------------
 summary(aft.res)
@@ -204,7 +204,7 @@ par(op)
 
 ## ----results = "hide"---------------------------------------------------------
 aft.res1 <- mable.reg(cbind(left, right) ~ x, data = bcos2, 'aft', M = c(1, 30), 
-      tau=100, x0=1)
+      g=.41, tau=100, x0=1)
 
 ## ----message=FALSE, warning = FALSE, results = "hide"-------------------------
 # Hosmer and Lemeshow (1989):                                           
@@ -245,7 +245,7 @@ M<-c(1,29)
 regr<-function(x) cbind(1,x,x^2)                                            
 m=maple.dr(x, y, M, regr=regr, interval=c(a,b), controls=mable.ctrl(sig.level=.001))$m
 pc.mable<-mable.dr(x, y, M=m, regr=regr, interval=c(a,b),
-                   controls=mable.ctrl(sig.level=1/length(c(x,y))))
+                  controls=mable.ctrl(sig.level=1/length(c(x,y))))
 #pc.mable   
 
 ## ----fig.align='center', fig.cap="DR Model Fit for Pancreatic Cancer Biomarker Data\\label{fig:pcb-data-plot}", fig.width=7, fig.height=3, warning = FALSE----
@@ -256,10 +256,10 @@ rf<-function(x) pc.mable$regr((x-a)/(b-a))
 f0hat<-dtmixbeta(z, p=pc.mable$p, alpha=pc.mable$alpha, 
                  interval=c(a, b), regr=rf)
 op<-par(mfrow=c(1,2),lwd=1.2, cex=.7, mar=c(5,4,1,1))
-hist(x, freq=F, col = "light grey", border = "white", xlab="Age", 
+hist(x, freq=F, col = "light grey", border = "white", xlab="log(CA19-9)", 
   ylab="Density", xlim=c(a,b),  main="Control")
 lines(z, f0hat, lty=1, col=1)
-hist(y, freq=F, col = "light grey", border = "white", xlab="Age", 
+hist(y, freq=F, col = "light grey", border = "white", xlab="log(CA19-9)", 
   ylab="Density", xlim=c(a,b), ylim=c(0,.5), main="Case")
 lines(z, f1hat, lty=1, col=1)
 par(op)

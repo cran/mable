@@ -97,7 +97,7 @@ all \eqn{\gamma} in a neighborhood of its true value.
 
 A missing initial value of \code{g} is imputed by \code{ic_sp()} of package \code{icenReg}. 
 
- The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+ The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 This process takes longer than \code{\link{maple.ph}} to select an optimal degree.
 }
@@ -114,9 +114,9 @@ This process takes longer than \code{\link{maple.ph}} to select an optimal degre
    op<-par(mfrow=c(2,2))
    plot(ova, which = "likelihood")
    plot(ova, which = "change-point")
-   plot(ova, y=data.frame(c(60)), which="survival", add=FALSE, type="l", 
+   plot(ova, y=data.frame(age=60), which="survival", add=FALSE, type="l", 
          xlab="Days", main="Age = 60")
-   plot(ova, y=data.frame(c(65)), which="survival", add=FALSE, type="l", 
+   plot(ova, y=data.frame(age=65), which="survival", add=FALSE, type="l", 
          xlab="Days", main="Age = 65")
    par(op)
 }

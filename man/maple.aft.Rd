@@ -68,9 +68,8 @@ A list with components
 \description{
 Maximum approximate profile likelihood estimation of Bernstein
  polynomial model in accelerated failure time based on interal 
- censored event time data with a given regression coefficients which are efficient
- estimates provided by other semiparametric methods. Select optimal degree with a 
- given regression coefficients for AFT model.
+ censored event time data with given regression coefficients which are efficient
+ estimates provided by other semiparametric methods.
 }
 \details{
 Consider the accelerated failure time model with covariate for interval-censored failure time data: 
@@ -82,7 +81,7 @@ Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated
 where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
 \eqn{\tau} is larger than the largest observed time, either uncensored time, or right endpoint of interval/left censored,
-or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
+or left endpoint of right censored time. We can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
 \eqn{S_m(t|x_0; p) = \sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
 the beta survival function with shapes \eqn{i+1} and \eqn{m-i+1}.
 
@@ -93,7 +92,7 @@ The truncation time \code{tau} and the baseline \code{x0} should be chosen so th
 \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 all the observed \eqn{x}.
 
- The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+ The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 }
 \examples{
@@ -103,7 +102,7 @@ all the observed \eqn{x}.
   bcos=cosmesis
   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
   g<-0.41 #Hanson and  Johnson 2004, JCGS, 
-  res1<-maple.aft(cbind(left, right)~x, data=bcos2, M=c(1,30),  g, tau=100, x0=1)
+  res1<-maple.aft(cbind(left, right)~x, data=bcos2, M=c(1,30),  g=g, tau=100, x0=1)
   op<-par(mfrow=c(1,2), lwd=1.5)
   plot(x=res1, which="likelihood")
   plot(x=res1, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 

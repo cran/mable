@@ -52,12 +52,11 @@
 #' \eqn{S(t|x)=S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 #' all the observed \eqn{x}.
 #'
-#' The missing \code{g} is imputed by the rank estimate \code{aftsrr()} of package \code{aftgee} 
-#' for right-censored data. For general interval censored observations, we keep the 
-#' right-censored but replace the finite interval with its midpoint and fit the data by 
-#' \code{aftsrr()} as a right-censored data. 
+# For general interval censored observations, we keep the 
+# right-censored but replace the finite interval with its midpoint and fit the data by 
+# \code{aftsrr()} as a right-censored data. 
 #' 
-#'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+#'  The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 #' @return A list with components
 #' \itemize{ 
@@ -96,7 +95,7 @@
 #'   bcos=cosmesis
 #'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   g <- 0.41 #Hanson and  Johnson 2004, JCGS
-#'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g, tau=100, x0=1)
+#'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=g, tau=100, x0=1)
 #'   op<-par(mfrow=c(1,2), lwd=1.5)
 #'   plot(x=aft.res, which="likelihood")
 #'   plot(x=aft.res, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 
@@ -109,7 +108,6 @@
 #' @concept Accelerated failure time model 
 #' @concept interval censoring
 #' @seealso \code{\link{maple.aft}}
-#' @importFrom aftgee aftsrr
 #' @importFrom stats coef reformulate terms
 #' @importFrom survival Surv
 #' @export
@@ -120,13 +118,14 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
     Dta<-get.mableData(formula, data)
     x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
     if(is.null(g)){
-        status<-1*(y2<Inf)
-        Y<-y 
-        Y[y2<Inf]<-(y[y2<Inf]+y2[y2<Inf])/2
-        rtc.data<-data.frame(Y = Y, status = status, x=x)
-        fmla<-reformulate(attr(terms(formula), "term.labels"), response="Surv(Y, status)")
-        rkest<-aftsrr(fmla, data = rtc.data)
-        g<--as.numeric(coef(rkest))      
+        stop("argument 'g' is missing.")
+        #status<-1*(y2<Inf)
+        #Y<-y 
+        #Y[y2<Inf]<-(y[y2<Inf]+y2[y2<Inf])/2
+        #rtc.data<-data.frame(Y = Y, status = status, x=x)
+        #fmla<-reformulate(attr(terms(formula), "term.labels"), response="Surv(Y, status)")
+        #rkest<-aftsrr(fmla, data = rtc.data)
+        #g<--as.numeric(coef(rkest))      
     }
     delta<-Dta$delta
     b<-max(y2[y2<Inf], y);
@@ -207,10 +206,10 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         ans$egx0<-exp(sum(res[[2]]*res[[9]]))
         Sig<--n*matrix(res[[12]], nrow=d, ncol=d)
         ans$SE<-sqrt(diag(Sig)/n)
-        ans$lk<-res[[10]][1:(k+1)] 
+        ans$lk<-res[[10]][1:(k+1)]-n0*log(b) 
         ans$lr<-res[[11]][1:k]
         ans$m<-res[[3]][2]
-        ans$mloglik<-res[[10]][ans$m-M[1]+1]
+        ans$mloglik<-res[[10]][ans$m-M[1]+1]-n0*log(b)
         mp1<-ans$m+1
         ans$p<-res[[4]][1:mp1]  
         ans$z<-res[[2]]/ans$SE
@@ -221,7 +220,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
     }
     ans$coefficients<--ans$coefficients
     ans$egx0<-1/ans$egx0
-    ans$model<-"mable.aft"
+    ans$model<-"aft"
     ans$callText<-fmla
     ans$data.name<-data.name
     class(ans)<-"mable_reg"
@@ -246,9 +245,8 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' @param progress if \code{TRUE} a text progressbar is displayed
 #' @description Maximum approximate profile likelihood estimation of Bernstein
 #'  polynomial model in accelerated failure time based on interal 
-#'  censored event time data with a given regression coefficients which are efficient
-#'  estimates provided by other semiparametric methods. Select optimal degree with a 
-#'  given regression coefficients for AFT model.
+#'  censored event time data with given regression coefficients which are efficient
+#'  estimates provided by other semiparametric methods. 
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
 #' \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
@@ -259,7 +257,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 #' \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
 #' \eqn{\tau} is larger than the largest observed time, either uncensored time, or right endpoint of interval/left censored,
-#' or left endpoint of right censored time. So we can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
+#' or left endpoint of right censored time. We can approximate  \eqn{S(t|x_0)} on \eqn{[0, \tau]} by
 #' \eqn{S_m(t|x_0; p) = \sum_{i=0}^{m} p_i \bar B_{mi}(t/\tau)}, where \eqn{\bar B_{mi}(u)} is
 #' the beta survival function with shapes \eqn{i+1} and \eqn{m-i+1}.
 #'
@@ -270,7 +268,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 #' all the observed \eqn{x}.
 #'
-#'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+#'  The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 #' @return A list with components
 #' \itemize{ 
@@ -309,7 +307,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #'   bcos=cosmesis
 #'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   g<-0.41 #Hanson and  Johnson 2004, JCGS, 
-#'   res1<-maple.aft(cbind(left, right)~x, data=bcos2, M=c(1,30),  g, tau=100, x0=1)
+#'   res1<-maple.aft(cbind(left, right)~x, data=bcos2, M=c(1,30),  g=g, tau=100, x0=1)
 #'   op<-par(mfrow=c(1,2), lwd=1.5)
 #'   plot(x=res1, which="likelihood")
 #'   plot(x=res1, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 
@@ -377,7 +375,7 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
     ans$tau.n<-b
     ans$tau<-tau
     k<-M[2]-M[1]
-    lk<-res[[9]][1:(k+1)]; 
+    lk<-res[[9]][1:(k+1)]-n0*log(b) 
     ans$mloglik<-lk[ans$m-M[1]+1]
     ans$coefficients<-g
     mp1<-ans$m+1
@@ -388,7 +386,7 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
     if(k>0){
         ans$M<-M; ans$lk<-lk; ans$lr<-res[[10]][1:k]
         ans$pval<-res[[16]][1:(k+1)]; ans$chpts<-res[[17]][1:(k+1)]+M[1]}  
-    ans$model<-"maple.aft"
+    ans$model<-"aft"
     ans$callText<-fmla
     ans$data.name<-data.name
     class(ans)<-"mable_reg"

@@ -63,9 +63,8 @@ a class '\code{mable_reg}' object, a list with components
 \description{
 Maximum approximate profile likelihood estimation of Bernstein
  polynomial model in Cox's proportional hazards regression  based on interal 
- censored event time data with a given regression coefficients which are efficient
- estimates provided by other semiparametric methods. Select optimal degree with a 
- given regression coefficients.
+ censored event time data with given regression coefficients which are efficient
+ estimates provided by other semiparametric methods.
 }
 \details{
 Consider Cox's PH model with covariate for interval-censored failure time data: 
@@ -89,7 +88,7 @@ if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
 \eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x}.
 
- The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+ The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 }
 \examples{
@@ -107,11 +106,11 @@ The associated covariate contains \eqn{d} columns. The baseline \code{x0} should
    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, 
       g=c(.5,-.5), tau=7)
    op<-par(mfrow=c(1,2))
-   plot(res1, y=data.frame(c(0,0)), which="density", add=FALSE, type="l", 
+   plot(res1, y=data.frame(x=0, x2=0), which="density", add=FALSE, type="l", 
        xlab="Time", main="Desnity Function")
    lines(xx<-seq(0, 7, len=512), dweibull(xx, 2,2), lty=2, col=2)
    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
-   plot(res1, y=data.frame(c(0,0)), which="survival", add=FALSE, type="l", 
+   plot(res1, y=data.frame(x=0, x2=0), which="survival", add=FALSE, type="l", 
        xlab="Time", main="Survival Function")
    lines(xx, 1-pweibull(xx, 2, 2), lty=2, col=2)
    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))

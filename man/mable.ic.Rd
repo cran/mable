@@ -67,7 +67,7 @@ Let \eqn{f(t)} and \eqn{F(t) = 1 - S(t)} be the density and cumulative distribut
  where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},
  \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
  \eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of 
- interval/left censored, or left endpoint of right censored time. So we can approximate  
+ interval/left censored, or left endpoint of right censored time. We can approximate  
  \eqn{S(t)} on \eqn{[0, \tau]} by \eqn{S_m(t; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)},  
  where  \eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) = 1}, \eqn{p_{m+1} = 1 - \pi}, and

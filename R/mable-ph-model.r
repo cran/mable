@@ -53,7 +53,7 @@
 #'
 #' A missing initial value of \code{g} is imputed by \code{ic_sp()} of package \code{icenReg}. 
 #'
-#'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+#'  The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 #' This process takes longer than \code{\link{maple.ph}} to select an optimal degree.  
 #' @return A list with components
@@ -100,9 +100,9 @@
 #'    op<-par(mfrow=c(2,2))
 #'    plot(ova, which = "likelihood")
 #'    plot(ova, which = "change-point")
-#'    plot(ova, y=data.frame(c(60)), which="survival", add=FALSE, type="l", 
+#'    plot(ova, y=data.frame(age=60), which="survival", add=FALSE, type="l", 
 #'          xlab="Days", main="Age = 60")
-#'    plot(ova, y=data.frame(c(65)), which="survival", add=FALSE, type="l", 
+#'    plot(ova, y=data.frame(age=65), which="survival", add=FALSE, type="l", 
 #'          xlab="Days", main="Age = 65")
 #'    par(op)
 #' }
@@ -172,7 +172,7 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
         egx0<-exp(sum(gama*x0))
         Sig <- -n*matrix(res[[10]], nrow=d, ncol=d)
         se<-sqrt(diag(Sig)/n)
-        ans<-list(m=m, mloglik=llik,  p=res[[2]], x0=x0, egx0=egx0, coefficients=gama, 
+        ans<-list(m=m, mloglik=llik-n0*log(b),  p=res[[2]], x0=x0, egx0=egx0, coefficients=gama, 
             tau.n=b, tau=tau, SE=se, z=gama/se, xNames=Dta$xNames, convergence=res[[14]],
             delta=res[[15]])
     }
@@ -201,12 +201,12 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
         llik<-lk[m-M[1]+1]
         mp2<-m+2
         egx0<-exp(sum(gama[1:d]*x0))
-        ans<-list(M=M, lk=lk, lr=lr, m=m, tau.n=b, tau=tau, mloglik=llik, 
+        ans<-list(M=M, lk=lk-n0*log(b), lr=lr, m=m, tau.n=b, tau=tau, mloglik=llik-n0*log(b), 
             p=res[[4]][1:mp2], x0=x0, egx0=egx0,  SE=se, z=gama/se, 
             coefficients=gama[1:d], convergence=res[[20]], xNames=Dta$xNames,
             pval=res[[18]][1:(k+1)], chpts=res[[19]][1:(k+1)]+M[1], delta=res[[18]][k+1])
     } 
-    ans$model<-"mable.ph"
+    ans$model<-"ph"
     ans$callText<-fmla
     ans$data.name<-data.name
     class(ans)<-"mable_reg"
@@ -231,9 +231,8 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' @param progress if \code{TRUE} a text progressbar is displayed
 #' @description Maximum approximate profile likelihood estimation of Bernstein
 #'  polynomial model in Cox's proportional hazards regression  based on interal 
-#'  censored event time data with a given regression coefficients which are efficient
-#'  estimates provided by other semiparametric methods. Select optimal degree with a 
-#'  given regression coefficients.
+#'  censored event time data with given regression coefficients which are efficient
+#'  estimates provided by other semiparametric methods.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
 #' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
@@ -256,7 +255,7 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
 #' \eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x}.
 #'
-#'  The search for optimal degree \code{m} is stoped if either \code{m1} is reached or the test 
+#'  The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
 #' @return a class '\code{mable_reg}' object, a list with components
 #' \itemize{ 
@@ -296,11 +295,11 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, 
 #'       g=c(.5,-.5), tau=7)
 #'    op<-par(mfrow=c(1,2))
-#'    plot(res1, y=data.frame(c(0,0)), which="density", add=FALSE, type="l", 
+#'    plot(res1, y=data.frame(x=0, x2=0), which="density", add=FALSE, type="l", 
 #'        xlab="Time", main="Desnity Function")
 #'    lines(xx<-seq(0, 7, len=512), dweibull(xx, 2,2), lty=2, col=2)
 #'    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
-#'    plot(res1, y=data.frame(c(0,0)), which="survival", add=FALSE, type="l", 
+#'    plot(res1, y=data.frame(x=0, x2=0), which="survival", add=FALSE, type="l", 
 #'        xlab="Time", main="Survival Function")
 #'    lines(xx, 1-pweibull(xx, 2, 2), lty=2, col=2)
 #'    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
@@ -368,12 +367,12 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
     m<-res[[3]][2]  
     llik<-lk[m-M[1]+1]
     mp2<-m+2
-    ans<-list(m=m, mloglik=llik, tau.n=b, tau=tau, p=res[[12]][1:mp2], coefficients=g, 
+    ans<-list(m=m, mloglik=llik-n0*log(b), tau.n=b, tau=tau, p=res[[12]][1:mp2], coefficients=g, 
     x0=x0, egx0=egx0, convergence=res[[20]],delta=res[[21]][1], xNames=Dta$xNames)
     if(k>0){
-        ans$M<-M; ans$lk<-lk; ans$lr<-res[[11]][1:k]; ans$pval<-res[[18]][1:(k+1)];
+        ans$M<-M; ans$lk<-lk-n0*log(b); ans$lr<-res[[11]][1:k]; ans$pval<-res[[18]][1:(k+1)];
         ans$chpts<-res[[19]][1:(k+1)]+M[1]; ans$pom<-res[[21]][2];}
-    ans$model<-"maple.ph"
+    ans$model<-"ph"
     ans$callText<-fmla
     ans$data.name<-data.name
     class(ans)<-"mable_reg"
@@ -409,7 +408,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #'  where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i = 1-p_{m+1}},
 #'  \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
 #'  \eqn{\tau_n} is the largest observed time, either uncensored time, or right endpoint of 
-#'  interval/left censored, or left endpoint of right censored time. So we can approximate  
+#'  interval/left censored, or left endpoint of right censored time. We can approximate  
 #'  \eqn{S(t)} on \eqn{[0, \tau]} by \eqn{S_m(t; p) = \sum_{i=0}^{m+1} p_i \bar B_{mi}(t/\tau)},  
 #'  where  \eqn{\bar B_{mi}(u)}, \eqn{i = 0, \ldots, m}, is the beta survival function with shapes 
 #'  \eqn{i+1} and \eqn{m-i+1}, \eqn{\bar B_{m,m+1}(t) = 1}, \eqn{p_{m+1} = 1 - \pi}, and
@@ -463,82 +462,82 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #' }
 #' @export
 mable.ic<-function(data, M, pi0=NULL, tau=Inf, IC=c("none", "aic", "hqic", "all"),
-                controls = mable.ctrl(), progress=TRUE){
-    IC <- match.arg(IC, several.ok=TRUE)    
-    xNames<-deparse(substitute(data))    
-    if(ncol(data)>2) stop("data contains too many columns.")
-    y<-as.numeric(data[,1]);y2<-as.numeric(data[,2])
-    y2[is.na(y2)]<-Inf
-    delta<-1*(y<y2)# rvar[,3]
-    b<-max(y2[y2<Inf], y);
-    if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
-    if(is.null(pi0)) pi0<-mean(y2<Inf)
-    else if(pi0<=0) stop("pi0 must be in (0, 1]")
-    y<-y/b; y2<-y2/b
-    if(tau==Inf) y2[y2==Inf]<-.Machine$double.xmax/2
-    else y2[y2==Inf]<-tau
-    n<-length(y)
-    n0<-sum(delta==0)
-    n1<-sum(delta==1)
-    n<-n0+n1
-    N<-c(n0,n1) 
-    ord<-order(delta)
-    y<-y[ord]; y2<-y2[ord]
-    if(missing(M) || length(M)==0) stop("'M' is missing.\n")
-    else if(length(M)==1) M<-c(M,M)
-    else if(length(M)>=2) {
-        M<-c(min(M), max(M))
+              controls = mable.ctrl(), progress=TRUE){
+  IC <- match.arg(IC, several.ok=TRUE)    
+  xNames<-deparse(substitute(data))    
+  if(ncol(data)>2) stop("data contains too many columns.")
+  y<-as.numeric(data[,1]);y2<-as.numeric(data[,2])
+  y2[is.na(y2)]<-Inf
+  delta<-1*(y<y2)# rvar[,3]
+  b<-max(y2[y2<Inf], y);
+  if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
+  if(is.null(pi0)) pi0<-mean(y2<Inf)
+  else if(pi0<=0) stop("pi0 must be in (0, 1]")
+  y<-y/b; y2<-y2/b
+  if(tau==Inf) y2[y2==Inf]<-.Machine$double.xmax/2
+  else y2[y2==Inf]<-tau
+  n<-length(y)
+  n0<-sum(delta==0)
+  n1<-sum(delta==1)
+  n<-n0+n1
+  N<-c(n0,n1) 
+  ord<-order(delta)
+  y<-y[ord]; y2<-y2[ord]
+  if(missing(M) || length(M)==0) stop("'M' is missing.\n")
+  else if(length(M)==1) M<-c(M,M)
+  else if(length(M)>=2) {
+    M<-c(min(M), max(M))
+  }
+  k<-M[2]-M[1]
+  lk<-rep(0, k+1)
+  lr<-rep(0, k)
+  bic<-rep(0,k+1)
+  pval<-rep(0,k+1)
+  level<-controls$sig.level
+  chpts<-rep(0,k+1)
+  eps<-c(controls$eps, .Machine$double.eps)
+  convergent<-0
+  #if(!any(y2>1)) pi0<-1
+  p<-c(rep(pi0, M[2]+1)/(M[2]+1), 1-pi0)
+  optim<-0
+  del<-0
+  ## Call C mable_ic
+  res<-.C("mable_ic", as.integer(M), as.double(pi0), as.double(y), as.double(y2), 
+    as.integer(N), as.double(lk), as.double(lr), as.double(p), as.double(eps), 
+    as.integer(controls$maxit), as.logical(progress), as.double(pval),  
+    as.double(bic), as.integer(chpts), as.integer(optim), as.double(level), 
+    as.integer(convergent), as.double(del))
+  M<-res[[1]]
+  k<-M[2]-M[1]
+  lk<-res[[6]][1:(k+1)]-n0*log(b)
+  m<-res[[15]]; 
+  mllik<-lk[m-M[1]+1]
+  ans<-list(m=m, mloglik=mllik-n0*log(b), tau.n=b, tau=tau, interval=c(0, b), 
+      convergence=res[[17]], delta=res[[12]][k+1])
+  if(k==0) ans$p<-res[[8]][1:(m[1]+2)]
+  if(k>0){
+    bic<-res[[13]][1:(k+1)]
+    ic<-list()
+    ic$BIC<-bic
+    if(!any(IC=="none")) {
+      d<-2*(lk-bic)/log(n)
+      if(any(IC=="aic")|| any(IC=="all")){
+        ic$AIC<-((log(n)-2)*lk+2*bic)/log(n)#lk-2*(lk-bic)/log(n)
+        #aic<-lk-d-(d^2+d)/(n-d-1)
+      }
+      if(any(IC=="qhic")|| any(IC=="all")){
+        ic$QHC<-lk-2*(lk-bic)*log(log(n))/log(n)}
     }
-    k<-M[2]-M[1]
-    lk<-rep(0, k+1)
-    lr<-rep(0, k)
-    bic<-rep(0,k+1)
-    pval<-rep(0,k+1)
-    level<-controls$sig.level
-    chpts<-rep(0,k+1)
-    eps<-c(controls$eps, .Machine$double.eps)
-    convergent<-0
-#    if(!any(y2>1)) pi0<-1
-    p<-c(rep(pi0, M[2]+1)/(M[2]+1), 1-pi0)
-    optim<-0
-    del<-0
-    ## Call C mable_ic
-    res<-.C("mable_ic", as.integer(M), as.double(pi0), as.double(y), as.double(y2), 
-        as.integer(N), as.double(lk), as.double(lr), as.double(p), as.double(eps), 
-        as.integer(controls$maxit), as.logical(progress), as.double(pval),  
-        as.double(bic), as.integer(chpts), as.integer(optim), as.double(level), 
-        as.integer(convergent), as.double(del))
-    M<-res[[1]]
-    k<-M[2]-M[1]
-    lk<-res[[6]][1:(k+1)]
-    m<-res[[15]]; 
-    mllik<-lk[m-M[1]+1]
-    ans<-list(m=m, mloglik=mllik, tau.n=b, tau=tau, interval=c(0, b), 
-        convergence=res[[17]], delta=res[[12]][k+1])
-    if(k==0) ans$p<-res[[8]][1:(m[1]+2)]
-    if(k>0){
-        bic<-res[[13]][1:(k+1)]
-        ic<-list()
-        ic$BIC<-bic
-        if(!any(IC=="none")) {
-            d<-2*(lk-bic)/log(n)
-            if(any(IC=="aic")|| any(IC=="all")){
-                ic$AIC<-((log(n)-2)*lk+2*bic)/log(n)#lk-2*(lk-bic)/log(n)
-                #aic<-lk-d-(d^2+d)/(n-d-1)
-            }
-            if(any(IC=="qhic")|| any(IC=="all")){
-                ic$QHC<-lk-2*(lk-bic)*log(log(n))/log(n)}
-        }
-        ans$lr<-res[[7]][1:k] 
-        ans$p<-res[[8]][1:(m+2)]         
-        #ans$p<-list(p.cp=res[[8]][1:(m[1]+2)], p.bic=res[[8]][(m[1]+3):(m[1]+m[2]+4)])          
-        ans$M<-M; ans$lk<-lk; ans$pval<-res[[12]][1:(k+1)]; ans$ic<-ic;
-        ans$chpts<-res[[14]][1:(k+1)]+M[1] 
-    }  
-    ans$xNames<-xNames 
-    ans$data.type<-"icen"
-    class(ans)<-"mable"
-    return(ans)
+    ans$lr<-res[[7]][1:k] 
+    ans$p<-res[[8]][1:(m+2)]         
+    #ans$p<-list(p.cp=res[[8]][1:(m[1]+2)], p.bic=res[[8]][(m[1]+3):(m[1]+m[2]+4)])          
+    ans$M<-M; ans$lk<-lk; ans$pval<-res[[12]][1:(k+1)]; ans$ic<-ic;
+    ans$chpts<-res[[14]][1:(k+1)]+M[1] 
+  }  
+  ans$xNames<-xNames 
+  ans$data.type<-"icen"
+  class(ans)<-"mable"
+  return(ans)
 }
 
 ##############################################
@@ -547,8 +546,11 @@ mable.ic<-function(data, M, pi0=NULL, tau=Inf, IC=c("none", "aic", "hqic", "all"
 #' @param x a class 'mable_reg' object return by functions such as \code{mable.ph} which contains 
 #'  \code{M}, \code{coefficients}, \code{p}, \code{m}, \code{x0}, \code{tau.n}, \code{tau} 
 #'  \code{lk}, \code{lr}.
-#' @param y a new data.frame
-#' @param newdata a new data.frame (ignored if \code{y} is included)
+#' @param y a new data.frame of covariate value(s) as row(s), whose columns are
+#'          arranged in the same order as in the \code{formula} called by the function
+#'          that returned the object \code{x}.
+#' @param newdata a new data.frame (ignored if \code{y} is included), imputed
+#'          by the working baseline \code{x0} if both missing. 
 #' @param ntime number of evaluations of density, survival or cumulative distribution
 #'         curve to be plotted.
 #' @param xlab x-axis label 
@@ -561,62 +563,75 @@ mable.ic<-function(data, M, pi0=NULL, tau=Inf, IC=c("none", "aic", "hqic", "all"
 #' @importFrom stats dexp pexp 
 #' @export  
 plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
-        which=c("survival", "likelihood", "change-point", "density", "all"), add=FALSE,...){
-    which <- match.arg(which, several.ok=TRUE)
-    model<-substr(x$model, 7,9) 
-    if(any(which=="likelihood")||any(which=="all")) {
-        if(is.null(x$lk)) stop("Cannot plot 'likelihood'.")
-        if(!add) plot(x$M[1]:x$M[2], x$lk, type="p", xlab="m",ylab="Loglikelihood",
-            main="Loglikelihood")
-        else points(x$M[1]:x$M[2], x$lk, pch=1,...)
-        segments(x$m[1], min(x$lk), x$m[1], x$mloglik[1], lty=2)
-        axis(1, x$m[1], as.character(x$m[1]), col=2)
+      which=c("survival", "likelihood", "change-point", "density", "all"), add=FALSE,...){
+  which <- match.arg(which, several.ok=TRUE)
+  #model<-substr(x$model, 7,9) 
+  if(any(which=="likelihood")||any(which=="all")) {
+    if(is.null(x$lk)) stop("Cannot plot 'likelihood'.")
+    if(!add) plot(x$M[1]:x$M[2], x$lk, type="p", xlab="m",ylab="Loglikelihood",
+        main="Loglikelihood")
+    else points(x$M[1]:x$M[2], x$lk, pch=1,...)
+    segments(x$m[1], min(x$lk), x$m[1], x$mloglik[1], lty=2)
+    axis(1, x$m[1], as.character(x$m[1]), col=2)
+  }
+  if(any(which=="change-point")||any(which=="all")) {
+    if(is.null(x$lr)) stop("Cannot plot 'likelihood ratios'.")
+    if(!add) plot((x$M[1]+1):x$M[2], x$lr, type="p", xlab="m",ylab="Loglikelihood Ratio",
+        main="Change-Point")
+    else points((x$M[1]+1):x$M[2], x$lr, pch=1, ...)
+    segments(x$m[1], 0, x$m[1], max(x$lr), lty=2)
+    axis(1, x$m[1], as.character(x$m[1]), col=2)
+  }
+  if(any(which=="density")||any(which=="survival")||any(which=="all")) {
+    if(missing(y) && is.null(newdata)) {
+      y<-data.frame(t(x$x0))
+      message("missing y and newdata, assigned as x=x0")}
+    else if(missing(y)) y<-newdata
+    nr=dim(y)[1]
+    tau.n<-x$tau.n
+    tau<-x$tau
+    #cat("y=",y[1,],"\n")
+    gama<-x$coefficients
+    p<-x$p
+    m<-x$m[1]
+    #cat("p=",p,"\n")
+    #cat("m=",m,"\n")
+    if(tau==Inf) tau<-tau.n
+    time<-seq(0, tau, length=ntime)
+    for(i in 1:nr){
+      if(x$model == "ph"){	          
+        xlb<-time[time<=tau.n]
+        xgb<-time[time>tau.n]
+        rate<-(m+1)*p[m+1]/p[m+2]/tau.n
+        Sb<-c(1-suppressMessages(pmixbeta(xlb, p=p[-(m+2)], c(0, tau.n))), p[m+2]*(1-pexp(xgb-tau.n,rate)))
+        fb<-c(suppressMessages(dmixbeta(xlb, p=p[-(m+2)], c(0, tau.n))), p[m+2]*dexp(xgb-tau.n, rate))
+        egxt<-as.vector(exp(sum(y[i,]*gama))/x$egx0)
+        fbx<-egxt*fb*Sb^(egxt-1)              
+        Sbx<-Sb^egxt}
+      if(x$model == "aft"){	
+        Sbx<-1-pmixbeta(time, p=p, c(0, tau))
+        fbx<-dmixbeta(time, p=p, c(0, tau))
+        egxt<-as.vector(exp(sum(y[i,]*gama))/x$egx0)
+        time<-time/egxt
+        tau<-tau.n}
+      if(x$model == "po"){	          
+        xlb<-time[time<=tau.n]
+        xgb<-time[time>tau.n]
+        rate<-(m+1)*p[m+1]/p[m+2]/tau.n
+        Sb<-c(1-suppressMessages(pmixbeta(xlb, p=p[-(m+2)], c(0, tau.n))), p[m+2]*(1-pexp(xgb-tau.n,rate)))
+        fb<-c(suppressMessages(dmixbeta(xlb, p=p[-(m+2)], c(0, tau.n))), p[m+2]*dexp(xgb-tau.n, rate))
+        egxt<-as.vector(exp(sum(y[i,]*gama))/x$egx0)
+        eta<-x$eta
+        fbx<-egxt*fb/(egxt+(1-egxt)*Sb^eta)^(1+1/eta)              
+        Sbx<-Sb/(egxt+(1-egxt)*Sb^eta)^(1/eta)}
+      if(any(which=="density")||any(which=="all"))
+        if(!add && i==1) plot(time, fbx, xlab=xlab, ylab="Density", xlim=c(0,tau),...)
+        else lines(time, fbx, xlab=xlab, ylab="Density",  xlim=c(0,tau), ...)
+      if(any(which=="survival")||any(which=="all")) # default is "survival" for plotting "all" 
+        if(!add && i==1) plot(time, Sbx, xlab=xlab, ylab="Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
+        else lines(time, Sbx, xlab=xlab, ylab="Probability",xlim=c(0,tau),  ylim=c(0,1),...)  
     }
-    if(any(which=="change-point")||any(which=="all")) {
-        if(is.null(x$lr)) stop("Cannot plot 'likelihood ratios'.")
-        if(!add) plot((x$M[1]+1):x$M[2], x$lr, type="p", xlab="m",ylab="Loglikelihood Ratio",
-            main="Change-Point")
-        else points((x$M[1]+1):x$M[2], x$lr, pch=1, ...)
-        segments(x$m[1], 0, x$m[1], max(x$lr), lty=2)
-        axis(1, x$m[1], as.character(x$m[1]), col=2)
-    }
-    if(any(which=="density")||any(which=="survival")||any(which=="all")) {
-        if(missing(y) && is.null(newdata)) {
-            y<-data.frame(rep(0,length(x$x0)))
-            warning("missing y and newdata, assigned as rep(0,d)")}
-        else if(missing(y)) y<-newdata
-        tau.n<-x$tau.n
-        tau<-x$tau
-        #cat("y=",y[,1],"\n")
-        gama<-x$coefficients
-        p<-x$p
-        m<-x$m[1]
-        #cat("p=",p,"\n")
-        #cat("m=",m,"\n")
-        if(tau==Inf) tau<-tau.n
-        time<-seq(0, tau, length=ntime)
-        if(model == "ph"){	          
-            xlb<-time[time<=tau.n]
-            xgb<-time[time>tau.n]
-            rate<-(m+1)*p[m+1]/p[m+2]/tau.n
-            Sb<-c(1-pmixbeta(xlb, p=p[-(m+2)], c(0, tau.n)), p[m+2]*(1-pexp(xgb-tau.n,rate)))
-            fb<-c(dmixbeta(xlb, p=p[-(m+2)], c(0, tau.n)), p[m+2]*dexp(xgb-tau.n, rate))
-            egxt<-as.vector(exp(sum(y[,1]*gama))/x$egx0)
-            fbx<-egxt*fb*Sb^(egxt-1)              
-            Sbx<-Sb^egxt}
-        if(model == "aft"){	
-            Sbx<-1-pmixbeta(time, p=p, c(0, tau))
-            fbx<-dmixbeta(time, p=p, c(0, tau))
-            egxt<-as.vector(exp(sum(y[,1]*gama))/x$egx0)
-            time<-time/egxt
-            tau<-tau.n}
-        if(any(which=="density")||any(which=="all"))
-            if(!add) plot(time, fbx, xlab=xlab, ylab="Density", xlim=c(0,tau),...)
-            else lines(time, fbx, xlab=xlab, ylab="Density",  xlim=c(0,tau), ...)
-        if(any(which=="survival")||any(which=="all")) # default is "survival" for plotting "all" 
-            if(!add) plot(time, Sbx, xlab=xlab, ylab="Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
-            else lines(time, Sbx, xlab=xlab, ylab="Probability",xlim=c(0,tau),  ylim=c(0,1),...)
-    }
+  }
 }
 ######################
 #' readingCall: an internal function of 'icenReg' package  
@@ -685,6 +700,7 @@ get.mableData<-function(formula, data){
 #' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
 #' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param x0 a working baseline covariate. See 'Details'. 
+#' @param eta the given positive value of \eqn{\eta}. Used when \code{model="po"}.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
@@ -704,10 +720,11 @@ get.mableData<-function(formula, data){
 #' @seealso \code{\link{mable.aft}}, \code{\link{mable.ph}} 
 #' @export
 mable.reg<-function(formula, data, model=c("ph","aft"), M, g=NULL, pi0=NULL, tau=Inf, 
-        x0=NULL, controls = mable.ctrl(), progress = TRUE){
+        x0=NULL, eta=1, controls = mable.ctrl(), progress = TRUE){
     model=match.arg(model)
     out<-switch(model,
         ph = mable.ph(formula, data, M, g, pi0, tau, x0, controls, progress), 
+        #po = mable.po(formula, data, M, g, pi0, tau, x0, eta, controls, progress), 
         aft = mable.aft(formula, data, M, g, tau, x0, controls, progress))
     class(out)<-"mable_reg" # 
     return(out)

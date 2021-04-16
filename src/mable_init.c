@@ -103,6 +103,39 @@ static R_NativePrimitiveArgType aft_gamma_t[] = {
     INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, 
     REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, REALSXP, INTSXP, REALSXP, INTSXP, REALSXP};
 
+/* GPO Regression */
+/*
+void mable_po(int *M, double *gama_hat, int *dm, double *p, double *pi0, 
+    double *x, double *y, double *y2, int *N, double *x0, double *lk, double *lr,
+    double *ddell, double *EPS, int *MAXIT, int *progress, double *level,
+    double *pval, int *chpts, int *conv, double *eta, int *eta_known);
+void mable_po_gamma(int *M, double *gama, int *dm, double *pi0, double *x, 
+    double *y, double *y2, int *N, double *x0, double *lk, double *lr, double *p,
+    double *ddell, double *eps, int *maxit, int *progress, double *level, 
+    double *pval, int *chpts, int *conv, double *delta, double *eta);
+void mable_po_m(double *gama, double *p, int *dm, double *x, double *y, 
+    double *y2, int *N, double *x0, double *ell, double *ddell, double *EPS, 
+    int *MAXIT, int *progress, int *conv, double *delta, double *eta, int *eta_known);
+void weib_gpo(double *theta, int *d, double *x, int *n0, int *n1, double *y,     
+    double *y2, double *lk, double *ddell, double *eps, int *maxit, int *prog, 
+    int *conv, double *delta, int *eta_known);
+
+static R_NativePrimitiveArgType po_t[] = {
+    INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, 
+    INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, 
+    REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, LGLSXP};
+static R_NativePrimitiveArgType po_gamma_t[] = {
+    INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, 
+    REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, 
+    REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP};
+static R_NativePrimitiveArgType po_m_t[] = {
+    REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP,
+    REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, REALSXP, LGLSXP};
+static R_NativePrimitiveArgType weib_gpo_t[] = {
+    REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP,  
+    REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, LGLSXP};
+*/
+
 /* Register .C */
 static const R_CMethodDef cMethods[] = {
    {"mable_em", (DL_FUNC) &mable_em, 9, em_t},
@@ -121,6 +154,10 @@ static const R_CMethodDef cMethods[] = {
    {"mable_aft", (DL_FUNC) &mable_aft, 19, aft_t},
    {"mable_aft_m", (DL_FUNC) &mable_aft_m, 15, aft_m_t},
    {"mable_aft_gamma", (DL_FUNC) &mable_aft_gamma, 20, aft_gamma_t},
+//   {"mable_po", (DL_FUNC) &mable_po, 22, po_t},
+//   {"mable_po_gamma", (DL_FUNC) &mable_po_gamma, 22, po_gamma_t},
+//   {"mable_po_m", (DL_FUNC) &mable_po_m, 17, po_m_t},
+//   {"weib_gpo", (DL_FUNC) &weib_gpo, 15, weib_gpo_t},
    {NULL, NULL, 0, NULL}
 };
 /* Deconvolution*/
@@ -134,6 +171,8 @@ SEXP maple_dr(SEXP args);
 SEXP C_mable_dr_group(SEXP args);
 SEXP maple_dr_group(SEXP args);
 SEXP mixtbeta_cdf(SEXP args);
+/* Integrate */
+//SEXP C_integrate_ibp(SEXP args);
 
 /* Register .External */
 static const R_ExternalMethodDef externalMethods[] = {
@@ -144,6 +183,7 @@ static const R_ExternalMethodDef externalMethods[] = {
    {"maple_dr", (DL_FUNC) &maple_dr, 19},
    {"maple_dr_group", (DL_FUNC) &maple_dr_group, 19},
    {"mixtbeta_cdf", (DL_FUNC) &mixtbeta_cdf, 8},
+//   {"C_integrate_ibp", (DL_FUNC) &C_integrate_ibp, 6},
    {NULL, NULL, 0}
 };
 

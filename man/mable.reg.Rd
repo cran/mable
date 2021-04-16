@@ -13,6 +13,7 @@ mable.reg(
   pi0 = NULL,
   tau = Inf,
   x0 = NULL,
+  eta = 1,
   controls = mable.ctrl(),
   progress = TRUE
 )
@@ -34,6 +35,8 @@ mable.reg(
 \item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
 \item{x0}{a working baseline covariate. See 'Details'.}
+
+\item{eta}{the given positive value of \eqn{\eta}. Used when \code{model="po"}.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}

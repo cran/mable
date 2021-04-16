@@ -33,7 +33,8 @@ Produces a summary of a mable fit.
   require(coxinterval)
   bcos=cosmesis
   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
-  aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), tau=100, x0=1)
+  aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=.41, 
+       tau=100, x0=1)
   summary(aft.res)
 }
 }

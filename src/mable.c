@@ -103,6 +103,12 @@ double *R_dvector(int nl,int nh){
 
 /* C code modified from Numerical Recipe in C, store matrix a as vector A*/
 /*  a[i][j] = A[i+j*n], i,j=0,...,n-1. */
+/* Given a matrix A, this routine replaces it by the LU decomposition of A rowwise
+permutation of itself. A and n are input. A is output, arranged as in A=(L-I)+U;
+indx is an output vector that records the row permutation effected by the partial
+pivoting; d is output as ±1 depending on whether the number of row interchanges 
+was even or odd, respectively. This routine is used in combination with lubksb 
+to solve linear equations or invert a matrix. */
 void ludcmp(double *A, int n, int *indx, double *d){
     int i,imax,j,k;
     double big,dum,sum,temp;
@@ -114,7 +120,7 @@ void ludcmp(double *A, int n, int *indx, double *d){
         big=0.0;
         for (j=0;j<n;j++)
             if ((temp=fabs(A[i+j*n])) > big) big=temp;
-        if (big == 0.0) error("Singular matrix in routine ludcmp\n");
+        if (big == 0.0) error("\nSingular matrix in routine ludcmp\n");
         /*No nonzero largest element.*/
         vv[i]=1.0/big; /*Save the scaling.*/
     }
@@ -163,7 +169,15 @@ void ludcmp(double *A, int n, int *indx, double *d){
 /*//////////////////////////////////////////////////*/
 /*          Forward and backsubstitution            */
 /*//////////////////////////////////////////////////*/
-
+/*Solves the set of n linear equations A·X = B. Here A is input, 
+not as the matrix A but rather as its LU decomposition, determined 
+by the routine ludcmp. indx is input as the permutation vector returned 
+by ludcmp. b[] is input as the right-hand side vector B, and returns with 
+the solution vector X. A, n, and indx are not modified by this routine
+and can be left in place for successive calls with different right-hand 
+sides b. This routine takes into account the possibility that b will 
+begin with many zero elements, so it is efficient for use 
+in matrix inversion. */
 void lubksb(double *A, int n, int *indx, double b[]){
     int i,ii=0,ip,j;
     double sum;
@@ -181,6 +195,26 @@ void lubksb(double *A, int n, int *indx, double b[]){
         for (j=i+1;j<n;j++) sum -= A[i+j*n]*b[j];
         b[i]=sum/A[i+i*n]; /*Store a component of the solution vector X.*/
     } /*All done!*/
+}
+
+/*//////////////////////////////////////////////*/
+/*  Newton Iteration x1=x0-J(x0)^{-1}F(x0)      */
+/*   (1) Solve J(x0)x=F(x0), (2) x1=x0-x        */
+/*//////////////////////////////////////////////*/
+// input: A=J(x0), c=x0, b=F(x0)
+//output: c=x1, del=sum(abs(x1-x0))
+void newton_iter(double *A, int N, double *b, double *c, double *del){
+    int i, *indx;
+    double d=0.0;
+    indx = Calloc(N, int); 
+    ludcmp(A,N,indx,&d);
+    /* Decompose the matrix.*/
+    lubksb(A,N,indx,b);
+    del[0]=0.0;
+    for(i=0;i<N;i++) {
+      del[0]+=fabs(b[i]);
+      c[i]-=b[i];}
+    Free(indx);
 }
 
 
@@ -220,9 +254,9 @@ void Print_Matrix(double *m, int nr, int nc, char *mname){
 }
 
 /*////////////////////////////////////////////////////////////*/
-/* Bernstein base polynomials/(m+1) */
+/* Bernstein base polynomials */
 /* dBeta: Returns n x (m+1) matrix, n=length(u) */
-/* dbeta(u[i], j+1, m+1-j)/(m+1)= the j-th column, j=0, 1, ..., m */
+/* dbeta(u[i], j+1, m+1-j)= the j-th column, j=0, 1, ..., m */
 void dBeta(double *u, int m, int n, double *Bta) {
     int i, j;
     for(i=0; i<n; i++) Bta[i]=(m+1)*R_pow_di(1.0-u[i], m);
@@ -328,13 +362,13 @@ void egxmx0(double *gama, int d, double *x, int n, double *egx, double *x0){
     int i,j;
     double gx0=0.0;
     for(j=0;j<d;j++) gx0+= x0[j]*gama[j];
-//    egx0 = exp(egx0);
+    //egx0 = exp(egx0);
     for(i=0;i<n;i++){
         egx[i]=0.0;
         for(j=0;j<d;j++) egx[i]+= x[i+n*j]*gama[j];
         egx[i]=exp(egx[i]-gx0);
     }
-//    for(i=0;i<n;i++) egx[i] /= egx0;
+    //for(i=0;i<n;i++) egx[i] /= egx0;
 }
 /*////////////////////////////////////////////////////*/
 /*       Calculate exp(g*x-tilde) and find            */
@@ -343,18 +377,20 @@ void egxmx0(double *gama, int d, double *x, int n, double *egx, double *x0){
 void egx_x0(double *gama, int d, double *x, int n, double *egx, double *x0){
     int i,j;
     double egx0=0.0;
+    //Rprintf("\n * x0=%f, gamma=%f\n",x0[0], gama[0]);
     for(j=0;j<d;j++) egx0 += x0[j]*gama[j];
-    egx0=exp(egx0);
+    //egx0=exp(egx0);
     for(i=0;i<n;i++){
         egx[i]=0.0;
         for(j=0;j<d;j++) egx[i]+= x[i+n*j]*gama[j];
-        egx[i]=exp(egx[i]);
+        //egx[i]=exp(egx[i]);
         if(egx[i]<egx0){
             egx0=egx[i];
             for(j=0;j<d;j++) x0[j] = x[i+n*j];
         }
     }
-    for(i=0;i<n;i++) egx[i]/= egx0;
+    //Rprintf("\n ** x0=%f, gamma=%f\n",x0[0], gama[0]);
+    for(i=0;i<n;i++) egx[i] = exp(egx[i]-egx0);
 }
 
 /*///////////////////////////////////////*/
@@ -667,7 +703,7 @@ void mable_em_group(int *m, int *n, int *N, double *p, double *t, int *maxit,
     double *dBta;
     dBta = Calloc((*m+1)*(*N), double);
     cpBeta(t, *m, *N, dBta);
-    em_beta_mix_group(p, dBta, *N, *m, n,  *maxit, *eps, llik, convergence, delta);
+    em_beta_mix_group(p, dBta, *N, *m, n, *maxit, *eps, llik, convergence, delta);
     Free(dBta);
 }
 ////////////////////////////////////////////////////////
@@ -702,7 +738,7 @@ void mable_optim(int *M, int *n, double *p, double *x, int *maxit,
       if(*vb== 1 || *vb==2) p[m]=0.0;
     }
     dBeta(x, m, *n, Bta);
-    em_beta_mix(p, Bta, m, *n,  *maxit, eps[0], llik, diverge, delta);
+    em_beta_mix(p, Bta, m, *n, *maxit, eps[0], llik, diverge, delta);
     convergence[0]+=diverge[0];
     tmp=m+1;
     for(i=0;i<tmp;i++) phat[i]=p[i];
@@ -1571,7 +1607,7 @@ double log_blik_ph(double *p, int m, double *egx, int n0, int n1,
         Sy+=p[mp1];
         llkhd += log(egx[i]*fy)+(egx[i]-1.0)*log(Sy);
     }
-//    Rprintf("lk1: lk=%f\n", llkhd);
+    //Rprintf("lk1: lk=%f\n", llkhd);
     for(i=n0; i<n; i++){
         Sy=0.0;
         Sy2=0.0;
@@ -1579,10 +1615,10 @@ double log_blik_ph(double *p, int m, double *egx, int n0, int n1,
             Sy += p[j]*BSy[i+n*j];
             Sy2 += p[j]*BSy2[i+n*j]; 
         }
-//        Rprintf("Sy: Sy=%f\n", Sy);
+        //Rprintf("Sy: Sy=%f\n", Sy);
         llkhd += log(R_pow(Sy, egx[i])-R_pow(Sy2, egx[i]));
     }
-//    Rprintf("lk2: lk=%f\n", llkhd);
+    //Rprintf("lk2: lk=%f\n", llkhd);
     return llkhd;
 }
 /*/////////////////////////////////////////////////////////////////*/
@@ -1600,8 +1636,9 @@ void logblik_ph_derv(double *gama, int d, double *x, double *x0, int n0, int n1,
     for(k=0; k<n0; k++){
         egxt=0.0;
         for(i=0; i<d; i++) egxt+= gama[i]*(x[k+n*i]-x0[i]);
+        ell[0] += egxt;
         egxt= exp(egxt);
-        ell[0] += log(egxt*Sy2[k])+(egxt-1.0)*log(Sy[k]);
+        ell[0] += log(Sy2[k])+(egxt-1.0)*log(Sy[k]);
         for(i=0; i<d; i++){
             dell[i] += (1+egxt*log(Sy[k]))*(x[k+n*i]-x0[i]); 
             for(j=0; j<d; j++)
@@ -1612,7 +1649,7 @@ void logblik_ph_derv(double *gama, int d, double *x, double *x0, int n0, int n1,
         egxt=0.0;
         for(i=0; i<d; i++) egxt+= gama[i]*(x[k+n*i]-x0[i]);
         egxt= exp(egxt);
-//        tmp=0.0;
+        //tmp=0.0;
         dPy=R_pow(Sy[k], egxt); 
         dPy2=R_pow(Sy2[k], egxt);  
         Py12 =dPy-dPy2;
@@ -1691,13 +1728,13 @@ void initialize_p(double *p, int m, double dgx0){
             tmp[i]+=p[j]*dbeta(i/(double) m, j+1,m-j+1, FALSE);
             Tmp[i]+=p[j]*(1-pbeta(i/(double) m, j+1,m-j+1, TRUE, FALSE)); 
         }
-//        Tmp[i]+=p[mp1];
+        //Tmp[i]+=p[mp1];
     }
     for(i=0; i<=m;i++){ 
         p[i]=edgx0*R_pow(Tmp[i], edgx0-1.0)*tmp[i];
         sum_p+=p[i];
     }
-//    Rprintf("Init: sum_p=%f\n",sum_p);
+    //Rprintf("Init: sum_p=%f\n",sum_p);
     for(i=0; i<=m; i++){
     p[i]=pi0*p[i]/sum_p;
     //Rprintf("Init: p[i]=%f\n",p[i]);
@@ -1711,8 +1748,6 @@ void initialize_p(double *p, int m, double dgx0){
 /* maximizer p of ell(gamma, p) for a gvien gamma     */
 /*  egx: exp(gama*x.tilde), where gama is the given   */
 /*       regression coefficient                       */
-/*  ss: step-size epsilon:  p = (1-ss)p+ss Psi(p),    */
-/*        default ss=1 so that p = Psi(p)             */
 /*////////////////////////////////////////////////////*/
 void pofg_ph(double *p, int m, double *egx, int n0, int n1, double *BSy, double *BSy2, 
         double *llik, double eps, int maxit, int prog, int *conv, double *delta){
@@ -1854,7 +1889,7 @@ void mable_ph_gamma(int *M, double *gama, int *dm, double *pi0, double *x,
     for(j=0;j<=mp1;j++) phat[j+tmp]=p[j];
     tmp += mp2;
     //Rprintf("lk[%d]=%f\n",i, lk[i]);
-    if(i>=2){
+    if(i>=3){
       cp[0]=i;
       chpt_exp(lk, lr, res, cp);
       pval[i]=res[0];
@@ -2364,7 +2399,7 @@ typedef struct mable_struct{
 /*//////////////////////////////////////////////////////////////////////*/
 static void eta_mj(double *x, int n, void *ex)
 {
-    SEXP args, resultsxp, tmp;
+    SEXP args, res, tmp;
     int i, j, m;
     double y, *z;
     z = Calloc(n, double);
@@ -2376,23 +2411,24 @@ static void eta_mj(double *x, int n, void *ex)
     for(i = 0; i < n; i++) REAL(args)[i] = y - x[i];
 
     PROTECT(tmp = lang2(MS->f, args));
-    PROTECT(resultsxp = eval(tmp, MS->env));
+    PROTECT(res = eval(tmp, MS->env));
 
-    if(length(resultsxp) != n)
+    if(length(res) != n)
 	error("evaluation of function gave a result of wrong length");
-    if(TYPEOF(resultsxp) == INTSXP) {
-	   resultsxp = coerceVector(resultsxp, REALSXP);
+    if(TYPEOF(res) == INTSXP) {
+	   res = coerceVector(res, REALSXP);
     } 
-    else if(TYPEOF(resultsxp) != REALSXP)
+    else if(TYPEOF(res) != REALSXP)
 	   error("evaluation of error density gave a result of wrong type");
     for(i = 0; i < n; i++){
-	   z[i] = REAL(resultsxp)[i];
-	   x[i] = z[i]*dbeta(x[i], j+1,  m-j+1, FALSE);
+	   z[i] = REAL(res)[i];
+	   //x[i] = z[i]*dbeta(x[i], j+1,  m-j+1, FALSE);
+	   x[i] = z[i]*(m+1)*dbinom_raw(j, m, x[i],1-x[i], FALSE);
 	   if(!R_FINITE(x[i]))
-	       error("non-finite error density value");
+	       error("non-finite error denity value");
     }
-    UNPROTECT(3);
     Free(z);
+    UNPROTECT(3);
     return;
 }
 /*////////////////////////////////////////////////////////////////////////*/
@@ -3771,9 +3807,9 @@ typedef struct mable_dr_struct
 } mable_dr_struct, *MableDRStruct;
 void func_ebeta_rjk(double *x, int n, void *ex)
 {
-    SEXP args, res_sxp, tmp;
+    SEXP args, res, tmp;
     int i, j, k, m, d, ii, jj;
-    double texp, *alpha;
+    double te, *alpha;
     MableDRStruct MDS = (MableDRStruct) ex;
     m = MDS->m; i = MDS->i; j = MDS->j; k = MDS->k; 
     d = MDS->d; alpha = MDS->alpha;
@@ -3781,19 +3817,20 @@ void func_ebeta_rjk(double *x, int n, void *ex)
     for(ii = 0; ii < n; ii++) REAL(args)[ii] = x[ii];
 
     PROTECT(tmp = lang2(MDS->f, args));
-    PROTECT(res_sxp = eval(tmp, MDS->env));
+    PROTECT(res = eval(tmp, MDS->env));
 
-    if(length(res_sxp) != n*(d+1))
+    if(length(res) != n*(d+1))
 	error("evaluation of regression function(s) gave a result of wrong length");
-    if(TYPEOF(res_sxp) == INTSXP) {
-	res_sxp = coerceVector(res_sxp, REALSXP);
-    } else if(TYPEOF(res_sxp) != REALSXP)
+    if(TYPEOF(res) == INTSXP) {
+	res = coerceVector(res, REALSXP);
+    } else if(TYPEOF(res) != REALSXP)
 	error("evaluation of regression function(s) gave a result of wrong type");
 
     for(ii=0;ii<n;ii++) { 
-        texp  = 0.0;
-        for(jj=0;jj<=d;jj++) texp+=REAL(res_sxp)[ii+n*jj]*alpha[jj];
-        x[ii] = REAL(res_sxp)[ii+n*j]*REAL(res_sxp)[ii+n*k]*dbeta(x[ii],i+1,m-i+1,FALSE)*exp(texp);
+        te  = 0.0;
+        for(jj=0;jj<=d;jj++) te+=REAL(res)[ii+n*jj]*alpha[jj];
+        //x[ii] = REAL(res)[ii+n*j]*REAL(res)[ii+n*k]*dbeta(x[ii],i+1,m-i+1,FALSE)*exp(te);
+        x[ii] = REAL(res)[ii+n*j]*REAL(res)[ii+n*k]*(m+1)*dbinom_raw(i,m,x[ii],1-x[ii], FALSE)*exp(te);
 	    if(!R_FINITE(x[ii]))
 	       error("non-finite r(x) value");
     }
@@ -4719,7 +4756,7 @@ void mablem_dr_group(double *llik, double *alpha, double *p, double *t, int *n0,
        double eps_nt, int maxit_em, int maxit_nt, int progress, void *ex){
   int i, j, k, l, it_nt, it_em, d1=d+1, m1=m+1, Nm=N*m1,Nmd=Nm*d1;
   double *Pm, *Fm, *Fm_s, *H, *Jac, llik_new;
-  double del_em, del_nt, *tmp, *h, *Sig, *Er, *dFm_s, *ddFm_s;//, eps0=10.0, diff0=10.0;
+  double del_em, del_nt, *tmp, *h, *Sig, *Er, *dFm_s, *ddFm_s; 
   double *Tk, *Pm_s, *dPm_s, *ddPm_s, *Pi_theta, *T_zero;
   T_zero = Calloc(m1,double); Tk = Calloc(m1,double);
   Pi_theta = Calloc(Nm,double); tmp = Calloc(d1,double);
@@ -4732,7 +4769,7 @@ void mablem_dr_group(double *llik, double *alpha, double *p, double *t, int *n0,
   dFm_s = Calloc(N*d1,double); ddFm_s = Calloc(N*d1*d1,double);
   Er = Calloc(d1,double);
   
-  cpBeta(t, m, N, Pm); //cdf_Beta(t, m, N, Pm); 
+  cpBeta(t, m, N, Pm); 
   Pm_alpha(alpha, t, N, d, m, Pm_s, ex);
   del_em=10.0; it_em=0;
   llik[0]=loglik_bern_group(p, N, n0, n1, Pm, Pm_s, m, d);
@@ -5095,7 +5132,6 @@ SEXP maple_dr_group(SEXP args){
 /*    with (alpha-hat, phat) based on grouped data    */
 /*////////////////////////////////////////////////////*/
 SEXP C_mable_dr_group(SEXP args){
-//////
   //if(progress==1) 
   //  Rprintf("\n Program 'mable.dr.group' is runing. This may take several minutes.\n\n\n");
   int_struct is;
