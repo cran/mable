@@ -8,6 +8,7 @@
   x,
   which = c("density", "cumulative", "survival", "likelihood", "change-point", "all"),
   add = FALSE,
+  contour = FALSE,
   lgd.x = NULL,
   lgd.y = NULL,
   nx = 512,
@@ -23,6 +24,8 @@ which contains \code{p}, \code{mloglik}, and \code{M = m0:m1}, \code{lk}, \code{
 \code{which} can contain more than one options.}
 
 \item{add}{logical add to an existing plot or not}
+
+\item{contour}{logical plot contour or not for two-dimensional data}
 
 \item{lgd.x, lgd.y}{coordinates of position where the legend is displayed}
 

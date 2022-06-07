@@ -27,6 +27,8 @@
 #'     logistic regression
 #' @param vb code for vanishing boundary constraints, -1: f0(a)=0 only, 
 #'     1: f0(b)=0 only, 2: both, 0: none (default).
+#' @param baseline the working baseline, "Control" or "Case", if \code{NULL}  
+#'     it is chosen to the one with smaller estimated lower bound for model degree.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
 #'    and the convergence criterion for EM and Newton iterations. Default is 
 #'    \code{\link{mable.ctrl}}. See Details.
@@ -54,6 +56,8 @@
 #'   \item \code{alpha} the estimated regression coefficients
 #'   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
 #'   \item \code{interval} support/truncation interval \code{(a,b)}
+#'   \item \code{baseline} ="control" if \eqn{f_0} is used as baseline, 
+#'     or ="case" if \eqn{f_1} is used as baseline.
 #'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1}, if greater than \code{m0}, is the
 #'      largest candidate when the search stoped
 #'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
@@ -62,8 +66,8 @@
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
 #' @author Zhong Guan <zguan@iusb.edu>
-#' @references Guan, Z., Application of Bernstein Polynomial Model to Density 
-#'  and ROC Estimation in a Semiparametric Density Ratio Model
+#' @references Guan, Z., Maximum Approximate Bernstein Likelihood Estimation of 
+#'   Densities in a Two-sample Semiparametric Model
 #' @examples
 #' \donttest{
 #' # Hosmer and Lemeshow (1989): 
@@ -83,7 +87,7 @@
 #' @export
 
 mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0, 
-      controls = mable.ctrl(),  progress=TRUE, message=FALSE){
+      baseline=NULL, controls = mable.ctrl(),  progress=TRUE, message=FALSE){
     a<-interval[1]
     b<-interval[2]
     eps.em=controls$eps.em
@@ -95,7 +99,7 @@ mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
     if(a>=b) stop("'a' must be smaller than 'b'")
     nx<-length(x)
     ny<-length(y)
-    if(ny==0) stop("'case' data 'y' is missing.\n")
+    if(ny==0 || ny==1) stop("'case' data 'y' are missing or too small.\n")
     x1<-(x-a)/(b-a)
     y1<-(y-a)/(b-a)
     regr <- match.fun(regr)
@@ -114,19 +118,21 @@ mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
     else if(length(M)>=2) {
         M<-c(min(M), max(M))
     }
-    ybar<-mean(y1); sy2<-var(y1); 
-    my<-max(0,ceiling(ybar*(1-ybar)/sy2-3)-2)
-    if(nx>0){
-      xbar<-mean(x1); sx2<-var(x1); 
-      mx<-max(0,ceiling(xbar*(1-xbar)/sx2-3)-2)
-      m0<-min(mx,my)
-    }else{
-      m0<-my
-      mx<--1}
-    #m0<-max(mx,my)
-    #if(M[1]<m0){
-    #  message("Replace M[1]=",M[1]," by the recommended ", m0,".")
-    #  M[1]=m0; M[2]=max(m0,M[2])}
+    if(!is.null(baseline)){
+      if(baseline!="Control" && baseline!="Case") stop("Invalid 'baseline'.\n")
+      m0<-M[1]}
+    else{
+      ybar<-mean(y1); sy2<-var(y1); 
+      my<-max(0,ceiling(ybar*(1-ybar)/sy2-3)-2)
+      if(nx>0){
+        xbar<-mean(x1); sx2<-var(x1); 
+        mx<-max(0,ceiling(xbar*(1-xbar)/sx2-3)-2)
+        m0<-min(mx,my)
+      }else{
+        m0<-my
+        mx<--1}
+      if(mx<=my) baseline<-"Control"
+      else baseline<-"Case"}
     if(M[1]<m0){
       message("Replace M[1]=",M[1]," by the recommended ", m0,".")
       M[1]=m0; M[2]=max(m0,M[2])}
@@ -137,8 +143,7 @@ mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
     #p<-rep(1,M[1]+1)/(M[1]+1)
     level<-controls$sig.level
     ## Call C_mable_dr
-    if(mx<=my){
-      baseline<-"Control"
+    if(baseline=="Control"){
       message("Use 'control' as baseline.")
       wk<-.External("C_mable_dr", ff, rho = environment(),
         as.double(x1), as.double(y1), as.double(ry), as.integer(M), 
@@ -147,7 +152,6 @@ mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
         as.integer(maxit.nt),as.double(tini), as.integer(progress), 
         as.double(level), as.integer(message), as.integer(vb))
     }else{
-      baseline<-"Case"
       message("Use 'case' as baseline.")
       wk<-.External("C_mable_dr", ff, rho = environment(),
         as.double(y1), as.double(x1), as.double(ff(x1)), as.integer(M), 
@@ -304,6 +308,8 @@ se.coef.dr<-function(obj, grouped=FALSE, B=500, parallel=FALSE, ncore=NULL,
 #'     logistic regression
 #' @param vb code for vanishing boundary constraints, -1: f0(a)=0 only, 
 #'     1: f0(b)=0 only, 2: both, 0: none (default).
+#' @param baseline the working baseline, "Control" or "Case", if \code{NULL}  
+#'     it is chosen to the one with smaller estimated lower bound for model degree.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
 #'    and the convergence criterion for EM and Newton iterations. Default is 
 #'    \code{\link{mable.ctrl}}. See Details.
@@ -333,6 +339,8 @@ se.coef.dr<-function(obj, grouped=FALSE, B=500, parallel=FALSE, ncore=NULL,
 #'   \item \code{alpha} the given regression coefficients
 #'   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
 #'   \item \code{interval} support/truncation interval \code{(a,b)}
+#'   \item \code{baseline} ="control" if \eqn{f_0} is used as baseline, 
+#'     or ="case" if \eqn{f_1} is used as baseline.
 #'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1}, if greater than \code{m0}, is the
 #'      largest candidate when the search stoped
 #'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
@@ -341,13 +349,13 @@ se.coef.dr<-function(obj, grouped=FALSE, B=500, parallel=FALSE, ncore=NULL,
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
 #' @author Zhong Guan <zguan@iusb.edu>
-#' @references Guan, Z., Application of Bernstein Polynomial Model to Density 
-#'  and ROC Estimation in a Semiparametric Density Ratio Model
+#' @references Guan, Z., Maximum Approximate Bernstein Likelihood Estimation of 
+#'   Densities in a Two-sample Semiparametric Model
 #' @importFrom stats binomial glm 
 #' @export
 
 maple.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0, 
-      controls = mable.ctrl(),  progress=TRUE, message=TRUE){
+      baseline=NULL, controls = mable.ctrl(),  progress=TRUE, message=TRUE){
     a<-interval[1]
     b<-interval[2]
     eps.em=controls$eps.em
@@ -364,6 +372,7 @@ maple.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
     ry<-ff(y1)
     nx<-length(x)
     ny<-length(y)
+    if(ny==0 || ny==1) stop("'case' data 'y' are missing or too small.\n")
     if(is.null(alpha)){
       z<-c(rep(0,nx),rep(1,ny))
       alpha=glm(z~ff(c(x1,y1))[,-1], family= binomial)$coefficients
@@ -376,15 +385,23 @@ maple.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
     else if(length(M)>=2) {
         M<-c(min(M), max(M))
     }
-    xbar<-mean(x1); sx2<-var(x1); 
-    mx<-max(0,ceiling(xbar*(1-xbar)/sx2-3)-2)
-    ybar<-mean(y1); sy2<-var(y1); 
-    my<-max(0,ceiling(ybar*(1-ybar)/sy2-3)-2)
-    #m0<-max(mx,my)
-    #if(M[1]<m0){
-    #  message("Replace M[1]=",M[1]," by the recommended ", m0,".")
-    #  M[1]=m0; M[2]=max(m0,M[2])}
-    m0<-min(mx,my)
+    if(!is.null(baseline)){
+      if(baseline!="Control" && baseline!="Case") stop("Invalid 'baseline'.\n")
+      m0<-M[1]}
+    else{
+      xbar<-mean(x1); sx2<-var(x1); 
+      mx<-max(0,ceiling(xbar*(1-xbar)/sx2-3)-2)
+      ybar<-mean(y1); sy2<-var(y1); 
+      my<-max(0,ceiling(ybar*(1-ybar)/sy2-3)-2)
+      if(nx>0){
+        xbar<-mean(x1); sx2<-var(x1); 
+        mx<-max(0,ceiling(xbar*(1-xbar)/sx2-3)-2)
+        m0<-min(mx,my)
+      }else{
+        m0<-my
+        mx<--1}
+      if(mx<=my) baseline<-"Control"
+      else baseline<-"Case"}
     if(M[1]<m0){
       message("Replace M[1]=",M[1]," by the recommended ", m0,".")
       M[1]=m0; M[2]=max(m0,M[2])}
@@ -394,8 +411,7 @@ maple.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
       M[2]<-M[2]+5}
     #p<-rep(1,M[1]+1)/(M[1]+1)
     ## Call maple_dr
-    if(mx<=my){
-      baseline<-"Control"
+    if(baseline=="Control"){
       message("Use 'control' as baseline.")
       wk<-.External("maple_dr", ff, rho = environment(),
         as.double(x1), as.double(y1), as.double(ry), as.integer(M), 
@@ -404,7 +420,7 @@ maple.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
         as.integer(maxit.nt), as.double(tini), as.integer(progress), 
         as.double(level), as.integer(message), as.integer(vb))
     }else{
-      baseline<-"Case"
+      #baseline<-"Case"
       message("Use 'case' as baseline.")
       wk<-.External("maple_dr", ff, rho = environment(),
         as.double(y1), as.double(x1), as.double(ff(x1)), as.integer(M), 
@@ -592,6 +608,8 @@ mable.dr.group<-function(t, n0, n1, M, regr, ..., interval=c(0,1), alpha=NULL,
 #'   \item \code{alpha} the given regression coefficients
 #'   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
 #'   \item \code{interval} support/truncation interval \code{(a,b)}
+#'   \item \code{baseline} ="control" if \eqn{f_0} is used as baseline, 
+#'     or ="case" if \eqn{f_1} is used as baseline.
 #'   \item \code{M} the vector \code{(m0, m1)}, where \code{m1}, if greater than \code{m0}, is the
 #'      largest candidate when the search stoped
 #'   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}

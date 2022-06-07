@@ -13,6 +13,7 @@ mable.dr(
   interval = c(0, 1),
   alpha = NULL,
   vb = 0,
+  baseline = NULL,
   controls = mable.ctrl(),
   progress = TRUE,
   message = FALSE
@@ -37,6 +38,9 @@ logistic regression}
 \item{vb}{code for vanishing boundary constraints, -1: f0(a)=0 only, 
 1: f0(b)=0 only, 2: both, 0: none (default).}
 
+\item{baseline}{the working baseline, "Control" or "Case", if \code{NULL}
+it is chosen to the one with smaller estimated lower bound for model degree.}
+
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
 and the convergence criterion for EM and Newton iterations. Default is 
 \code{\link{mable.ctrl}}. See Details.}
@@ -54,6 +58,8 @@ A list with components
   \item \code{alpha} the estimated regression coefficients
   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
   \item \code{interval} support/truncation interval \code{(a,b)}
+  \item \code{baseline} ="control" if \eqn{f_0} is used as baseline, 
+    or ="case" if \eqn{f_1} is used as baseline.
   \item \code{M} the vector \code{(m0, m1)}, where \code{m1}, if greater than \code{m0}, is the
      largest candidate when the search stoped
   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}
@@ -98,8 +104,8 @@ chd.mable
 }
 }
 \references{
-Guan, Z., Application of Bernstein Polynomial Model to Density 
- and ROC Estimation in a Semiparametric Density Ratio Model
+Guan, Z., Maximum Approximate Bernstein Likelihood Estimation of 
+  Densities in a Two-sample Semiparametric Model
 }
 \author{
 Zhong Guan <zguan@iusb.edu>

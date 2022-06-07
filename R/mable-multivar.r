@@ -41,17 +41,21 @@
 #'   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
 #'   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
 #'   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-#'   Let \eqn{\tilde f_i} be an estimate with degree \eqn{\tilde m_i} of the i-th 
-#'   marginal density based on marginal data \code{x[,i]}, \eqn{i=1, \ldots, d}. 
+#'   Let \eqn{\tilde F_i} (\eqn{\tilde f_i}) be an estimate with degree \eqn{\tilde m_i} of  
+#'   the i-th marginal cdf (pdf) based on marginal data \code{x[,i]}, \eqn{i=1, \ldots, d}. 
 #'   If \code{search=TRUE} and \code{use.marginal=TRUE}, then the optimal degrees
 #'   are \eqn{(\tilde m_1,\ldots,\tilde m_d)}. If \code{search=TRUE} and 
 #'   \code{use.marginal=FALSE}, then the optimal degrees \eqn{(\hat m_1,\ldots,\hat m_d)}
-#'   are those that minimize the maximum of \eqn{L_2}-distance between \eqn{\tilde f_i}
-#'   and the estimate of \eqn{f_i} based on the joint data with degrees 
-#'   \eqn{m=(m_1,\ldots,m_d)} for all \eqn{m} between \eqn{M_0} and \eqn{M}.  
+#'   are those that minimize the maximum of \eqn{L_2}-distance between 
+#'   \eqn{\tilde F_i} (\eqn{\tilde f_i}) and the estimate of \eqn{F_i} (\eqn{f_i}) 
+#'   based on the joint data with degrees \eqn{m=(m_1,\ldots,m_d)} for all \eqn{m}
+#'    between \eqn{M_0} and \eqn{M} if \code{criterion}="cdf" (\code{criterion}="pdf"). 
+#'
+#'   For large data and multimodal density, the search for the model degrees is 
+#'   very time-consuming. In this case, it is suggested that the degrees are selected  
+#'   based on marginal data using \code{\link{mable}} or \code{\link{optimable}}.
 #' @return  A list with components
 #' \itemize{
-#'  \item \code{dim} the dimension \code{d} of the data
 #'  \item \code{m} a vector of the selected optimal degrees by the method of change-point
 #'  \item \code{p} a vector of the mixture proportions \eqn{p(j_1, \ldots, j_d)}, arranged in the 
 #'   column-major order of \eqn{j = (j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}.
@@ -68,11 +72,11 @@
 #' ## Old Faithful Data
 #' \donttest{
 #'  a<-c(0, 40); b<-c(7, 110)
-#'  #ans<-mable.mvar(faithful, M = c(60, 40), interval = cbind(a, b))
 #'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
 #'  plot(ans, which="density") 
 #'  plot(ans, which="cumulative")
 #' }
+#' @seealso \code{\link{mable}}, \code{\link{optimable}}
 #' @keywords distribution nonparametric multivariate 
 #' @concept multivariate Bernstein polynomial model
 #' @concept density estimation
@@ -177,7 +181,7 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=FALSE,
         cat("M0 = ", M0, "\nM = ",M,"\n")
         out<-list(p=res[[6]][1:K], mloglik=res[[15]][1], 
         lk=res[[11]][1:Kn], interval=interval, M0=M0, M=M,
-            m=m, dim=d, xNames=xNames,  convergence=res[[13]], D=res[[14]])
+            m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
       }
       else{
         if(use.mar.deg){
@@ -187,7 +191,7 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=FALSE,
         }
         else cat("Model degrees are specified: M=", m, "\n")
         out<-list(p=res[[6]][1:K], mloglik=res[[11]][1], interval=interval, 
-             m=m, dim=d, xNames=xNames,  convergence=res[[13]], D=res[[14]])
+             m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
       }
     out$data.type<-"mvar"
     class(out)<-"mable"

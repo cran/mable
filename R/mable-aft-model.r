@@ -2,7 +2,7 @@
 #   MABLE of AFT model based on interval-censored data   #
 ##########################################################
 #     AFT model with covariate for interval-censored     #
-#  failure time data: S(t|x)=S(t/exp(gamma'(x-x0))|x0)   #
+#  failure time data: S(t|x)=S(texp(-gamma'(x-x0))|x0)   #
 ##########################################################
 #  tau:  S(tau|x) ~ 0 for all x.  
 # Data transformation: dividing all the times by b to obtain y=(y1,y2].
@@ -25,9 +25,11 @@
 #'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.  
-#' @param g initial guess of \eqn{d}-vector of regression coefficients.  See 'Details'. 
-#' @param tau a finite truncation time greater than the maximum observed time \eqn{\tau}. See 'Details'.
-#' @param x0 a working baseline covariate \eqn{x_0}. See 'Details'. 
+#' @param g the given \eqn{d}-vector of regression coefficients, default is zero vector. 
+#' @param tau the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the   
+#'   baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
+#'   then it is taken as a known value of \eqn{\tau}.  See 'Details'. 
+#' @param x0 a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
@@ -111,14 +113,18 @@
 #' @importFrom stats coef reformulate terms
 #' @importFrom survival Surv
 #' @export
-mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,    
+mable.aft<-function(formula, data, M, g=NULL, tau=NULL, x0=NULL,    
                    controls = mable.ctrl(), progress=TRUE){
     data.name<-deparse(substitute(data)) 
     fmla<-Reduce(paste, deparse(formula))
     Dta<-get.mableData(formula, data)
     x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
+    x<-as.matrix(x)
+    d<-ncol(x)
+    if(is.null(x0)) x0<-rep(0,d)
     if(is.null(g)){
-        stop("argument 'g' is missing.")
+      g<-rep(0,d)
+        #stop("argument 'g' is missing.")
         #status<-1*(y2<Inf)
         #Y<-y 
         #Y[y2<Inf]<-(y[y2<Inf]+y2[y2<Inf])/2
@@ -127,15 +133,14 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         #rkest<-aftsrr(fmla, data = rtc.data)
         #g<--as.numeric(coef(rkest))      
     }
+    else if(length(g)!=d) stop("length of 'g' does not match number of covariates.")
     delta<-Dta$delta
     b<-max(y2[y2<Inf], y);
-    if(b>=tau) stop("tau must be greater than the maximum observed time")
-    y<-y/tau; y2<-y2/tau
+#    if(b>=tau) stop("tau must be greater than the maximum observed time")
+#    y<-y/tau; y2<-y2/tau
 #    y2[y2==Inf]<-.Machine$double.xmax/2 
-    y2[y2==Inf]<-1 # truncation interval is [0, tau)
-    x<-as.matrix(x)
-    d<-length(g)
-    if(d!=ncol(x)) stop("length of gamma does not match number of covariates.")
+#    y2[y2==Inf]<-1 # truncation interval is [0, tau)
+    #if(d!=ncol(x)) stop("length of gamma does not match number of covariates.")
     n<-length(y)
     n0<-sum(delta==0)
     n1<-sum(delta==1)
@@ -146,7 +151,22 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
     del<-0
     ord<-order(delta)
     x<-as.matrix(x[ord,]); y<-y[ord]; y2<-y2[ord]
-    if(is.null(x0)) x0<-rep(0,d)
+###
+    i2<-(y2<Inf)
+    xt<-t(t(x)-x0)
+    if(is.null(tau)){ 
+      tau<-max((y2*exp(xt%*%g))[i2,],y*exp(xt%*%g))+1/n #???
+      known.tau<-FALSE
+    }
+    else{
+      if(b>=tau) stop("tau must be greater than the maximum observed time")
+      known.tau<-TRUE
+      y<-y/tau; y2<-y2/tau
+    }
+    #y<-y/tau; y2<-y2/tau
+    tau<-c(tau,b) # 
+    y2[y2==Inf]<-.Machine$double.xmax/2
+###
     Eps<-c(controls$eps, controls$eps.em)
     MaxIt<-c(controls$maxit, controls$maxit.em)
     ddell<-diag(0,d)
@@ -159,7 +179,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
     if(k>0 && k<=3) stop("Too few candidate model degrees.")
     ans<-list()
     ans$tau.n<-b
-    ans$tau<-tau
+    ans$tau<-tau[1]
     ans$xNames<-Dta$xNames
     if(k==0){
         m<-M[1]    
@@ -169,20 +189,21 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         ## Call C mable_aft_m
         res<-.C("mable_aft_m",
             as.double(-g), as.double(p), as.integer(dm), as.double(x), as.double(y),  
-            as.double(y2), as.integer(N), as.double(x0), as.double(ell), 
-            as.double(ddell), as.double(Eps), as.integer(MaxIt), 
-            as.logical(progress), as.integer(conv), as.double(del))
+            as.double(y2), as.double(tau), as.integer(N), as.double(x0), as.double(ell), 
+            as.double(ddell), as.double(Eps), as.integer(MaxIt), as.logical(progress), 
+            as.integer(conv), as.double(del), as.logical(known.tau))
         ans$m<-m
         ans$mloglik<-res[[9]][1]
         ans$p<-res[[2]]
         ans$x0<-res[[8]]
-        ans$coefficients<-res[[1]]
+        ans$coefficients<--res[[1]]
         ans$egx0<-exp(sum(res[[1]]*res[[8]]))
         Sig<--n*matrix(res[[10]], nrow=d, ncol=d)
         ans$SE<-sqrt(diag(Sig)/n)
         ans$z<-res[[1]]/ans$SE 
         ans$convergence<-res[[14]]
         ans$delta<-res[[15]] 
+        ans$tau<-res[[7]][1]
     }
     else{
         lk<-rep(0, k+1)
@@ -194,31 +215,31 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
         ## Call C mable_aft
         res<-.C("mable_aft",
             as.integer(M), as.double(-g), as.integer(dm), as.double(p), as.double(x),  
-            as.double(y), as.double(y2), as.integer(N), as.double(x0), as.double(lk), 
-            as.double(lr), as.double(ddell), as.double(Eps), as.integer(MaxIt), 
-            as.logical(progress), as.double(pval), as.integer(chpts), as.double(level), 
-            as.integer(conv))
+            as.double(y), as.double(y2), as.double(tau), as.integer(N), as.double(x0), 
+            as.double(lk), as.double(lr), as.double(ddell), as.double(Eps), 
+            as.integer(MaxIt), as.logical(progress), as.double(pval), 
+            as.integer(chpts), as.double(level), as.integer(conv), as.logical(known.tau))
         M<-res[[1]]
         ans$M<-M
         k<-M[2]-M[1]
-        ans$coefficients<-res[[2]]
-        ans$x0<-res[[9]]
-        ans$egx0<-exp(sum(res[[2]]*res[[9]]))
-        Sig<--n*matrix(res[[12]], nrow=d, ncol=d)
+        ans$coefficients<--res[[2]]
+        ans$x0<-res[[10]]
+        ans$egx0<-exp(sum(res[[2]]*res[[10]]))
+        Sig<--n*matrix(res[[13]], nrow=d, ncol=d)
         ans$SE<-sqrt(diag(Sig)/n)
-        ans$lk<-res[[10]][1:(k+1)]-n0*log(b) 
-        ans$lr<-res[[11]][1:k]
+        ans$lk<-res[[11]][1:(k+1)]-n0*log(b) 
+        ans$lr<-res[[12]][1:k]
         ans$m<-res[[3]][2]
-        ans$mloglik<-res[[10]][ans$m-M[1]+1]-n0*log(b)
+        ans$mloglik<-res[[11]][ans$m-M[1]+1]-n0*log(b)
         mp1<-ans$m+1
         ans$p<-res[[4]][1:mp1]  
         ans$z<-res[[2]]/ans$SE
-        ans$pval<-res[[16]][1:(k+1)]
-        ans$chpts<-res[[17]][1:(k+1)]+M[1]
-        ans$convergence<-res[[19]]
-        ans$delta<-res[[16]][k+1]   
+        ans$pval<-res[[17]][1:(k+1)]
+        ans$chpts<-res[[18]][1:(k+1)]+M[1]
+        ans$convergence<-res[[20]]
+        ans$delta<-res[[17]][k+1]   
+        ans$tau<-res[[8]][1]
     }
-    ans$coefficients<--ans$coefficients
     ans$egx0<-1/ans$egx0
     ans$model<-"aft"
     ans$callText<-fmla
@@ -237,9 +258,11 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0 > 3}.  
-#' @param g the given \eqn{d}-vector of regression coefficients 
-#' @param tau a truncation time greater than or equal to the maximum observed time \eqn{\tau}. See 'Details'. 
-#' @param x0 a working baseline covariate \eqn{x_0}. See 'Details'. 
+#' @param g the given \eqn{d}-vector of regression coefficients. 
+#' @param tau the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the   
+#'   baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
+#'   then it is taken as a known value of \eqn{\tau}.  See 'Details'. 
+#' @param x0 a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
@@ -252,7 +275,7 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
-#' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
+#' Then \eqn{f(t|x_0)} on a support or truncation interval \eqn{[0, \tau]} can be approximated by  
 #' \eqn{f_m(t|x_0; p) = \tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
 #' where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 #' \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and
@@ -321,21 +344,37 @@ mable.aft<-function(formula, data, M, g=NULL, tau=1, x0=NULL,
 #' @concept interval censoring
 #' @seealso \code{\link{mable.aft}} 
 #' @export
-maple.aft<-function(formula, data, M, g, tau=1, x0=NULL, 
+maple.aft<-function(formula, data, M, g, tau=NULL, x0=NULL, 
             controls = mable.ctrl(), progress=TRUE){
     data.name<-deparse(substitute(data)) 
     fmla<-Reduce(paste, deparse(formula))
     Dta<-get.mableData(formula, data)
     x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
     delta<-Dta$delta
+    if(is.null(x0)) x0<-rep(0,d)
     b<-max(y2[y2<Inf], y);
-    if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
-    y<-y/tau; y2<-y2/tau
+    #if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
+    #y<-y/tau; y2<-y2/tau
 #    y2[y2==Inf]<-.Machine$double.xmax/2 
-    y2[y2==Inf]<-1 # truncation interval is [0, tau)
+    #y2[y2==Inf]<-1 # truncation interval is [0, tau)
     x<-as.matrix(x)
+    if(missing(g)) stop("missing arguement 'g'.")
     d<-length(g)
     if(d!=ncol(x)) stop("length of gamma and number of covariates do not match.")
+###
+    i2<-(y2<Inf)
+    if(is.null(tau)) {
+      tau<-max((y2*exp(x%*%g))[i2,],y*exp(x%*%g))
+      known.tau<-FALSE
+    }
+    else{
+      if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
+      y<-y/tau; y2<-y2/tau 
+      known.tau<-TRUE
+    }
+    tau<-c(tau,b)
+    y2[y2==Inf]<-.Machine$double.xmax/2
+###
     n<-length(y)
     n0<-sum(delta==0)
     n1<-sum(delta==1)
@@ -352,7 +391,6 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
     lk<-rep(0, k+1)
     lr<-rep(0, k)
     p<-rep(0, M[1]+k+1) 
-    if(is.null(x0)) x0<-rep(0,d)
     ddell<-diag(0,d)
     pval<-rep(0,k+1)
     chpts<-rep(0,k+1)
@@ -366,14 +404,14 @@ maple.aft<-function(formula, data, M, g, tau=1, x0=NULL,
         as.double(y2), as.integer(N), as.double(x0), as.double(lk), as.double(lr), 
         as.double(p), as.double(ddell), as.double(controls$eps), as.integer(controls$maxit), 
         as.logical(progress), as.double(pval), as.integer(chpts), as.double(level), 
-        as.integer(conv), as.double(del))
+        as.integer(conv), as.double(del), as.double(tau), as.logical(known.tau))
     ans<-list()
     M<-res[[1]]
     ans$x0<-res[[8]]
     ans$egx0<-exp(sum(g*x0))
     ans$m<-res[[3]][2]
     ans$tau.n<-b
-    ans$tau<-tau
+    ans$tau<-res[[21]][1]
     k<-M[2]-M[1]
     lk<-res[[9]][1:(k+1)]-n0*log(b) 
     ans$mloglik<-lk[ans$m-M[1]+1]

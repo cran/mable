@@ -9,7 +9,7 @@ maple.aft(
   data,
   M,
   g,
-  tau = 1,
+  tau = NULL,
   x0 = NULL,
   controls = mable.ctrl(),
   progress = TRUE
@@ -25,11 +25,13 @@ then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0 > 3}.}
 
-\item{g}{the given \eqn{d}-vector of regression coefficients}
+\item{g}{the given \eqn{d}-vector of regression coefficients.}
 
-\item{tau}{a truncation time greater than or equal to the maximum observed time \eqn{\tau}. See 'Details'.}
+\item{tau}{the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the
+baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
+then it is taken as a known value of \eqn{\tau}.  See 'Details'.}
 
-\item{x0}{a working baseline covariate \eqn{x_0}. See 'Details'.}
+\item{x0}{a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}
@@ -76,7 +78,7 @@ Consider the accelerated failure time model with covariate for interval-censored
 \eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
-Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
+Then \eqn{f(t|x_0)} on a support or truncation interval \eqn{[0, \tau]} can be approximated by  
 \eqn{f_m(t|x_0; p) = \tau^{-1}\sum_{i=0}^m p_i\beta_{mi}(t/\tau)},
 where \eqn{p_i \ge 0}, \eqn{i = 0, \ldots, m}, \eqn{\sum_{i=0}^mp_i=1},  
 \eqn{\beta_{mi}(u)} is the beta denity with shapes \eqn{i+1} and \eqn{m-i+1}, and

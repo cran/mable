@@ -9,7 +9,7 @@ mable.aft(
   data,
   M,
   g = NULL,
-  tau = 1,
+  tau = NULL,
   x0 = NULL,
   controls = mable.ctrl(),
   progress = TRUE
@@ -25,11 +25,13 @@ then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
-\item{g}{initial guess of \eqn{d}-vector of regression coefficients.  See 'Details'.}
+\item{g}{the given \eqn{d}-vector of regression coefficients, default is zero vector.}
 
-\item{tau}{a finite truncation time greater than the maximum observed time \eqn{\tau}. See 'Details'.}
+\item{tau}{the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the
+baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
+then it is taken as a known value of \eqn{\tau}.  See 'Details'.}
 
-\item{x0}{a working baseline covariate \eqn{x_0}. See 'Details'.}
+\item{x0}{a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}

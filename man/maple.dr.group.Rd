@@ -59,6 +59,8 @@ A list with components
   \item \code{alpha} the given regression coefficients
   \item \code{mloglik}  the maximum log-likelihood at degree \code{m}
   \item \code{interval} support/truncation interval \code{(a,b)}
+  \item \code{baseline} ="control" if \eqn{f_0} is used as baseline, 
+    or ="case" if \eqn{f_1} is used as baseline.
   \item \code{M} the vector \code{(m0, m1)}, where \code{m1}, if greater than \code{m0}, is the
      largest candidate when the search stoped
   \item \code{lk} log-likelihoods evaluated at \eqn{m \in \{m_0, \ldots, m_1\}}

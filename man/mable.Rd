@@ -87,11 +87,18 @@ Any continuous density function \eqn{f} on a known closed supporting interval \e
  smaller than \code{sig.level}.  The BIC for a given degree \code{m} is calculated as in
  Schwarz (1978) where the dimension of the model is \eqn{d = \#\{i: \hat p_i\ge\epsilon,
   i = 0, \ldots, m\} - 1} and a default \eqn{\epsilon} is chosen as \code{.Machine$double.eps}.
+
+ If data show a clearly multimodal distribution by plotting the histogram for example, 
+ the model degree is usually large. The range \code{M} should be large enough to cover the 
+ optimal degree and the computation is time-consuming. In this case the iterative method 
+ of moment with an initial selected by a method of mode which is implemented
+ by \code{\link{optimable}} can be used to reduce the computation time.
 }
 \note{
 Since the Bernstein polynomial model of degree \eqn{m} is nested in the model of
 degree \eqn{m+1}, the maximum likelihood is increasing in \eqn{m}. The change-point method
-is used to choose an optimal degree \eqn{m}.
+is used to choose an optimal degree \eqn{m}. The degree can also be chosen by a method of
+moment and a method of mode which are implemented by function \code{optimal()}.
 }
 \examples{
 \donttest{
@@ -150,6 +157,9 @@ is used to choose an optimal degree \eqn{m}.
 }
 \references{
 Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
+}
+\seealso{
+\code{\link{optimable}}
 }
 \author{
 Zhong Guan <zguan@iusb.edu>

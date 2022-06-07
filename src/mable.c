@@ -1069,13 +1069,15 @@ double log_blik_aft(double *p, int m, double *gx, int n0, int n1,
 /* Derivatives of loglikelihood ell(gamma, p) wrt gamma, aft model */
 /*/////////////////////////////////////////////////////////////////*/
 // 
-void logblik_aft_derv(double *gama, double *p, int d, int m, double *y, double *y2,
-          double *x, double *x0, int n0, int n1, double *ell, double *dell, double *ddell){
+void logblik_aft_derv(double *gama, double *p, int d, int m, 
+    double *y, double *y2, double *x, double *x0, double *tau,
+    double *gx, double *z, double *z2, int n0, int n1, double *ell, 
+    double *dell, double *ddell){
   int i,j,k, n=n0+n1, mp2=m+2;
-  double egxt, tmp1=0.0, tmp2=0.0, A, B, C;
-  double *BSz, *BSz2, *bz, *bz2, *z, *z2;   
-  z = Calloc(n, double);
-  z2 = Calloc(n, double);
+  double tmp1=0.0, tmp2=0.0, A, B, C;
+  double *BSz, *BSz2, *bz, *bz2;   
+  //z = Calloc(n, double);
+  //z2 = Calloc(n, double);
   bz = Calloc(n*mp2, double);  
   bz2 = Calloc(n*mp2, double); 
   BSz = Calloc(n*mp2, double);  
@@ -1083,17 +1085,8 @@ void logblik_aft_derv(double *gama, double *p, int d, int m, double *y, double *
   ell[0]=0.0;
   for(i=0; i<d; i++){ dell[i]=0.0; 
     for(j=0; j<d; j++) ddell[i+d*j]=0.0;}
-  for(k=0; k<n; k++){
-    egxt=0.0;
-    for(i=0; i<d; i++) egxt -= gama[i]*(x[k+n*i]-x0[i]);
-    if(k<n0) ell[0] += egxt;
-    egxt= exp(egxt);
-    z[k] = egxt*y[k];
-    z2[k] = egxt*y2[k];
-    // add error check whether z[k] and z2[k] <=1????
-    //Rprintf("\n y[%d]=%f\n, z[%d]=%f", k, y[k], k, z[k]);
-    //if (y2[k]<=1 && z2[k]>1) error("\n Error: z2 >1 \n");
-  }
+  // egx, z, z2 have been evaluated???
+  for(k=0; k<n0; k++) ell[0] -= gx[k];
   Bdata(z, m, 0, n, BSz);//1-B(z),1-B(z2) 
   Bdata(z2, m, 0, n, BSz2);
   Bdata(z, m, n, 0, bz); // beta(z), beta(z2)
@@ -1145,7 +1138,8 @@ void logblik_aft_derv(double *gama, double *p, int d, int m, double *y, double *
   //for(i=0; i<d; i++)
      //for(j=0;j<d;j++) Rprintf("\n ddell[%d,%d]=%f", i,j, ell[i+d*j]);
 
-  Free(z); Free(z2); Free(bz); Free(bz2);
+  //Free(z); Free(z2); 
+  Free(bz); Free(bz2);
   Free(BSz); Free(BSz2);
 }
 /*////////////////////////////////////////////////////*/
@@ -1154,12 +1148,13 @@ void logblik_aft_derv(double *gama, double *p, int d, int m, double *y, double *
 /*////////////////////////////////////////////////////*/
 
 void gofp_aft(double *gama, int d, double *p, int m, double *y, double *y2, 
-          double *x, double *x0, int n0, int n1, double *ell, double *dell, 
-          double *ddell, double eps, int maxit, int prog){
-  int i,j, it=0;
-  double del=0.0, *tmp; 
+      double *x, double *x0, double *tau, double *gx, double *z, double *z2, int n0, int n1, 
+      double *ell, double *dell, double *ddell, double eps, int maxit, int prog, int known_tau){
+  int i,j, it=0, n=n0+n1;
+  double del=0.0, *tmp;//, *gx; 
+  //gx = Calloc(n, double);
   tmp = Calloc(d, double);
-  logblik_aft_derv(gama, p, d, m, y, y2, x, x0, n0, n1, ell, dell, ddell);
+  logblik_aft_derv(gama, p, d, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
   for(i=0;i<d;i++) del+=fabs(dell[i]); 
   while(it<maxit && del>eps){
     minverse(ddell, d);  
@@ -1172,7 +1167,31 @@ void gofp_aft(double *gama, int d, double *p, int m, double *y, double *y2,
       gama[i] -= tmp[i];
       del += fabs(tmp[i]);
     }
-    logblik_aft_derv(gama, p, d, m, y, y2, x, x0, n0, n1, ell, dell, ddell);
+    ///
+    egxmx0(gama, d, x, n, gx, x0);
+    if(known_tau!=1){
+      tau[0]=tau[1];
+      for(i=0;i<n;i++){
+        z[i] = y[i]/gx[i];
+        z2[i] = y2[i]/gx[i];
+        tau[0]=fmax(tau[0], z[i]);
+        if(y2[i]<=tau[1]) tau[0]=fmax(tau[0], z2[i]);
+        tau[0]+=1.0/(double) n;
+      }
+      for(i=0;i<n;i++){
+        z[i] = z[i]/tau[0];
+        z2[i] = z2[i]/tau[0];
+        gx[i] = log(gx[i]);
+      }
+    }
+    else{
+      for(i=0;i<n;i++){
+        z[i] = y[i]/gx[i];
+        z2[i] = y2[i]/gx[i];
+      }
+    }
+    ///
+    logblik_aft_derv(gama, p, d, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
     for(i=0;i<d;i++) del+=fabs(dell[i]);
     it++;
     R_CheckUserInterrupt();
@@ -1249,11 +1268,12 @@ void pofg_aft(double *p, int m, double *gx, int n0, int n1, double *BSz, double 
 /*   x0: baseline covariate value, default is 0                 */
 /*    x: d-dim covariate                                        */
 /*//////////////////////////////////////////////////////////////*/
-void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y, double *y2, int *N, 
-      double *x0, double *lk, double *lr, double *p, double *ddell, double *eps, int *maxit, 
-      int *progress, double *pval, int *chpts, double *level, int *conv, double *delta){        
+void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y, 
+    double *y2, int *N, double *x0, double *lk, double *lr, double *p, 
+    double *ddell, double *eps, int *maxit, int *progress, double *pval, 
+    int *chpts, double *level, int *conv, double *delta, double *tau, int *known_tau){        
   int i,j, d=dm[0], k=M[1]-M[0], *cp, cp0=1, cp1=1, n0=N[0], n1=N[1], n=n0+n1, tmp, itmp=0;
-  int m=M[1], mp1=m+1,  mp2=m+2, lp=(k+1)*M[0]+(k+1)*(k+2)/2;//optim=m,
+  int m=M[1], mp1=m+1,  mp2=m+2, lp=(k+1)*M[0]+(k+1)*(k+2)/2, nbt1=0; 
   double tini=.0001, pct=0.0, ttl, *z, *z2, *res, pv0=1.0, pv1=1.0;
   double *ell, *dell, *gx, *BSz, *BSz2, *phat; 
   cp = Calloc(1, int);
@@ -1270,14 +1290,33 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y, double
       ProgressBar(0.0,""); }
   ttl = (double)((k+2)*(k+1));
   egxmx0(gama, d, x, n, gx, x0);
-  for(i=0;i<n;i++) {
-    z[i] = y[i]/gx[i];
-    z2[i] = y2[i]/gx[i];
-    gx[i] = log(gx[i]);
-    // add check to see any z, z2 are bigger than 1
-    if (y2[i]<=1 && z2[i]>1) {
+  if(*known_tau!=1){
+    tau[0]=tau[1]; 
+    for(i=0;i<n;i++) {
+      z[i] = y[i]/gx[i];
+      z2[i] = y2[i]/gx[i];
+      tau[0]=fmax(tau[0],z[i]);
+      if(y2[i]<=tau[1]) tau[0]=fmax(tau[0],z2[i]);
+      tau[0]+=1.0/(double) n;
+    }
+    for(i=0;i<n;i++) {
+      z[i] = z[i]/tau[0];
+      z2[i] = z2[i]/tau[0];
+      gx[i] = log(gx[i]);
+    }
+  }
+  else{
+    for(i=0;i<n;i++) {
+      z[i] = y[i]/gx[i];
+      z2[i] = y2[i]/gx[i];
+      gx[i] = log(gx[i]);
+      // add check to see any z, z2 are bigger than 1
+      if (y2[i]<=1 && z2[i]>1)  nbt1++;
+    }
+    if(nbt1==n){
       Rprintf("\n");
-      error("Try another baseline 'x0' and/or a larger truncation time 'tau'.\n");}
+      warning("May need to try another baseline 'x0' and/or a larger truncation time 'tau'.\n");
+    }
   }
   m=M[0]; 
   mp1=m+1;
@@ -1365,10 +1404,10 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y, double
 /*   (gamma, p) with a fixed degree m for AFT model   */
 /*////////////////////////////////////////////////////*/
 void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double *y2, 
-       int *N, double *x0, double *ell, double *ddell, double *EPS, int *MAXIT,
-       int *progress, int *conv, double *delta){
+       double *tau, int *N, double *x0, double *ell, double *ddell, double *EPS, 
+       int *MAXIT, int *progress, int *conv, double *delta, int *known_tau){
   int i, n0=N[0], n1=N[1], n=n0+n1, d=dm[0], m=dm[1],  mp2 =m+2, it=0;
-  int maxit=MAXIT[0], maxit_em=MAXIT[1], prog=1; 
+  int maxit=MAXIT[0], maxit_em=MAXIT[1], prog=1, nbt1=0; 
   double eps=EPS[0], eps_em=EPS[1], pct=0.0;
   double *z, *z2, *BSz, *BSz2, *gnu, del=1.0;//*xt, tini, 
   double *ell1, *dell, *gx, *tmp;
@@ -1383,13 +1422,30 @@ void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double 
   BSz2 = Calloc(n*mp2, double);  
   gnu = Calloc(d, double);  
   egxmx0(gama, d, x, n, gx, x0);
-  for(i=0;i<n;i++){
-    z[i] = y[i]/gx[i];
-    z2[i] = y2[i]/gx[i];
-    gx[i] = log(gx[i]);
-    if(y2[i]<=1 && z2[i]>1){
+  if(*known_tau!=1){
+    tau[0]=tau[1];
+    for(i=0;i<n;i++){
+      z[i] = y[i]/gx[i];
+      z2[i] = y2[i]/gx[i];
+      tau[0]=fmax(tau[0], z[i]);
+      if(y2[i]<=tau[1]) tau[0]=fmax(tau[0], z2[i]);
+      tau[0]+=1.0/(double) n;
+    }
+    for(i=0;i<n;i++){
+      z[i] = z[i]/tau[0];
+      z2[i] = z2[i]/tau[0];
+      gx[i] = log(gx[i]);
+    }
+  }
+  else{
+    for(i=0;i<n;i++){
+      z[i] = y[i]/gx[i];
+      z2[i] = y2[i]/gx[i];
+      if(y2[i]<=1 && z2[i]>1) nbt1++;
+    }
+    if(nbt1==n){
       Rprintf("\n");
-      error("Try another baseline 'x0' and/or a larger truncation time 'tau'.\n");}
+      warning("May need to try another baseline 'x0' and/or a larger truncation time 'tau'.\n");}
   }
   Bdata(z, m, 0, n, BSz);
   Bdata(z2, m, n0, n1, BSz2);
@@ -1399,16 +1455,9 @@ void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double 
   pofg_aft(p, m, gx, n0, n1, BSz, BSz2, ell, eps_em, maxit_em, prog, conv, delta);
   //Rprintf("\n ell=%f, ell0=%f\n",ell[0], ell[1]);
   while(it<maxit && (del>eps || ell[0]<ell[1])){
-    gofp_aft(gama, d, p, m, y, y2, x, x0, n0, n1, ell1, dell, ddell, eps, maxit, prog);
-    egxmx0(gama, d, x, n, gx, x0);
-    for(i=0;i<n;i++) {
-      z[i] = y[i]/gx[i];
-      z2[i] = y2[i]/gx[i];
-      gx[i] = log(gx[i]);
-      if (y2[i]<=1 && z2[i]>1) {
-        Rprintf("\n");
-        error("Try another baseline 'x0' and/or a larger truncation time 'tau'.\n");}
-    }
+    gofp_aft(gama, d, p, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, ell1, dell, ddell, eps, maxit, prog, known_tau[0]);
+    //egxmx0(gama, d, x, n, gx, x0);
+    nbt1=0;
     Bdata(z, m, 0, n, BSz);
     Bdata(z2, m, n0, n1, BSz2);
     pofg_aft(p, m, gx, n0, n1, BSz, BSz2, ell1, eps_em, maxit_em, prog, conv, delta);
@@ -1445,16 +1494,17 @@ void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double 
 /*           estimate of regression coefficient gamma        */
 /*    phat: (m1+1)-vector, phat[0:m0] is initial of p        */
 /*            for degree m=m0, used to return phat           */
-/*     dk: (d,k)                                             */
-/*      x: d-dim covariate                                   */
-/*     x0: baseline covariate value, default is 0            */
+/*      dk: (d,k)                                            */
+/*       x: d-dim covariate                                  */
+/*      x0: baseline covariate value, default is 0           */
 /*///////////////////////////////////////////////////////////*/
 void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y,    
-      double *y2, int *N, double *x0, double *lk, double *lr, double *ddell, double *EPS, 
-      int *MAXIT, int *progress, double *pval, int *chpts, double *level, int *conv){
+      double *y2, double *tau, int *N, double *x0, double *lk, double *lr, 
+      double *ddell, double *EPS, int *MAXIT, int *progress, double *pval, 
+      int *chpts, double *level, int *conv, int *known_tau){
   int i, j, d=dm[0], k=M[1]-M[0], tmp=0,*cp, cp0=1, cp1=1;//, n0=N[0], n1=N[1], n=n0+n1
   int m=M[1], mp1=m+1, lp=(k+1)*M[0]+(k+1)*(k+2)/2, prg=1-*progress; 
-  double *phat, *ghat, *ell, pct=0.0, ttl, lnn=-1.0e20, *res, pv0=1.0, pv1=1.0;  //maxLR=0.0, lr0, 
+  double *phat, *ghat, *ell, pct=0.0, ttl, lnn=-1.0e20, *res, pv0=1.0, pv1=1.0;    
   cp = Calloc(1, int);
   res = Calloc(1, double);
   phat=Calloc(lp, double);
@@ -1469,7 +1519,7 @@ void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y,
   dm[1]=m;
   for(i=0;i<mp1;i++) p[i]=1.0/(double)mp1;
   ell[1]=lnn;
-  mable_aft_m(gama, p, dm, x, y, y2, N, x0, ell, ddell, EPS, MAXIT, &prg, conv, res);
+  mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell, EPS, MAXIT, &prg, conv, res, known_tau);
   tmp=mp1;
   for(i=0;i<tmp;i++) phat[i]=p[i];
   for(i=0;i<d;i++) ghat[i]=gama[i];
@@ -1488,7 +1538,7 @@ void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y,
     dm[1]=m;
     mp1=m+1; 
     for(j=0;j<mp1;j++) p[j]=(p[j]+.000001/(double)mp1)/1.000001;
-    mable_aft_m(gama, p, dm, x, y, y2, N, x0, ell, ddell,  EPS, MAXIT, &prg, conv, res);
+    mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell,  EPS, MAXIT, &prg, conv, res, known_tau);
     for(j=0;j<mp1;j++) phat[j+tmp]=p[j];
     tmp+=mp1;
     for(j=0;j<d; j++) ghat[j+i*d]=gama[j];
@@ -2400,7 +2450,7 @@ typedef struct mable_struct{
 static void eta_mj(double *x, int n, void *ex)
 {
     SEXP args, res, tmp;
-    int i, j, m;
+    int i, j, m, pc = 0;
     double y, *z;
     z = Calloc(n, double);
     MableStruct MS = (MableStruct) ex;
@@ -2414,9 +2464,13 @@ static void eta_mj(double *x, int n, void *ex)
     PROTECT(res = eval(tmp, MS->env));
 
     if(length(res) != n)
-	error("evaluation of function gave a result of wrong length");
+	     error("evaluation of function gave a result of wrong length");
     if(TYPEOF(res) == INTSXP) {
-	   res = coerceVector(res, REALSXP);
+	     PROTECT(res = coerceVector(res, REALSXP));
+       pc = 1;
+	     //res = coerceVector(res, REALSXP);
+       //UNPROTECT(1); /* uprotect the old res */
+       //PROTECT(res);
     } 
     else if(TYPEOF(res) != REALSXP)
 	   error("evaluation of error density gave a result of wrong type");
@@ -2428,7 +2482,8 @@ static void eta_mj(double *x, int n, void *ex)
 	       error("non-finite error denity value");
     }
     Free(z);
-    UNPROTECT(3);
+    UNPROTECT(3+pc);
+    //UNPROTECT(3);
     return;
 }
 /*////////////////////////////////////////////////////////////////////////*/
@@ -3573,7 +3628,7 @@ void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int 
     kN[0]=1;
     km[0] = 1;
     for(i=0; i<*d; i++){
-      M[i]=M[i]-M0[i];// candidate deggrees: M0[i]+0,...,M0[i]+M[i]
+      M[i]=M[i]-M0[i];// candidate degrees: M0[i]+0,...,M0[i]+M[i]
       kN[i+1]=kN[i]*(M[i]+1);
       Itmp0[i]=0;
       m[i] = M0[i];
@@ -3584,7 +3639,7 @@ void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int 
     ttl=N;
     for(j=0; j<K; j++) p[j]=1.0/(double) K;
     Multivar_dBeta(x, m, *n, *d, km, Bta);
-      em_multivar_beta_mix(p, Bta, m, *n, *d, K, *maxit, *eps, llik, prgrs, conv);
+    em_multivar_beta_mix(p, Bta, m, *n, *d, K, *maxit, *eps, llik, prgrs, conv);
     l = 1;
     while(l<N){
       k=0;
@@ -3808,7 +3863,7 @@ typedef struct mable_dr_struct
 void func_ebeta_rjk(double *x, int n, void *ex)
 {
     SEXP args, res, tmp;
-    int i, j, k, m, d, ii, jj;
+    int i, j, k, m, d, ii, jj, pc=0;
     double te, *alpha;
     MableDRStruct MDS = (MableDRStruct) ex;
     m = MDS->m; i = MDS->i; j = MDS->j; k = MDS->k; 
@@ -3822,7 +3877,11 @@ void func_ebeta_rjk(double *x, int n, void *ex)
     if(length(res) != n*(d+1))
 	error("evaluation of regression function(s) gave a result of wrong length");
     if(TYPEOF(res) == INTSXP) {
-	res = coerceVector(res, REALSXP);
+	     PROTECT(res = coerceVector(res, REALSXP));
+       pc = 1;
+	     //res = coerceVector(res, REALSXP);
+       //UNPROTECT(1); /* uprotect the old res */
+       //PROTECT(res);
     } else if(TYPEOF(res) != REALSXP)
 	error("evaluation of regression function(s) gave a result of wrong type");
 
@@ -3834,7 +3893,8 @@ void func_ebeta_rjk(double *x, int n, void *ex)
 	    if(!R_FINITE(x[ii]))
 	       error("non-finite r(x) value");
     }
-    UNPROTECT(3);
+    UNPROTECT(3+pc);
+    //UNPROTECT(3);
     return;
 }
 
