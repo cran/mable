@@ -648,10 +648,8 @@ Let $f(t)$ and $F(t)=1-S(t)$ be the density and cumulative distribution function
 ### Example: The Breast Cosmesis Data
 Consider the breast cosmesis data as described in @Finkelstein-and-Wolfe-1985-biom is used to study the cosmetic effects of cancer therapy. The time-to-breast-retractions in months ($T$) were  subject to interval censoring and were measured for 94 women among them 46 received radiation only ($X=0$) (25 right-censored, 3 left-censored and 18 interval censored) and 48 received radiation plus chemotherapy ($X=1$)  (13 right-censored, 2 left-censored and 33 interval censored). The right-censored event times were for those women who did not experienced cosmetic deterioration.   
 
-Load package \texttt{coxinterval} to access Breast Cosmesis Data. We fit the two-sample data separately.
-```{r results = "hide", warning = FALSE}
-library(coxinterval) 
-```
+We fit the Breast Cosmesis Data as two-sample data separately.
+
 ```{r}
 bcos=cosmesis
 head(bcos, 3)
@@ -1634,6 +1632,7 @@ The \texttt{plot} method \texttt{plot.mable\_reg()} for class \texttt{mable\_reg
 ### Example: Ovarian Cancer Survival Data
 The Ovarian Cancer Survival Data is included in package \texttt{survival}.
 ```{r}
+library(survival)
 futime2 <- ovarian$futime
 futime2[ovarian$fustat==0] <- Inf
 ovarian2 <- data.frame(age = ovarian$age, futime1 = ovarian$futime, futime2 = futime2)

@@ -8,7 +8,8 @@
 #' @name Vaal.Flow
 #' @usage data(Vaal.Flow)
 #' @format   The format is: int [1:65] 222 1094 452 1298 882 988 276 216 103 490 ...
-#' @references Linhart, H., and Zucchini, W., \emph{Model Selection}, Wiley Series in Probability and Mathematical Statistics: Applied
-#' Probability and Statistics, New York: John Wiley \& Sons Inc, 1986.
+#' @references Linhart, H., and Zucchini, W., \emph{Model Selection}, 
+#'  Wiley Series in Probability and Mathematical Statistics: Applied
+#' Probability and Statistics, New York: John Wiley and Sons Inc, 1986.
 #' @examples data(Vaal.Flow)
 "Vaal.Flow"

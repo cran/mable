@@ -135,7 +135,7 @@ moment and a method of mode which are implemented by function \code{optimal()}.
  lam<-pmix$lambda; mu<-pmix$mu; sig<-pmix$sigma
  y1<-lam[1]*dnorm(v,mu[1], sig[1])+lam[2]*dnorm(v, mu[2], sig[2])
  res<-mable(x, M = c(2,300), interval = c(a,b), controls  =
-        mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-7))
+        mable.ctrl(sig.level = 1e-8, maxit = 2000L, eps = 1.0e-7))
  op<-par(mfrow = c(1,2),lwd = 2)
  layout(rbind(c(1, 2), c(3, 3)))
  plot(res, which = "likelihood")

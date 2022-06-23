@@ -93,7 +93,6 @@
 #' arXiv:1911.07087.
 #' @examples \donttest{
 #' ## Breast Cosmesis Data
-#'   require(coxinterval) 
 #'   bcos=cosmesis
 #'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   g <- 0.41 #Hanson and  Johnson 2004, JCGS
@@ -326,7 +325,6 @@ mable.aft<-function(formula, data, M, g=NULL, tau=NULL, x0=NULL,
 #' arXiv:1911.07087.
 #' @examples \donttest{
 #' ## Breast Cosmesis Data
-#'   require(coxinterval) 
 #'   bcos=cosmesis
 #'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   g<-0.41 #Hanson and  Johnson 2004, JCGS, 

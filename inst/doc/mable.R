@@ -547,9 +547,6 @@ legend("bottomright", bty = "n", lty = c(1,2), col = c(1,2), c(expression(F),
     expression(hat(F))))
 par(op)
 
-## ----results = "hide", warning = FALSE----------------------------------------
-library(coxinterval) 
-
 ## -----------------------------------------------------------------------------
 bcos=cosmesis
 head(bcos, 3)
@@ -1476,6 +1473,7 @@ plot(oldfaith2, which="cumulative", contour=TRUE, add=TRUE, lty=2, col=2)
 par(op)                                                                                                                       
 
 ## -----------------------------------------------------------------------------
+library(survival)
 futime2 <- ovarian$futime
 futime2[ovarian$fustat==0] <- Inf
 ovarian2 <- data.frame(age = ovarian$age, futime1 = ovarian$futime, futime2 = futime2)

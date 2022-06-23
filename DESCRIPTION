@@ -1,7 +1,7 @@
 Package: mable
 Title: Maximum Approximate Bernstein/Beta Likelihood Estimation
-Version: 3.1.0
-Date: 2022-05-31
+Version: 3.1.1
+Date: 2022-06-21
 Author: Zhong Guan [aut, cre]
 Maintainer: Zhong Guan <zguan@iusb.edu>
 Depends: R (>= 3.5.0)
@@ -11,12 +11,12 @@ LazyData: true
 Encoding: UTF-8
 Imports: survival, graphics, stats, icenReg, parallel, doParallel,
         foreach, iterators, tcltk
-Suggests: mixtools, ICsurv, coxinterval, knitr, rmarkdown, pbapply,
-        markdown, ks, multimode
+Suggests: mixtools, ICsurv, knitr, rmarkdown, pbapply, markdown, ks,
+        multimode
 BuildVignettes: true
 VignetteBuilder: knitr, rmarkdown
 RoxygenNote: 7.2.0
 NeedsCompilation: yes
-Packaged: 2022-06-07 19:12:41 UTC; zguan
+Packaged: 2022-06-23 23:19:59 UTC; zguan
 Repository: CRAN
-Date/Publication: 2022-06-07 20:20:02 UTC
+Date/Publication: 2022-06-23 23:50:02 UTC

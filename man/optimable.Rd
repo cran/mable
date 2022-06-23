@@ -13,7 +13,7 @@ optimable(
   modes = NULL,
   nmod = 1,
   ushaped = FALSE,
-  maxit = 50
+  maxit = 50L
 )
 }
 \arguments{

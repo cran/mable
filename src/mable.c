@@ -3227,6 +3227,24 @@ void Multivar_dBeta(double *x, int *m, int n, int d, int *km, double *dBta){
     }
   }
 }
+void MVdBeta_One_Obs(double *x, int *m, int j, int n, int d, int *km, double *dBta){
+  int i, jj, k, r, K, it;
+  K=km[d];
+  
+  for(it=0;it<K;it++){
+    dBta[it]=1.0;
+    r = it;
+    for(k=d-1; k>0; k--){
+      jj = r%km[k];
+      i = (r-jj)/km[k];
+      dBta[it]*=dbeta(x[j+n*k], i+1, m[k]+1-i, FALSE);
+      r = jj;
+      //Rprintf("it=%d, k=%d, i=%d\n",  it, k, i);
+    }
+    dBta[it]*=dbeta(x[j], r+1, m[0]+1-r, FALSE); 
+  }
+
+}
 /*//////////////////////////////////////////////////////////////////*/
 /* Multivariate Beta cdfs                                           */
 /* Multivar_Beta_CDF: Returns a K x n matrix, K=(m1+1)...(md+1)     */
@@ -3274,41 +3292,41 @@ double loglik_bern_multivar(double *p, int K, int n, double *Bta){
 }
 
 /*/////////////////////////////////////////////////////*/
+/* A slower version but takes less memory              */
 /* EM Method for mixture of                            */
 /* beta(x1, i1+1, m1+1-i1),...,beta(xd, id+1, md+1-id),*/ 
 /*               0<=ik<=mk, 1<=k<=d                    */
 /*/////////////////////////////////////////////////////*/
-void em_multivar_beta_mix(double *p, double *Bta, int *m, 
+void em_mvar_mixbeta(double *x, double *p, int *m, int *km,
       int n, int d, int K, int maxit, double eps, 
       double *llik, int progress, int *conv){
   int i, j, it;
-  double del, llik_nu, *pBeta, *fp, *pnu;
-  double  ttl;
+  double del, llik_nu, *pb, *pt, fp=0.0, ttl;
   ttl=(double) maxit;
   conv[0] = 0;
-  pBeta = Calloc(K*n, double);
-  fp = Calloc(n, double);
-  pnu = Calloc(K, double);
-  llik[0] = loglik_bern_multivar(p, K, n, Bta);
+  pb = Calloc(K, double);
+  pt = Calloc(K, double);
+  llik[0] = -n*log(n);
   del = 10.0;
-  it = 1;
+  it = 0;
   while(del>eps && it<maxit){
+    llik_nu=0.0;
+    for(i=0; i<K; i++) pt[i]=0.0;
     for(j=0; j<n; j++){
-      fp[j] = 0.0;
+      fp = 0.0;
+      MVdBeta_One_Obs(x, m, j, n, d, km, pb);
       for(i=0; i<K; i++) {
-        pBeta[i+K*j] = p[i]*Bta[i+K*j];
-        fp[j] += pBeta[i+K*j];
+        pb[i] = p[i]*pb[i];
+        fp += pb[i];
       }
+      for(i=0; i<K; i++) pt[i] += pb[i]/fp;
+      llik_nu += log(fp);
     }
     for(i=0; i<K; i++){
-      pnu[i] = 0.0;
-      for(j=0; j<n; j++) pnu[i] += pBeta[i+K*j]/fp[j];
-      pnu[i] /= (double)n;
+      p[i] = pt[i]/(double)n;
     }
-    llik_nu = loglik_bern_multivar(pnu, K, n, Bta);
     del = fabs(llik[0]-llik_nu);
     it += 1;
-    for(i=0; i<K; i++) p[i] = pnu[i];
     llik[0] = llik_nu;
     R_CheckUserInterrupt();
     //Rprintf("  llik = %g\n", llik[0]);
@@ -3321,9 +3339,66 @@ void em_multivar_beta_mix(double *p, double *Bta, int *m,
     conv[0]+=1; 
     if(progress==1) warning("\n The maximum iteration has been reached \n with del %f.\n", del);
   }
-  Free(pBeta);
+  Free(pb);
+  Free(pt);
+}
+/* end function em_mvar_mixbeta */
+
+/*/////////////////////////////////////////////////////*/
+/* EM Method for mixture of                            */
+/* beta(x1, i1+1, m1+1-i1),...,beta(xd, id+1, md+1-id),*/ 
+/*               0<=ik<=mk, 1<=k<=d                    */
+/*/////////////////////////////////////////////////////*/
+void em_multivar_beta_mix(double *p, double *Bta, int *m, 
+      int n, int d, int K, int maxit, double eps, 
+      double *llik, int progress, int *conv){
+  int i, j, it;
+  double del, llik_nu, *fp;//*pBeta,  *pnu;
+  double tmp, ttl;
+  ttl=(double) maxit;
+  conv[0] = 0;
+  //pBeta = Calloc(K*n, double);//very BIG memory
+  fp = Calloc(n, double);
+  //pnu = Calloc(K, double);
+  llik[0] = loglik_bern_multivar(p, K, n, Bta);
+  del = 10.0;
+  it = 1;
+  while(del>eps && it<maxit){
+    for(j=0; j<n; j++){
+      fp[j] = 0.0;
+      for(i=0; i<K; i++) {
+        //pBeta[i+K*j] = p[i]*Bta[i+K*j];
+        //fp[j] += pBeta[i+K*j];
+        fp[j] += p[i]*Bta[i+K*j];
+      }
+    }
+    for(i=0; i<K; i++){
+      //p[i] = 0.0;
+      //for(j=0; j<n; j++) p[i] += pBeta[i+K*j]/fp[j];
+      //p[i] /= (double)n;
+      tmp = 0.0; 
+      for(j=0; j<n; j++) tmp += p[i]*Bta[i+K*j]/fp[j];
+      p[i] = tmp/(double)n;
+    }
+    llik_nu = loglik_bern_multivar(p, K, n, Bta);
+    del = fabs(llik[0]-llik_nu);
+    it += 1;
+    //for(i=0; i<K; i++) p[i] = pnu[i];
+    llik[0] = llik_nu;
+    R_CheckUserInterrupt();
+    //Rprintf("  llik = %g\n", llik[0]);
+    if(progress==1) ProgressBar(it/ttl,"");
+  }
+  if(progress==1){
+    ProgressBar(1.0,"");
+    Rprintf("\n");}
+  if(it==maxit){
+    conv[0]+=1; 
+    if(progress==1) warning("\n The maximum iteration has been reached \n with del %f.\n", del);
+  }
+  //Free(pBeta);
   Free(fp);
-  Free(pnu);
+  //Free(pnu);
 }
 /* end function em_beta_mix */
 /*////////////////////////////////////////////////////////////*/
@@ -3574,17 +3649,13 @@ void Init_p(double *p, int *m, int d, int J, int diff, int *km){
 // estimated based on marginal data and joint data
 void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int *mhat, 
       double *x, int *maxit,  double *eps, double *lk, int *progress,   
-      int *conv, double *D, double *mlk, int *cdf){
+      int *conv, double *D, int *cdf, int *hd){
   int i, j, k, l, prgrs, *km, *m, *mt, K, maxM;
   int N, *kN, itmp, *Itmp0, *Itmp1, jtmp=0, diff=0, Kt=0; 
   double *p, *pt, *pt1, *pt2, *llik, pct=0.0, ttl,  *Bta;
-  double maxD, minimaxD=1e+5;//, Dt, tini=1e-5;
+  double maxD, minimaxD=1e+5, tini=1e-4;//, Dt, tini=1e-4;
   km = Calloc(*d+1, int);
-  kN = Calloc(*d+1, int);
-  mt = Calloc(*d, int);
    m = Calloc(*d, int);
-  Itmp0 = Calloc(*d, int);
-  Itmp1 = Calloc(*d, int);
   llik = Calloc(1, double);
   km[0] = 1;
   maxM=0;
@@ -3595,34 +3666,33 @@ void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int 
     // Rprintf("km[%d]=%d\n",i,km[i]);
   }
   K=km[*d];
-  Bta = Calloc(*n*K, double);
-  p = Calloc(K, double);
-  pt = Calloc(K, double);
-  pt1 = Calloc(maxM+1, double);
-  pt2 = Calloc(maxM+1, double);
   if(*progress==1)
     Rprintf("\n Mable fit of multivariate data. This may take several minutes.\n\n");
   if(*search==0){
     if(*progress==1) prgrs=1;
     else prgrs=0;
-    Multivar_dBeta(x, M, *n, *d, km, Bta);
-    for(i=0;i<K;i++) pt[i]=1.0/(double) K;
-    em_multivar_beta_mix(pt, Bta, M, *n, *d, K, *maxit, *eps, lk, prgrs, conv);
-    k = 0;
-    maxD=0.0;
-    for(i=0; i<*d; i++){
-      for(j=0;j<=mhat[i];j++) pt1[j]=phat[k+j];
-      k+=mhat[i]+1;
-      p2pj(pt, M, *d, km, pt2, i);
-      if(*cdf) maxD=fmax2(maxD, L2_F1F2(pt1, mhat[i], pt2, M[i]));
-      else maxD=fmax2(maxD, L2_f1f2(pt1, mhat[i], pt2, M[i]));
-      mt[i]=M[i];
+    for(i=0;i<K;i++) phat[i]=(phat[i]+tini/(double) K)/(1.0+tini);
+    if(*hd==0){
+      Bta = Calloc(*n*K, double);// very BIG memory
+      Multivar_dBeta(x, M, *n, *d, km, Bta);
+      em_multivar_beta_mix(phat, Bta, M, *n, *d, K, *maxit, *eps, lk, prgrs, conv);
+      Free(Bta);
     }
-    minimaxD=maxD;
-    mlk[0]=lk[0];
-    Kt=K;
+    else{
+      em_mvar_mixbeta(x, phat, M, km, *n, *d, K, *maxit, *eps, lk, prgrs, conv);
+    }
+    for(i=0; i<*d; i++) mhat[i]=M[i];
   }
   else{
+    kN = Calloc(*d+1, int);
+    mt = Calloc(*d, int);
+    Itmp0 = Calloc(*d, int);
+    Itmp1 = Calloc(*d, int);
+    Bta = Calloc(*n*K, double);// very BIG memory
+    p = Calloc(K, double); // BIG memory
+    pt = Calloc(K, double); // BIG memory
+    pt1 = Calloc(maxM+1, double);
+    pt2 = Calloc(maxM+1, double);
     // Start with m=M0
     prgrs=0;
     kN[0]=1;
@@ -3642,9 +3712,10 @@ void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int 
     em_multivar_beta_mix(p, Bta, m, *n, *d, K, *maxit, *eps, llik, prgrs, conv);
     l = 1;
     while(l<N){
-      k=0;
-      for(i=0;i<*d;i++) k+=Itmp0[i]*kN[i]; 
-      lk[k] = llik[0];// column-major order
+      //k=0;
+      //for(i=0;i<*d;i++) k+=Itmp0[i]*kN[i]; 
+      //lk[k] = llik[0];// column-major order
+      
       k = 0;
       maxD=0.0;
       for(i=0; i<*d; i++){
@@ -3658,7 +3729,8 @@ void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int 
         minimaxD=maxD;
         for(i=0; i<*d; i++) mt[i]=m[i];
         for(i=0; i<K; i++) pt[i]=p[i];
-        mlk[0]=lk[k];
+        //mlk[0]=lk[k];
+        lk[0] = llik[0];
         Kt=K;
         //Rprintf("l=%d, minimaxD=%g\n",l,minimaxD);
       }
@@ -3708,21 +3780,22 @@ void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat, int 
       ProgressBar(1.0,"");
       Rprintf("\n");
     }
+    D[0]=minimaxD;
+    for(j=0;j<*d;j++) mhat[j]=mt[j];
+    for(i=0;i<Kt;i++) phat[i]=pt[i];
+    Free(Bta);
+    Free(p);
+    Free(pt);
+    Free(pt1);
+    Free(pt2);
+    Free(kN);
+    Free(mt);
+    Free(Itmp0);
+    Free(Itmp1);
   }
-  for(j=0;j<*d;j++) mhat[j]=mt[j];
-  for(i=0;i<Kt;i++) phat[i]=pt[i];
-  D[0]=minimaxD;
-  Free(Bta);
-  Free(p);
-  Free(pt);
-  Free(pt1);
-  Free(pt2);
+  
   Free(km);
-  Free(kN);
   Free(m);
-  Free(mt);
-  Free(Itmp0);
-  Free(Itmp1);
   Free(llik);
 }
 /* t=(t1,...,td) is in [0,1]^d */

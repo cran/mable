@@ -119,7 +119,7 @@
 #'  lam<-pmix$lambda; mu<-pmix$mu; sig<-pmix$sigma
 #'  y1<-lam[1]*dnorm(v,mu[1], sig[1])+lam[2]*dnorm(v, mu[2], sig[2])
 #'  res<-mable(x, M = c(2,300), interval = c(a,b), controls  =
-#'         mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-7))
+#'         mable.ctrl(sig.level = 1e-8, maxit = 2000L, eps = 1.0e-7))
 #'  op<-par(mfrow = c(1,2),lwd = 2)
 #'  layout(rbind(c(1, 2), c(3, 3)))
 #'  plot(res, which = "likelihood")
@@ -644,7 +644,7 @@ momodem<-function(modes, x){
 
 
 optimable<-function(x, interval, m=NULL, mu=NULL, lam=NULL, modes=NULL, nmod=1, 
-             ushaped=FALSE,  maxit=50){
+             ushaped=FALSE,  maxit=50L){
   M<-NULL
   if(missing(interval)) interval=c(0,1)
   n<-length(x)
@@ -1024,21 +1024,21 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
 ##############################################
 #' Summary mathods for classes 'mable' and 'mable_reg'
 ##############################################
-#' @param object  Class "mable" or 'mable_reg' object return by \code{mable} or \code{mable.xxxx}  functions
+#' @param object  Class "mable" or 'mable_reg' object return by \code{mable} or 
+#'         \code{mable.xxxx}  functions
 #' @param ...  for future methods
 #' @description Produces a summary of a mable fit.
 #' @return Invisibly returns its argument, \code{object}.
 #' @examples
-#' \donttest{
-#'   # Vaal Rive Flow Data
-#'   data(Vaal.Flow)
-#'   res<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000),
-#'      controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
-#'   summary(res)
-#' }
+# \donttest{
+#   # Vaal Rive Flow Data
+#   data(Vaal.Flow)
+#   res<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000),
+#      controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
+#   summary(res)
+# }
 #' \donttest{
 #' ## Breast Cosmesis Data
-#'   require(coxinterval)
 #'   bcos=cosmesis
 #'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=.41, 
@@ -1182,8 +1182,8 @@ optim.gcp<-function(obj){
 #' @author Zhong Guan <zguan@iusb.edu>
 #' @return a list of the arguments' values
 #' @export
-mable.ctrl<-function(sig.level=1.0e-2, eps = 1.0e-7, maxit = 5000, eps.em = 1.0e-7, maxit.em = 5000,
-    eps.nt = 1.0e-7, maxit.nt = 1000, tini=1e-4){
+mable.ctrl<-function(sig.level=1.0e-2, eps = 1.0e-7, maxit = 5000L, eps.em = 1.0e-7, 
+  maxit.em = 5000L, eps.nt = 1.0e-7, maxit.nt = 1000L, tini=1e-4){
     ans<-list(sig.level=sig.level, eps = eps, maxit = maxit, eps.em = eps.em,
             maxit.em = maxit.em, eps.nt = eps.nt, maxit.nt = maxit.nt, tini=tini)
     return(ans)

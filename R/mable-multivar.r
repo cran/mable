@@ -30,6 +30,8 @@
 #'    on marginal data, otherwise, the optimal degrees are those minimize the maximum
 #'    L2 distance between marginal cdf or pdf estimated based on marginal data and the
 #'    joint data. See details.   
+#' @param high.dim logical, data are high dimensional/large sample or not
+#'    if TRUE, run a slower version procedure which requires less memory  
 #' @param criterion either cdf or pdf should be used for selecting optimal degrees.
 #'    Default is "cdf"
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
@@ -72,7 +74,8 @@
 #' ## Old Faithful Data
 #' \donttest{
 #'  a<-c(0, 40); b<-c(7, 110)
-#'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
+#'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, 
+#'          interval = cbind(a,b), progress=FALSE)
 #'  plot(ans, which="density") 
 #'  plot(ans, which="cumulative")
 #' }
@@ -84,118 +87,147 @@
 #' @references Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density,    
 #'    \emph{Statistics}, Vol. 53, no. 2, 321-338  
 #' @export
-mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=FALSE, 
-        criterion=c("cdf", "pdf"), controls = mable.ctrl(), progress=TRUE){
-    data.name<-deparse(substitute(x))
-    n<-nrow(x)
-    d<-ncol(x)
-    xNames<-names(x)
-    criterion <- match.arg(criterion)
-    if(is.null(xNames)) 
-        for(i in 1:d) xNames[i]<-paste("x",i,sep='')
-    x<-as.matrix(x)   
-    if(is.null(interval))  
-        interval<-cbind(apply(x, 2, min), apply(x, 2, max))
-    else if(is.matrix(interval)){
-        if(nrow(interval)!=d || ncol(interval)!=2)
-            stop("Invalid argument 'interval'.\n")
+mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE, 
+      high.dim=FALSE, criterion=c("cdf", "pdf"), controls = mable.ctrl(), progress=TRUE){
+  data.name<-deparse(substitute(x))
+  n<-nrow(x)
+  d<-ncol(x)
+  xNames<-names(x)
+  criterion <- match.arg(criterion)
+  if(is.null(xNames)) 
+    for(i in 1:d) xNames[i]<-paste("x",i,sep='')
+  x<-as.matrix(x)   
+  if(is.null(interval))  
+    interval<-cbind(apply(x, 2, min), apply(x, 2, max))
+  else if(is.matrix(interval)){
+    if(nrow(interval)!=d || ncol(interval)!=2)
+      stop("Invalid argument 'interval'.\n")
+  }
+  else{
+    if(length(interval)!=2) 
+      stop("Invalid argument 'interval'.\n")
+    else if(any(apply(x, 2, min)<interval[1])||any(apply(x, 2, max)>interval[2]))
+      stop("Invalid argument 'interval'.\n")
+    else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
+  }
+  for(i in 1:d) x[,i]<-(x[,i]-interval[i,1])/(interval[i,2]-interval[i,1])
+  if(any(x<0) || any(x>1)) stop("All data values must be contained in 'interval'.")
+  if(missing(M) || length(M)==0) stop("'M' is missing.\n")
+  else if(length(M)==1) M<-rep(M,d)
+  else if(length(M)!=d){
+    if(search){
+      if(max(M)>=5) warning("Length of 'M' does not match 'ncol(x)'. Use largest 'M'.\n")
+      else stop("'M' are too small for searching optimal degrees.\n")
+      M<-rep(max(M),d)}
+    else stop("Invalide 'M'.\n")
+  }
+  else M<-M[1:d]
+  if(length(M0)==1) M0<-rep(M0,d)
+  else if(length(M0)!=d){
+    if(search){
+      if(min(M0)<max(M)) 
+        warning("Length of 'M0' does not match 'ncol(x)'. Use least 'M0'.\n")
+      else stop("'M0' are too big for searching optimal degrees.\n")
+      M0<-rep(max(M0),d)}
+  }
+  m<-rep(0, d)
+  pl<-list()
+  mlik<-0    
+  convergence<-0
+  cdf<-ifelse(criterion=="cdf", TRUE, FALSE)
+  D<-0
+  Ord<-function(i){
+    if(any(1:3==i%%10) && !any(11:13==i)) switch(i%%10, "st", "nd", "rd")
+    else "th"}
+  #mar<-list()# estimates based on marginal data
+  k<-1
+  for(i in 1:d){
+    if(search){
+      cat("mable fit of the ",i, Ord(i), " marginal data.\n", sep='')
+      res<-mable(x[,i], M=c(M0[i],M[i]), c(0,1), controls=controls, progress = TRUE)
+      pval<-res$pval
+      #m1<-res$M[2]
+      cat("m[",i,"]=", res$m," with p-value ",  pval[length(pval)],"\n", sep='')
     }
     else{
-        if(length(interval)!=2) 
-            stop("Invalid argument 'interval'.\n")
-        else if(any(apply(x, 2, min)<interval[1])||any(apply(x, 2, max)>interval[2]))
-                stop("Invalid argument 'interval'.\n")
-        else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
+      cat("mable fit of the ",i, Ord(i), " marginal data with the given degree m[",i,"]=",M[i],".\n", sep='')
+      res<-mable(x[,i], M=M[i], c(0,1), controls=controls, progress = TRUE) 
     }
-    for(i in 1:d) x[,i]<-(x[,i]-interval[i,1])/(interval[i,2]-interval[i,1])
-    if(any(x<0) || any(x>1)) stop("All data values must be contained in 'interval'.")
-    if(missing(M) || length(M)==0) stop("'M' is missing.\n")
-    else if(length(M)==1) M<-rep(M,d)
-    else if(length(M)!=d){
-        if(search){
-            if(max(M)>=5) warning("Length of 'M' does not match 'ncol(x)'. Use largest 'M'.\n")
-            else stop("'M' are too small for searching optimal degrees.\n")
-            M<-rep(max(M),d)}
-        else stop("Invalide 'M'.\n")
+    m[i]<-res$m
+    pl[[i]]<-res$p
+  }
+  if(!search | use.mar.deg){
+    M<-m
+    search=FALSE
+    km<-c(1,cumprod(m+1))
+    K<-km[d+1]
+    p<-rep(1,K)
+    j<-rep(0,d)
+    for(l in 1:K){
+      r <- l-1
+      s<-d-1
+      while(s > 0){
+        jj <- r%%km[s+1] 
+        i <- (r-jj)/km[s+1] 
+        j[s+1]<-i
+        r <- jj 
+        s<-s-1
+      }
+      j[1]<-r
+      for(i in 1:d) p[l]<-p[l]*pl[[i]][j[i]+1] 
     }
-    else M<-M[1:d]
-    if(length(M0)==1) M0<-rep(M0,d)
-    else if(length(M0)!=d){
-        if(search){
-            if(min(M0)<max(M)) 
-                warning("Length of 'M0' does not match 'ncol(x)'. Use least 'M0'.\n")
-            else stop("'M0' are too big for searching optimal degrees.\n")
-            M0<-rep(max(M0),d)}
-    }
-    m<-rep(0, d)
+  }
+  else if(search) {
+    M<-2*m
     K<-prod(M+1)
-    p<-rep(1,K)/K
-    Kn<-prod(M)
-    if(search) lk<-rep(0, Kn)
-    else lk<-0
-    mlik<-0    
-    convergence<-0
-    cdf<-ifelse(criterion=="cdf", TRUE, FALSE)
-    D<-0
-    Ord<-function(i){
-        if(any(1:3==i%%10) && !any(11:13==i)) switch(i%%10, "st", "nd", "rd")
-        else "th"}
-    mar<-list()# estimates based on marginal data
+    p<-rep(0,K)
     k<-1
     for(i in 1:d){
-        if(search) {
-            cat("mable fit of the ",i, Ord(i), " marginal data.\n", sep='')
-            res<-mable(x[,i], M=c(1,M[i]), c(0,1), controls=controls, progress = TRUE)
-            pval<-res$pval
-            m1<-res$M[2]
-            cat("m[",i,"]=", res$m," with p-value ",  pval[length(pval)],"\n", sep='')
-        }
-        else{
-            cat("mable fit of the ",i, Ord(i), " marginal data with the given degree m[",i,"]=",M[i],".\n", sep='')
-            res<-mable(x[,i], M=M[i], c(0,1), controls=controls, progress = TRUE) 
-        }
-        m[i]<-res$m
-        p[k+(0:m[i])]<-res$p
-        k<-k+m[i]+1
-        mar$m[i]<-res$m
-        mar$p[[i]]<-res$p
+      p[k+(0:m[i])]<-pl[[i]]
+      k<-k+m[i]+1}
+  }
+  rm(pl)
+
+  #if(search){
+  #  Kn<-prod(M)
+  #  lk<-rep(0, Kn)}
+  #else lk<-0
+  lk<-0
+  ## Call C mable_mvar
+  res<-.C("mable_mvar",
+    as.integer(M0), as.integer(M), as.integer(n), as.integer(d), as.integer(search), 
+    as.double(p), as.integer(m), as.double(x), as.integer(controls$maxit), 
+    as.double(controls$eps), as.double(lk), as.logical(progress), 
+    as.integer(convergence), as.double(D), #as.double(mlik), 
+    as.logical(cdf), as.logical(high.dim))
+  m<-res[[7]]
+  K<-prod(m+1)
+  out<-list(p=res[[6]][1:K], mloglik=res[[11]], interval=interval, 
+       m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
+  cat("\n MABLE for ", d,"-dimensional data:\n",sep='')
+  if(search){
+    cat("Optimal degrees m = (", m[1], sep='')
+    for(i in 2:d) cat(", ",m[i],sep='')
+    cat(") are selected between M0 and M, inclusive, where \n",sep='')
+    cat("M0 = ", M0, "\nM = ",M,"\n")
+    out$M0<-M0
+    out$M<-M
+    #out<-list(p=res[[6]][1:K], mloglik=res[[11]], 
+    #mloglik=res[[15]][1], lk=res[[11]][1:Kn], 
+    #interval=interval, M0=M0, M=M,
+    #  m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
+  }
+  else{
+    if(use.mar.deg){
+      cat("Optimal degrees m = (", m[1], sep='')
+          for(i in 2:d) cat(", ",m[i],sep='')
+      cat(") are selected based on marginal data m=", m, "\n")
     }
-    if(search && use.mar.deg){
-        M<-m
-        search=FALSE
-    }
-    else if(search) M<-2*m
-    ## Call C mable_mvar
-    res<-.C("mable_mvar",
-      as.integer(M0), as.integer(M), as.integer(n), as.integer(d), as.integer(search), 
-      as.double(p), as.integer(m), as.double(x), as.integer(controls$maxit), 
-      as.double(controls$eps), as.double(lk), as.logical(progress), 
-      as.integer(convergence), as.double(D), as.double(mlik), as.logical(cdf))
-      m<-res[[7]]
-      K<-prod(m+1)
-      cat("\n MABLE for ", d,"-dimensional data:\n",sep='')
-      if(search){
-        cat("Optimal degrees m = (", m[1], sep='')
-        for(i in 2:d) cat(", ",m[i],sep='')
-        cat(") are selected between M0 and M, inclusive, where \n",sep='')
-        cat("M0 = ", M0, "\nM = ",M,"\n")
-        out<-list(p=res[[6]][1:K], mloglik=res[[15]][1], 
-        lk=res[[11]][1:Kn], interval=interval, M0=M0, M=M,
-            m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
-      }
-      else{
-        if(use.mar.deg){
-            cat("Optimal degrees m = (", m[1], sep='')
-                for(i in 2:d) cat(", ",m[i],sep='')
-            cat(") are selected based on marginal data m=", m, "\n")
-        }
-        else cat("Model degrees are specified: M=", m, "\n")
-        out<-list(p=res[[6]][1:K], mloglik=res[[11]][1], interval=interval, 
-             m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
-      }
-    out$data.type<-"mvar"
-    class(out)<-"mable"
-    invisible(out)
+    else cat("Model degrees are specified: M=", m, "\n")
+  }
+  out$data.type<-"mvar"
+  class(out)<-"mable"
+  invisible(out)
 }
 #########################################################
 #' Multivariate Mixture Beta Distribution
@@ -367,21 +399,24 @@ rmixmvbeta<-function(n, p, m, interval=NULL){
 #' @export
 marginal.p<-function(p, m){
     d<-length(m)
-    km<-c(1,cumprod(m+1))
     mp<-list()
-    K <- km[d+1] 
-    for(j in 1:d) mp[[j]]<-rep(0,m[j]+1) 
-    it<-0 
-    while(it<K){
-        r <- it 
-        for(k in (d-1):1){
-            jj <- r%%km[k+1] 
-            i <- (r-jj)/km[k+1] 
-            mp[[k+1]][i+1] <- mp[[k+1]][i+1]+p[it+1]
-            r <- jj 
-        }
-        mp[[1]][r+1] <- mp[[1]][r+1]+p[it+1]
-        it<-it+1
+    if(d==1) mp[[1]]<-p
+    else{
+      km<-c(1,cumprod(m+1))
+      K <- km[d+1] 
+      for(j in 1:d) mp[[j]]<-rep(0,m[j]+1) 
+      it<-0 
+      while(it<K){
+          r <- it 
+          for(k in (d-1):1){
+              jj <- r%%km[k+1] 
+              i <- (r-jj)/km[k+1] 
+              mp[[k+1]][i+1] <- mp[[k+1]][i+1]+p[it+1]
+              r <- jj 
+          }
+          mp[[1]][r+1] <- mp[[1]][r+1]+p[it+1]
+          it<-it+1
+      }
     }
     mp
 } 

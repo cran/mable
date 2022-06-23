@@ -24,7 +24,7 @@ void mable_approx(double *u, double *p, int *m, int *n, int *cdf);
 void rbeta_mi(int *n, int *m, int *w, double *v);
 void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat,  
         int *mhat, double *x, int *maxit,  double *eps, double *lk, int *progress,   
-        int *conv, double *D, double *mlk, int *cdf);
+        int *conv, double *D, int *cdf, int *hd);
 void mable_mvdf(int *d, int *m, int *km, int *n, double *t, double *p, 
             double *mvdf, int *density);
 void optim_gcp(int *M, double *lk, double *lr, int *m, double *pval, int *chpts);
@@ -44,7 +44,7 @@ static R_NativePrimitiveArgType approx_t[] = {
 static R_NativePrimitiveArgType rbeta_t[] = {INTSXP, INTSXP, INTSXP, REALSXP};
 static R_NativePrimitiveArgType mvar_t[] = {
     INTSXP, INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,  
-    REALSXP, REALSXP, LGLSXP, INTSXP, REALSXP, REALSXP, LGLSXP};
+    REALSXP, REALSXP, LGLSXP, INTSXP, REALSXP, LGLSXP, LGLSXP};
 static R_NativePrimitiveArgType mvdf_t[] = {
     INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP, LGLSXP};
 static R_NativePrimitiveArgType gcp_t[] = {

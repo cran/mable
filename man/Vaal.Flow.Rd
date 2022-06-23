@@ -18,7 +18,8 @@ The annual flow data of Vaal River at Standerton as given by Table 1.1 of Linhar
 data(Vaal.Flow)
 }
 \references{
-Linhart, H., and Zucchini, W., \emph{Model Selection}, Wiley Series in Probability and Mathematical Statistics: Applied
-Probability and Statistics, New York: John Wiley \& Sons Inc, 1986.
+Linhart, H., and Zucchini, W., \emph{Model Selection}, 
+ Wiley Series in Probability and Mathematical Statistics: Applied
+Probability and Statistics, New York: John Wiley and Sons Inc, 1986.
 }
 \keyword{datasets}

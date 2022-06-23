@@ -445,7 +445,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL,
 #' arXiv:1906.08882 .
 #' @examples
 #' \donttest{
-#'  library(coxinterval) 
+#'  library(mable) 
 #'  bcos=cosmesis
 #'  bc.res0<-mable.ic(bcos[bcos$treat=="RT",1:2], M=c(1,50), IC="none")
 #'  bc.res1<-mable.ic(bcos[bcos$treat=="RCT",1:2], M=c(1,50), IC="none")

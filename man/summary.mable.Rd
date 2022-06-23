@@ -10,7 +10,8 @@
 \method{summary}{mable_reg}(object, ...)
 }
 \arguments{
-\item{object}{Class "mable" or 'mable_reg' object return by \code{mable} or \code{mable.xxxx}  functions}
+\item{object}{Class "mable" or 'mable_reg' object return by \code{mable} or 
+\code{mable.xxxx}  functions}
 
 \item{...}{for future methods}
 }
@@ -22,15 +23,7 @@ Produces a summary of a mable fit.
 }
 \examples{
 \donttest{
-  # Vaal Rive Flow Data
-  data(Vaal.Flow)
-  res<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000),
-     controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
-  summary(res)
-}
-\donttest{
 ## Breast Cosmesis Data
-  require(coxinterval)
   bcos=cosmesis
   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=.41, 

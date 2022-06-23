@@ -99,7 +99,6 @@ all the observed \eqn{x}.
 \examples{
 \donttest{
 ## Breast Cosmesis Data
-  require(coxinterval) 
   bcos=cosmesis
   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
   g <- 0.41 #Hanson and  Johnson 2004, JCGS

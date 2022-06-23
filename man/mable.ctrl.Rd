@@ -7,11 +7,11 @@
 mable.ctrl(
   sig.level = 0.01,
   eps = 1e-07,
-  maxit = 5000,
+  maxit = 5000L,
   eps.em = 1e-07,
-  maxit.em = 5000,
+  maxit.em = 5000L,
   eps.nt = 1e-07,
-  maxit.nt = 1000,
+  maxit.nt = 1000L,
   tini = 1e-04
 )
 }

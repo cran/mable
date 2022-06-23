@@ -11,7 +11,8 @@ mable.mvar(
   M,
   search = TRUE,
   interval = NULL,
-  use.mar.deg = FALSE,
+  use.mar.deg = TRUE,
+  high.dim = FALSE,
   criterion = c("cdf", "pdf"),
   controls = mable.ctrl(),
   progress = TRUE
@@ -37,6 +38,9 @@ If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
 on marginal data, otherwise, the optimal degrees are those minimize the maximum
 L2 distance between marginal cdf or pdf estimated based on marginal data and the
 joint data. See details.}
+
+\item{high.dim}{logical, data are high dimensional/large sample or not
+if TRUE, run a slower version procedure which requires less memory}
 
 \item{criterion}{either cdf or pdf should be used for selecting optimal degrees.
 Default is "cdf"}
@@ -90,7 +94,8 @@ A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a, b]
 ## Old Faithful Data
 \donttest{
  a<-c(0, 40); b<-c(7, 110)
- ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, interval = cbind(a,b))
+ ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, 
+         interval = cbind(a,b), progress=FALSE)
  plot(ans, which="density") 
  plot(ans, which="cumulative")
 }
