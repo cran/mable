@@ -9,6 +9,7 @@ mable.ph(
   data,
   M,
   g = NULL,
+  p = NULL,
   pi0 = NULL,
   tau = Inf,
   x0 = NULL,
@@ -21,12 +22,15 @@ mable.ph(
 
 \item{data}{a dataset}
 
-\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
-then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1},
+then \code{m0} is a preselected degree. If \code{m0<m1} it specifies the set of 
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
 \item{g}{initial guess of \eqn{d}-vector of regression coefficients.  See 'Details'.}
+
+\item{p}{an initial coefficients of Bernstein polynomial model of degree \code{m0}, 
+default is the uniform initial.}
 
 \item{pi0}{Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.}
 
@@ -74,7 +78,7 @@ based on interal censored event time data.
 }
 \details{
 Consider Cox's PH model with covariate for interval-censored failure time data: 
-\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on \eqn{[0, \tau_n]} can be approximated by  

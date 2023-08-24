@@ -88,7 +88,7 @@ void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y, d
     int *MAXIT, int *progress, double *pval, int *chpts, double *level, int *conv, int *known_tau);
 void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double *y2, 
     double *tau, int *N, double *x0, double *ell, double *ddell, double *EPS, int *MAXIT, 
-    int *progress, int *conv, double *delta, int *known_tau);
+    int *progress, int *conv, double *delta, int *known_tau, int *method);
 void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y, double *y2, int *N, 
         double *x0, double *lk, double *lr, double *p, double *ddell, double *eps, int *maxit, 
         int *progress, double *pval, int *chpts, double *level, int *conv, double *del, 
@@ -99,7 +99,7 @@ static R_NativePrimitiveArgType aft_t[] = {
     REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, REALSXP, INTSXP, REALSXP, INTSXP, LGLSXP};
 static R_NativePrimitiveArgType aft_m_t[] = {
     REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP,
-    REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, LGLSXP};
+    REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, LGLSXP, INTSXP};
 static R_NativePrimitiveArgType aft_gamma_t[] = {
     INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP,  
     REALSXP, REALSXP, INTSXP, LGLSXP, REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, LGLSXP};
@@ -153,7 +153,7 @@ static const R_CMethodDef cMethods[] = {
    {"mable_ph_m", (DL_FUNC) &mable_ph_m, 15, ph_m_t},
    {"mable_ic", (DL_FUNC) &mable_ic, 18, ic_t},
    {"mable_aft", (DL_FUNC) &mable_aft, 21, aft_t},
-   {"mable_aft_m", (DL_FUNC) &mable_aft_m, 17, aft_m_t},
+   {"mable_aft_m", (DL_FUNC) &mable_aft_m, 18, aft_m_t},
    {"mable_aft_gamma", (DL_FUNC) &mable_aft_gamma, 22, aft_gamma_t},
 //   {"mable_po", (DL_FUNC) &mable_po, 22, po_t},
 //   {"mable_po_gamma", (DL_FUNC) &mable_po_gamma, 22, po_gamma_t},

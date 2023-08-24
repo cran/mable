@@ -9,6 +9,7 @@ mable.aft(
   data,
   M,
   g = NULL,
+  p = NULL,
   tau = NULL,
   x0 = NULL,
   controls = mable.ctrl(),
@@ -20,12 +21,15 @@ mable.aft(
 
 \item{data}{a dataset}
 
-\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
-then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
+\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1 = m},
+then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
-\item{g}{the given \eqn{d}-vector of regression coefficients, default is zero vector.}
+\item{g}{a \eqn{d}-vector of regression coefficients, default is the zero vector.}
+
+\item{p}{an initial coefficients of Bernstein polynomial of degree \code{m0}, 
+default is the uniform initial.}
 
 \item{tau}{the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the
 baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
@@ -50,11 +54,13 @@ A list with components
   \item \code{tau.n} maximum observed time \eqn{\tau_n}
   \item \code{tau} right endpoint of trucation interval \eqn{[0, \tau)}
   \item \code{x0} the working baseline covariates 
-  \item \code{egx0} the value of \eqn{e^{\gamma'x_0}} 
-  \item \code{convergence} an integer code, 1 indicates either the EM-like iteration for finding 
-    maximum likelihood reached the maximum iteration for at least one \code{m} or the search of 
-    an optimal degree using change-point method reached the maximum candidate degree,
-    2 indicates both occured, and 0 indicates a successful completion.  
+  \item \code{egx0} the value of \eqn{e^{\gamma^T x_0}} 
+  \item \code{convergence} an integer code: 0 indicates a successful completion; 
+    1 indicates that the search of an optimal degree using change-point method reached  
+    the maximum candidate degree; 2 indicates that the matimum iterations was reached for
+    calculating \eqn{\hat p} and \eqn{\hat\gamma} with the selected degree \eqn{m},  
+    or the divergence of the last EM-like iteration for \eqn{p} or the divergence of
+    the last (quasi) Newton iteration for \eqn{\gamma}; 3 indicates 1 and 2.   
   \item \code{delta} the final \code{delta} if \code{m0 = m1} or the final \code{pval} of the change-point 
      for searching the optimal degree \code{m};
  }
@@ -73,7 +79,7 @@ accelerated failure time model based on interval censored data.
 }
 \details{
 Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-\eqn{S(t|x) = S(t \exp(\gamma'(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+\eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
@@ -89,7 +95,7 @@ Response variable should be of the form \code{cbind(l, u)}, where \code{(l,u)} i
 containing the event time. Data is uncensored if \code{l = u}, right censored 
 if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 The truncation time \code{tau} and the baseline \code{x0} should be chosen so that 
-\eqn{S(t|x)=S(t \exp(\gamma'(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
+\eqn{S(t|x)=S(t \exp(\gamma^T(x-x_0))|x_0)} on \eqn{[\tau, \infty)} is negligible for
 all the observed \eqn{x}.
 
 

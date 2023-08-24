@@ -11,7 +11,7 @@ mable.mvar(
   M,
   search = TRUE,
   interval = NULL,
-  use.mar.deg = TRUE,
+  mar.deg = TRUE,
   high.dim = FALSE,
   criterion = c("cdf", "pdf"),
   controls = mable.ctrl(),
@@ -30,11 +30,11 @@ the maximum candidate or the given model degrees for the joint density.}
 \item{search}{logical, whether to search optimal degrees between \code{M0} and \code{M} 
 or not but use \code{M} as the given model degrees for the joint density.}
 
-\item{interval}{a vector of two endpoints or a \code{d x 2} matrix, each row containing 
+\item{interval}{a vector of two endpoints or a \code{2 x d} matrix, each column containing 
 the endpoints of support/truncation interval for each marginal density.
-If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
+If missing, the i-th column is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
 
-\item{use.mar.deg}{logical, if TRUE, the optimal degrees are selected based
+\item{mar.deg}{logical, if TRUE, the optimal degrees are selected based
 on marginal data, otherwise, the optimal degrees are those minimize the maximum
 L2 distance between marginal cdf or pdf estimated based on marginal data and the
 joint data. See details.}
@@ -95,7 +95,7 @@ A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a, b]
 \donttest{
  a<-c(0, 40); b<-c(7, 110)
  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, 
-         interval = cbind(a,b), progress=FALSE)
+         interval = rbind(a,b), progress=FALSE)
  plot(ans, which="density") 
  plot(ans, which="cumulative")
 }

@@ -422,7 +422,7 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
 #'  check if sequence contains repeated subvector
 #' @keywords internal
 #' @noRd
-rep.check <- function(x) {
+repCheck <- function(x) {
   i <- 0
   while (TRUE) {
     i <- i + 1
@@ -508,7 +508,6 @@ ucl.fz<-function(x, z=NULL, nz=length(z), alpha=0.05, interval=c(0,1), del=1/len
 #'       of density values at modes, and \code{fz}, a vector of estimated density 
 #'       values at modes by \code{ks::kde} or \code{multimode::locmodes()} 
 #' @param x a vector sample values 
-#' @param interval support/truncation interval
 #' @return  A list with components
 #' \itemize{
 #'   \item \code{mode} a vector of modes
@@ -719,7 +718,7 @@ optimable<-function(x, interval, m=NULL, mu=NULL, lam=NULL, modes=NULL, nmod=1,
       m<-round(max(0,b/(a-c)-2))
       M[it]<-m
       for(j in (it-1):1){
-        test<-rep.check(M[j:it])
+        test<-repCheck(M[j:it])
         reps<-test$Reps
         if(reps>=2) {
           m<-round(mean(test$Subseq))
@@ -986,8 +985,8 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
       #out<-list(x=x, y=yy)
   }
   else{
-    a<-support[,1]
-    b<-support[,2]
+    a<-support[1,]
+    b<-support[2,]
     if(!any(which=="cumulative")&& !any(which=="density")&& !any(which=="all")){
       cat("Only 'density' and 'cumulative' distribution can be plotted.\n")
       which<-"all"
@@ -1100,7 +1099,7 @@ summary.mable_reg<-function(object, ...){
     ans$pval.z<-2*pnorm(-abs(ans$z))
     ans$p<-obj$p
     ans$pval<-obj$pval[length(obj$pval)]
-    cat(paste("Call: ",obj$model,"(",obj$callText,")", sep=''))
+    cat(paste("Call: mable.",obj$model,"(",obj$callText,")", sep=''))
     cat("\nData:", obj$data.name,"\n")
     cat("Obj Class:", cl,"\n")
     cat("Dimension of response:", ans$dim,"\n")
@@ -1183,7 +1182,7 @@ optim.gcp<-function(obj){
 #' @return a list of the arguments' values
 #' @export
 mable.ctrl<-function(sig.level=1.0e-2, eps = 1.0e-7, maxit = 5000L, eps.em = 1.0e-7, 
-  maxit.em = 5000L, eps.nt = 1.0e-7, maxit.nt = 1000L, tini=1e-4){
+  maxit.em = 5000L, eps.nt = 1.0e-7, maxit.nt = 100L, tini=1e-4){
     ans<-list(sig.level=sig.level, eps = eps, maxit = maxit, eps.em = eps.em,
             maxit.em = maxit.em, eps.nt = eps.nt, maxit.nt = maxit.nt, tini=tini)
     return(ans)

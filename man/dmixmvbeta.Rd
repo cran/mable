@@ -21,9 +21,9 @@ nonnegative and sum to one for the mixture multivariate beta distribution. See '
 
 \item{m}{a vector of degrees, \eqn{(m_1, \ldots, m_d)}}
 
-\item{interval}{a vector of two endpoints or a \code{d x 2} matrix, each row containing 
+\item{interval}{a vector of two endpoints or a \code{2 x d} matrix, each column containing 
 the endpoints of support/truncation interval for each marginal density.
-If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
+If missing, the i-th column is assigned as \code{c(0,1))}.}
 
 \item{n}{sample size}
 }

@@ -203,7 +203,7 @@ mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
 #' @export
 
 
-se.coef.dr<-function(obj, grouped=FALSE, B=500, parallel=FALSE, ncore=NULL,
+se.coef.dr<-function(obj, grouped=FALSE, B=500L, parallel=FALSE, ncore=NULL,
       controls = mable.ctrl()){
   alpha<-obj$alpha; p<-obj$p
   d<-length(alpha)-1 

@@ -10,6 +10,7 @@ maple.ph(
   M,
   g,
   pi0 = NULL,
+  p = NULL,
   tau = Inf,
   x0 = NULL,
   controls = mable.ctrl(),
@@ -21,14 +22,17 @@ maple.ph(
 
 \item{data}{a dataset}
 
-\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
-then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
+\item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1},
+then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 where \code{m1-m0>3}.}
 
 \item{g}{the given \eqn{d}-vector of regression coefficients}
 
 \item{pi0}{Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.}
+
+\item{p}{an initial coefficients of Bernstein polynomial model of degree \code{m0}, 
+default is the uniform initial.}
 
 \item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
@@ -68,7 +72,7 @@ Maximum approximate profile likelihood estimation of Bernstein
 }
 \details{
 Consider Cox's PH model with covariate for interval-censored failure time data: 
-\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
@@ -86,7 +90,7 @@ Response variable should be of the form \code{cbind(l, u)}, where \code{(l, u)} 
 containing the event time. Data is uncensored if \code{l = u}, right censored 
 if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
-\eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x}.
+\eqn{\gamma^T(x-x_0)} is nonnegative for all the observed \eqn{x}.
 
  The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.

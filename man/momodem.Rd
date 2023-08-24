@@ -13,8 +13,6 @@ of density values at modes, and \code{fz}, a vector of estimated density
 values at modes by \code{ks::kde} or \code{multimode::locmodes()}}
 
 \item{x}{a vector sample values}
-
-\item{interval}{support/truncation interval}
 }
 \value{
 A list with components

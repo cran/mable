@@ -11,7 +11,7 @@ mable.ctrl(
   eps.em = 1e-07,
   maxit.em = 5000L,
   eps.nt = 1e-07,
-  maxit.nt = 1000L,
+  maxit.nt = 100L,
   tini = 1e-04
 )
 }

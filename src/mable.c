@@ -30,6 +30,7 @@
 #include <Rmath.h>
 #include <stddef.h>
 #include <stdio.h>
+//#include <windows.h>
 #include <float.h>
 #include <R_ext/Complex.h>
 #include <R_ext/Boolean.h>
@@ -49,53 +50,53 @@
 #define PRGRSS "######################################################################"
 #define PBWIDTH 70
 void ProgressBar (double percentage, char *txt){
-    int val = (int) (percentage * 100);
-    int lpad = (int) (percentage * PBWIDTH);
-    int rpad = PBWIDTH - lpad;
-    Rprintf("\r%s%3d%% [%.*s%*s]",txt, val, lpad, PRGRSS, rpad, "");
+  int val = (int) (percentage * 100);
+  int lpad = (int) (percentage * PBWIDTH);
+  int rpad = PBWIDTH - lpad;
+  Rprintf("\r%s%3d%% [%.*s%*s]",txt, val, lpad, PRGRSS, rpad, "");
 //    Rprintf("\r%3d%% [%.*s%*s]\n%s", val, lpad, PRGRSS, rpad, "", txt);
-    R_FlushConsole();
+  R_FlushConsole();
 }
 
 //void clockProgress (double percentage)
 void clockProgress (int val, char *txt)
 {
-    const char *pcl[8]={"|","/","-","\\","|","/","-","\\"};
+  const char *pcl[8]={"|","/","-","\\","|","/","-","\\"};
 //    int val = (int) (percentage * 100);
-    int agl = (int) (val % 8);
-    Rprintf ("\r%s %s", pcl[agl], txt);
-    R_FlushConsole();
+  int agl = (int) (val % 8);
+  Rprintf ("\r%s %s", pcl[agl], txt);
+  R_FlushConsole();
 }
 
 /*////////////////////////////*/
 /* Ordinal indicator function */
 /*////////////////////////////*/
 const char *Ord(int i){
-    static char ord[3];
-    int it=i%10;
-    if(i!=11 && i!=12 && i!=13){
-        if(it==1) strcpy(ord, "st");
-        if(it==2) strcpy(ord, "nd"); 
-        if(it==3) strcpy(ord, "rd");
-    }
-    else strcpy(ord, "th"); 
-    return ord;
+  static char ord[3];
+  int it=i%10;
+  if(i!=11 && i!=12 && i!=13){
+    if(it==1) strcpy(ord, "st");
+    if(it==2) strcpy(ord, "nd"); 
+    if(it==3) strcpy(ord, "rd");
+  }
+  else strcpy(ord, "th"); 
+  return ord;
 }
 
 /*//////////////////////////////////////////*/
 /*    Using Transient storage allocation    */
 /* R will reclaim the memory at the end of the call to .C.*/
 int *R_ivector(int nl,int nh){
-        int *v;
-        v=(int *)R_alloc((unsigned) (nh-nl+1), sizeof(int));
-        return v-nl;
+  int *v;
+  v=(int *)R_alloc((unsigned) (nh-nl+1), sizeof(int));
+  return v-nl;
 }
 
 double *R_dvector(int nl,int nh){
-        double *v;
+  double *v;
 
-        v=(double *)R_alloc((unsigned) (nh-nl+1), sizeof(double));
-        return v-nl;
+  v=(double *)R_alloc((unsigned) (nh-nl+1), sizeof(double));
+  return v-nl;
 }
 /*//////////////////////////////////////////////////*/
 /*               LU Decomposition                   */
@@ -110,61 +111,61 @@ pivoting; d is output as ±1 depending on whether the number of row interchanges
 was even or odd, respectively. This routine is used in combination with lubksb 
 to solve linear equations or invert a matrix. */
 void ludcmp(double *A, int n, int *indx, double *d){
-    int i,imax,j,k;
-    double big,dum,sum,temp;
-    double *vv; /*vv stores the implicit scaling of each row.*/
-    vv=Calloc(n, double);
-    imax=0;
-    *d=1.0; /*No row interchanges yet.*/
-    for (i=0;i<n;i++) { /*Loop over rows to get the implicit scaling information.*/
-        big=0.0;
-        for (j=0;j<n;j++)
-            if ((temp=fabs(A[i+j*n])) > big) big=temp;
-        if (big == 0.0) error("\nSingular matrix in routine ludcmp\n");
-        /*No nonzero largest element.*/
-        vv[i]=1.0/big; /*Save the scaling.*/
+  int i,imax,j,k;
+  double big,dum,sum,temp;
+  double *vv; /*vv stores the implicit scaling of each row.*/
+  vv=Calloc(n, double);
+  imax=0;
+  *d=1.0; /*No row interchanges yet.*/
+  for (i=0;i<n;i++) { /*Loop over rows to get the implicit scaling information.*/
+    big=0.0;
+    for (j=0;j<n;j++)
+        if ((temp=fabs(A[i+j*n])) > big) big=temp;
+    if (big == 0.0) error("\nSingular matrix in routine ludcmp\n");
+    /*No nonzero largest element.*/
+    vv[i]=1.0/big; /*Save the scaling.*/
+  }
+  for (j=0;j<n;j++) {
+    /* This is the loop over columns of Crout  method. */
+    for (i=0;i<j;i++) {
+    /*This is equation (2.3.12) except for i = j.*/
+      sum=A[i+j*n];
+      for (k=0;k<i;k++) sum -= A[i+k*n]*A[k+j*n];
+      A[i+j*n]=sum;
     }
-    for (j=0;j<n;j++) {
-        /* This is the loop over columns of Crout  method. */
-        for (i=0;i<j;i++) {
-        /*This is equation (2.3.12) except for i = j.*/
-            sum=A[i+j*n];
-            for (k=0;k<i;k++) sum -= A[i+k*n]*A[k+j*n];
-            A[i+j*n]=sum;
-        }
-        big=0.0; /*Initialize for the search for largest pivot element.*/
-        for (i=j;i<n;i++){
-        /*This is i = j of equation (2.3.12) and i = j+1...N of equation (2.3.13).*/
-            sum=A[i+j*n];
-            for(k=0;k<j;k++)
-                sum -= A[i+k*n]*A[k+j*n];
-            A[i+j*n]=sum;
-            if((dum=vv[i]*fabs(sum)) >= big){
-            /*Is the figure of merit for the pivot better than the best so far?*/
-                big=dum;
-                imax=i;
-            }
-        }
-        if (j != imax) { /*Do we need to interchange rows?*/
-            for(k=0;k<n;k++) { /*Yes, do so...*/
-                dum= A[imax+k*n];
-                A[imax+k*n]=A[j+k*n];
-                A[j+k*n] =dum;
-            }
-            *d = -(*d); /*...and change the parity of d.*/
-            vv[imax]=vv[j];/* Also interchange the scale factor.*/
-        }
-        indx[j]=imax;
-        if (A[j+j*n] == 0.0) A[j+j*n]=TINY;
-        /* If the pivot element is zero the matrix is singular (at least to the precision of the*/
-        /* algorithm). For some applications on singular matrices, it is desirable to substitute*/
-        /* TINY for zero.*/
-        if (j != n-1) { /*Now, finally, divide by the pivot element.*/
-            dum=1.0/A[j+j*n];
-            for (i=j+1;i<n;i++) A[i+j*n] *= dum;
-        }
-    } /*Go back for the next column in the reduction.*/
-    Free(vv);
+    big=0.0; /*Initialize for the search for largest pivot element.*/
+    for (i=j;i<n;i++){
+    /*This is i = j of equation (2.3.12) and i = j+1...N of equation (2.3.13).*/
+      sum=A[i+j*n];
+      for(k=0;k<j;k++)
+        sum -= A[i+k*n]*A[k+j*n];
+      A[i+j*n]=sum;
+      if((dum=vv[i]*fabs(sum)) >= big){
+      /*Is the figure of merit for the pivot better than the best so far?*/
+          big=dum;
+          imax=i;
+      }
+    }
+    if (j != imax) { /*Do we need to interchange rows?*/
+      for(k=0;k<n;k++) { /*Yes, do so...*/
+        dum= A[imax+k*n];
+        A[imax+k*n]=A[j+k*n];
+        A[j+k*n] =dum;
+      }
+      *d = -(*d); /*...and change the parity of d.*/
+      vv[imax]=vv[j];/* Also interchange the scale factor.*/
+    }
+    indx[j]=imax;
+    if (A[j+j*n] == 0.0) A[j+j*n]=TINY;
+    /* If the pivot element is zero the matrix is singular (at least to the precision of the*/
+    /* algorithm). For some applications on singular matrices, it is desirable to substitute*/
+    /* TINY for zero.*/
+    if (j != n-1) { /*Now, finally, divide by the pivot element.*/
+      dum=1.0/A[j+j*n];
+      for (i=j+1;i<n;i++) A[i+j*n] *= dum;
+    }
+  } /*Go back for the next column in the reduction.*/
+  Free(vv);
  }
 /*//////////////////////////////////////////////////*/
 /*          Forward and backsubstitution            */
@@ -179,22 +180,22 @@ sides b. This routine takes into account the possibility that b will
 begin with many zero elements, so it is efficient for use 
 in matrix inversion. */
 void lubksb(double *A, int n, int *indx, double b[]){
-    int i,ii=0,ip,j;
-    double sum;
-    for (i=0;i<n;i++) {  /*When ii is set to a positive value, it will become the*/
-        ip=indx[i];      /*index of the first nonvanishing element of b. We now*/
-        sum=b[ip];       /*do the forward substitution, equation (2.3.6). The*/
-        b[ip]=b[i];      /*only new wrinkle is to unscramble the permutation*/
-        if(ii)           /*as we go.*/
-            for (j=ii-1;j<=i-1;j++) sum -= A[i+j*n]*b[j];
-        else if(sum) ii=i+1; /*A nonzero element was encountered, so from now on we*/
-        b[i]=sum;           /*will have to  do the sums in the loop above.*/
-    }
-    for (i=n-1;i>=0;i--) {  /*Now we do the backsubstitution, equation (2.3.7).*/
-        sum=b[i];
-        for (j=i+1;j<n;j++) sum -= A[i+j*n]*b[j];
-        b[i]=sum/A[i+i*n]; /*Store a component of the solution vector X.*/
-    } /*All done!*/
+  int i,ii=0,ip,j;
+  double sum;
+  for (i=0;i<n;i++) {  /*When ii is set to a positive value, it will become the*/
+    ip=indx[i];      /*index of the first nonvanishing element of b. We now*/
+    sum=b[ip];       /*do the forward substitution, equation (2.3.6). The*/
+    b[ip]=b[i];      /*only new wrinkle is to unscramble the permutation*/
+    if(ii)           /*as we go.*/
+        for (j=ii-1;j<=i-1;j++) sum -= A[i+j*n]*b[j];
+    else if(sum) ii=i+1; /*A nonzero element was encountered, so from now on we*/
+    b[i]=sum;           /*will have to  do the sums in the loop above.*/
+  }
+  for (i=n-1;i>=0;i--) {  /*Now we do the backsubstitution, equation (2.3.7).*/
+    sum=b[i];
+    for (j=i+1;j<n;j++) sum -= A[i+j*n]*b[j];
+    b[i]=sum/A[i+i*n]; /*Store a component of the solution vector X.*/
+  } /*All done!*/
 }
 
 /*//////////////////////////////////////////////*/
@@ -204,17 +205,17 @@ void lubksb(double *A, int n, int *indx, double b[]){
 // input: A=J(x0), c=x0, b=F(x0)
 //output: c=x1, del=sum(abs(x1-x0))
 void newton_iter(double *A, int N, double *b, double *c, double *del){
-    int i, *indx;
-    double d=0.0;
-    indx = Calloc(N, int); 
-    ludcmp(A,N,indx,&d);
-    /* Decompose the matrix.*/
-    lubksb(A,N,indx,b);
-    del[0]=0.0;
-    for(i=0;i<N;i++) {
-      del[0]+=fabs(b[i]);
-      c[i]-=b[i];}
-    Free(indx);
+  int i, *indx;
+  double d=0.0;
+  indx = Calloc(N, int); 
+  ludcmp(A,N,indx,&d);
+  /* Decompose the matrix.*/
+  lubksb(A,N,indx,b);
+  del[0]=0.0;
+  for(i=0;i<N;i++) {
+    del[0]+=fabs(b[i]);
+    c[i]-=b[i];}
+  Free(indx);
 }
 
 
@@ -223,34 +224,52 @@ void newton_iter(double *A, int N, double *b, double *c, double *del){
 /*//////////////////////////////////////////////////*/
 
 void minverse(double *A, int N){
-    double *tmp, d, *col;
-    int i,j,*indx;
-    d=0.0;
-    indx = Calloc(N, int); 
-    col = Calloc(N, double);
-    tmp = Calloc(N*N, double);
-    ludcmp(A,N,indx,&d);
-    /* Decompose the matrix just once.*/
-    for(j=0;j<N;j++) {
-        /*Find inverse by columns.*/
-        for(i=0;i<N;i++) col[i]=0.0;
-        col[j]=1.0;
-        lubksb(A,N,indx,col);
-        for(i=0;i<N;i++) tmp[i+j*N]=col[i];
-    }
-    for(j=0;j<N;j++)
-        for(i=0;i<N;i++) A[i+j*N]=tmp[i+j*N];
-        /* return inverse of A using A */
-    Free(tmp); Free(col); Free(indx);
+  double *tmp, d, *col;
+  int i,j,*indx;
+  d=0.0;
+  indx = Calloc(N, int); 
+  col = Calloc(N, double);
+  tmp = Calloc(N*N, double);
+  ludcmp(A,N,indx,&d);
+  /* Decompose the matrix just once.*/
+  for(j=0;j<N;j++) {
+    /*Find inverse by columns.*/
+    for(i=0;i<N;i++) col[i]=0.0;
+    col[j]=1.0;
+    lubksb(A,N,indx,col);
+    for(i=0;i<N;i++) tmp[i+j*N]=col[i];
+  }
+  for(j=0;j<N;j++)
+    for(i=0;i<N;i++) A[i+j*N]=tmp[i+j*N];
+    /* return inverse of A using A */
+  Free(tmp); Free(col); Free(indx);
 }
+
+/*//////////////////////////////////////////////////*/
+/*         Check if Matrix is Singular              */
+/*//////////////////////////////////////////////////*/
+
+int matrix_singular(double *A, int n){
+  int i,j, singular=0;
+  double big, temp;
+  for (i=0;i<n;i++) { 
+    big=0.0;
+    for (j=0;j<n;j++)
+        if ((temp=fabs(A[i+j*n])) > big) big=temp;
+    if (big == 0.0) singular=1;
+  }
+  return singular;
+}
+
+
 /* Print matrix */
 void Print_Matrix(double *m, int nr, int nc, char *mname){
-    int i,j;
-    Rprintf("%s:\n", mname);
-    for(i=1; i<=nr; i++) {
-        for(j=1;j<=nc;j++) Rprintf("  %s[%d][%d] = %f, \t", mname, i,j, m[i+(j-1)*nr]);
-        Rprintf("\n");
-    }
+  int i,j;
+  Rprintf("%s:\n", mname);
+  for(i=1; i<=nr; i++) {
+    for(j=1;j<=nc;j++) Rprintf("  %s[%d][%d] = %f, \t", mname, i,j, m[i+(j-1)*nr]);
+    Rprintf("\n");
+  }
 }
 
 /*////////////////////////////////////////////////////////////*/
@@ -258,22 +277,22 @@ void Print_Matrix(double *m, int nr, int nc, char *mname){
 /* dBeta: Returns n x (m+1) matrix, n=length(u) */
 /* dbeta(u[i], j+1, m+1-j)= the j-th column, j=0, 1, ..., m */
 void dBeta(double *u, int m, int n, double *Bta) {
-    int i, j;
-    for(i=0; i<n; i++) Bta[i]=(m+1)*R_pow_di(1.0-u[i], m);
-    for(i=0; i<n; i++) {
-        if(u[i]<1){
-            j=0;
-            while(j<m){
-                Bta[i+n*(j+1)]=(m-j)*(u[i]/(1.0-u[i]))*Bta[i+n*j]/(double)(j+1.0);
-//                Rprintf("  Bta = %g\n",  Bta[i+n*(j+1)]);
-                j++;
-            }
-        }
-        else{
-            for(j=1;j<m;j++) Bta[i+n*j]=0.0;
-            Bta[i+n*m]=(m+1);
-        }
+  int i, j;
+  for(i=0; i<n; i++) Bta[i]=(m+1)*R_pow_di(1.0-u[i], m);
+  for(i=0; i<n; i++) {
+    if(u[i]<1){
+      j=0;
+      while(j<m){
+        Bta[i+n*(j+1)]=(m-j)*(u[i]/(1.0-u[i]))*Bta[i+n*j]/(double)(j+1.0);
+//          Rprintf("  Bta = %g\n",  Bta[i+n*(j+1)]);
+        j++;
+      }
     }
+    else{
+      for(j=1;j<m;j++) Bta[i+n*j]=0.0;
+      Bta[i+n*m]=(m+1);
+    }
+  }
 }
 /*////////////////////////////////////////////////////////////*/
 /*                    CDF of beta(i+1, m-i+1)                 */
@@ -281,13 +300,13 @@ void dBeta(double *u, int m, int n, double *Bta) {
 /*   pbeta(u[i], j+1, m+1-j)= the j-th column, j=0, 1, ..., m */
 /*////////////////////////////////////////////////////////////*/
 void pBeta(double *u, int m, int n, double *pBta) {
-    int i, j;
-    for(i=0; i<n;i++){
-        for(j=0; j<=m; j++){
-            pBta[i+n*j]=pbeta(u[i], j+1, m-j+1, TRUE, FALSE);
-//            Rprintf("  Bta = %g\n",  pBta[i+n*j]);
-        }
+  int i, j;
+  for(i=0; i<n;i++){
+    for(j=0; j<=m; j++){
+      pBta[i+n*j]=pbeta(u[i], j+1, m-j+1, TRUE, FALSE);
+//          Rprintf("  Bta = %g\n",  pBta[i+n*j]);
     }
+  }
 }
 /*////////////////////////////////////////////////////////////*/
 /*          Class Probability of beta(j+1, m-j+1)             */
@@ -296,45 +315,46 @@ void pBeta(double *u, int m, int n, double *pBta) {
 /*                          = the j-th column, j=0, 1, ..., m */
 /*////////////////////////////////////////////////////////////*/
 void cpBeta(double *u, int m, int N, double *dBta) {
-    int i, j;
-    for(i=0; i<N;i++){
-        for(j=0; j<=m; j++){
-            dBta[i+N*j]=pbeta(u[i+1], j+1, m-j+1, TRUE, FALSE)-pbeta(u[i], j+1, m-j+1, TRUE, FALSE);
-        }
+  int i, j;
+  for(i=0; i<N;i++){
+    for(j=0; j<=m; j++){
+      dBta[i+N*j]=pbeta(u[i+1], j+1, m-j+1, TRUE, FALSE)-pbeta(u[i], j+1, m-j+1, TRUE, FALSE);
     }
+  }
 }
 /*///////////////////////////////////////////////////////////////////*/
 /* Calculating 1-Beta(y): n x (m+1), [beta(y), 1-Beta(y)]: n x (m+2) */
-/* Bdata: Returns n x (m+1) matrices Bta and bBta, n=length(y)       */
-/*   Bta:  dbeta(y[i], j+1, m+1-j), i=0,...,n-1                      */
-/*  bBta:  1-pbeta(y[i], j+1, m+1-j), i=0,...,n-1                    */
-/*                         j=0, 1, ..., m                            */
+/* Bdata: Returns n x (m+2) matrix B[0:(n-1), 0:(m+1)], n=length(y)  */
+/* The first n0 rows are                                             */
+/*   B[i,j]=dbeta(y[i], j+1, m+1-j), j=0:m; B[i,m+1]=0, i=0:(n0-1)   */
+/* The other n1=n-n0 rows are                                        */
+/*   B[i,j]=1-pbeta(y[i], j+1, m+1-j), j=0:m; B[i,m+1]=1, i=n0:(n-1) */
 /*///////////////////////////////////////////////////////////////////*/
 void Bdata(double *y, int m, int n0, int n1, double *Bta) {
-    int i, j, mp1=m+1, n=n0+n1;
-    for(i=0; i<n0; i++){
-        for(j=0;j<=m;j++) Bta[i+n*j]=dbeta(y[i], j+1, m-j+1, FALSE);
-        Bta[i+n*mp1]=0.0;}
-    for(i=n0; i<n; i++){ 
-        if(y[i]<=1.0){
-            for(j=0;j<=m;j++) Bta[i+n*j]=1-pbeta(y[i], j+1, m-j+1, TRUE, FALSE);
-            Bta[i+n*mp1]=1.0;}
-        else for(j=0;j<=mp1;j++) Bta[i+n*j]=0.0; //Bta[i+n*mp1]=0.0;
-    }
+  int i, j, n=n0+n1, mp1=m+1, nmp1=n*mp1;
+  for(i=0; i<n0; i++){
+    for(j=0;j<=m;j++) Bta[i+n*j]=dbeta(y[i], j+1, mp1-j, FALSE);
+    Bta[i+nmp1]=0.0;}
+  for(i=n0; i<n; i++){ 
+    if(y[i]<=1.0){
+      for(j=0;j<=m;j++) Bta[i+n*j]=1-pbeta(y[i], j+1, mp1-j, TRUE, FALSE);
+      Bta[i+nmp1]=1.0;}
+    else for(j=0;j<=mp1;j++) Bta[i+n*j]=0.0;  
+  }
 }
 /*////////////////////////////////////////////////////*/
-/*    Calculate fm(y,p) and Sm(y,p)                   */
+/*          Calculate fm(y,p) and Sm(y,p)             */
 /*////////////////////////////////////////////////////*/
 void fm_Sm(double *p, int m, double *BSy, double *BSy2, int n, double *Sy, double *Sy2){
-    int j, k, mp1=m+1;
-    for(k=0; k<n; k++){
-        Sy[k] = 0.0; 
-        Sy2[k] = 0.0;
-        for(j=0; j<=mp1; j++){
-            Sy[k] += p[j]*BSy[k+n*j];
-            Sy2[k] += p[j]*BSy2[k+n*j]; 
-        }
+  int j, k, mp1=m+1;
+  for(k=0; k<n; k++){
+    Sy[k] = 0.0; 
+    Sy2[k] = 0.0;
+    for(j=0; j<=mp1; j++){
+      Sy[k] += p[j]*BSy[k+n*j];
+      Sy2[k] += p[j]*BSy2[k+n*j]; 
     }
+  }
 }    
 /*////////////////////////////////////////////////////*/
 /*  Initialize p for fm(.|x0;p) using                 */
@@ -342,55 +362,53 @@ void fm_Sm(double *p, int m, double *BSy, double *BSy2, int n, double *Sy, doubl
 /*  p_i=Cm*fmt(i/m,p0), i=0:m, sum(p_i)=1-pt[m0+1]    */
 /*////////////////////////////////////////////////////*/
 void pm(double *p0, int m0, double *p, int m){
-    int i, j;
-    double tmp=0.0, pi0=1-p0[m0+1];
-    for(i=0; i<=m; i++){
-        p[i]=0.0;
-        for(j=0; j<=m0; j++){
-            p[i] += p0[j]*dbeta(i/(double)m, j+1, m0-j+1, FALSE); 
-        }
-        tmp+=p[i];
+  int i, j;
+  double tmp=0.0, pi0=1-p0[m0+1];
+  for(i=0; i<=m; i++){
+    p[i]=0.0;
+    for(j=0; j<=m0; j++){
+      p[i] += p0[j]*dbeta(i/(double)m, j+1, m0-j+1, FALSE); 
     }
-    for(i=0; i<=m; i++) p[i]=pi0*p[i]/tmp;
-    p[m+1]=p0[m0+1];
+    tmp+=p[i];
+  }
+  for(i=0; i<=m; i++) p[i]=pi0*p[i]/tmp;
+  p[m+1]=p0[m0+1];
 }  
 /*////////////////////////////////////////////////////*/
 /*   Calculate exp(g*x-tilde) for a fixed x0          */
 /*           x-tilde = x-x0                           */
 /*////////////////////////////////////////////////////*/
 void egxmx0(double *gama, int d, double *x, int n, double *egx, double *x0){
-    int i,j;
-    double gx0=0.0;
-    for(j=0;j<d;j++) gx0+= x0[j]*gama[j];
-    //egx0 = exp(egx0);
-    for(i=0;i<n;i++){
-        egx[i]=0.0;
-        for(j=0;j<d;j++) egx[i]+= x[i+n*j]*gama[j];
-        egx[i]=exp(egx[i]-gx0);
-    }
-    //for(i=0;i<n;i++) egx[i] /= egx0;
+  int i,j;
+  double gx0=0.0;
+  for(j=0;j<d;j++) gx0+= x0[j]*gama[j];
+  for(i=0;i<n;i++){
+    egx[i]=0.0;
+    for(j=0;j<d;j++) egx[i]+= x[i+n*j]*gama[j];
+    egx[i]=exp(egx[i]-gx0);
+  }
 }
 /*////////////////////////////////////////////////////*/
 /*       Calculate exp(g*x-tilde) and find            */
 /*      x0=x(gama)=argmin{gamma'x_i: i=1:n}           */
 /*////////////////////////////////////////////////////*/
 void egx_x0(double *gama, int d, double *x, int n, double *egx, double *x0){
-    int i,j;
-    double egx0=0.0;
-    //Rprintf("\n * x0=%f, gamma=%f\n",x0[0], gama[0]);
-    for(j=0;j<d;j++) egx0 += x0[j]*gama[j];
-    //egx0=exp(egx0);
-    for(i=0;i<n;i++){
-        egx[i]=0.0;
-        for(j=0;j<d;j++) egx[i]+= x[i+n*j]*gama[j];
-        //egx[i]=exp(egx[i]);
-        if(egx[i]<egx0){
-            egx0=egx[i];
-            for(j=0;j<d;j++) x0[j] = x[i+n*j];
-        }
+  int i,j;
+  double egx0=0.0;
+  //Rprintf("\n * x0=%f, gamma=%f\n",x0[0], gama[0]);
+  for(j=0;j<d;j++) egx0 += x0[j]*gama[j];
+  //egx0=exp(egx0);
+  for(i=0;i<n;i++){
+    egx[i]=0.0;
+    for(j=0;j<d;j++) egx[i]+= x[i+n*j]*gama[j];
+    //egx[i]=exp(egx[i]);
+    if(egx[i]<egx0){
+      egx0=egx[i];
+      for(j=0;j<d;j++) x0[j] = x[i+n*j];
     }
-    //Rprintf("\n ** x0=%f, gamma=%f\n",x0[0], gama[0]);
-    for(i=0;i<n;i++) egx[i] = exp(egx[i]-egx0);
+  }
+  //Rprintf("\n ** x0=%f, gamma=%f\n",x0[0], gama[0]);
+  for(i=0;i<n;i++) egx[i] = exp(egx[i]-egx0);
 }
 
 /*///////////////////////////////////////*/
@@ -399,23 +417,22 @@ void egx_x0(double *gama, int d, double *x, int n, double *egx, double *x0){
 /*///////////////////////////////////////*/
 // chpt[0] input k, ouput change-point
 void chpt_exp(double *lk, double *lr, double *pv, int *chpt){
-    int i, k = chpt[0]; 
-    double mLR=0.0, lr0, lnk=log(k), llnk=log(lnk);
-    //chpt[0]=k;
-    lr0 = k*log((lk[k]-lk[0])/(double)k);
-    lr[k-1]=0.0;
-    for(i=1;i<k;i++){
-        lr[i-1] = lr0-i*log((lk[i]-lk[0])/(double)i)-(k-i)*log((lk[k]-lk[i])/(double)(k-i));
-        if(lr[i-1]>mLR){
-            chpt[0] = i; 
-            mLR=lr[i-1];
-        }
-     //Rprintf("\n lr[%d]=%f\n",i, lr[i-1]);
+  int i, k = chpt[0]; 
+  double mLR=0.0, lr0, lnk=log(k), llnk=log(lnk);
+  lr0 = k*log((lk[k]-lk[0])/(double)k);
+  lr[k-1]=0.0;
+  for(i=1;i<k;i++){
+    lr[i-1] = lr0-i*log((lk[i]-lk[0])/(double)i)-(k-i)*log((lk[k]-lk[i])/(double)(k-i));
+    if(lr[i-1]>mLR){
+      chpt[0] = i; 
+      mLR=lr[i-1];
     }
-    // p-value of change-point
-    pv[0]=1.0-exp(-2*lnk*lnk*sqrt(llnk*M_1_PI)*exp(-2*sqrt(mLR*llnk)));
-    //Rprintf("\n pv[%d]=%f\n",0, pv[0]);
-    //Rprintf("\n chpt=%d, p-val=%f\n", chpt[0], pv[0]);
+   //Rprintf("\n lr[%d]=%f\n",i, lr[i-1]);
+  }
+  // p-value of change-point
+  pv[0]=1.0-exp(-2*lnk*lnk*sqrt(llnk*M_1_PI)*exp(-2*sqrt(mLR*llnk)));
+  //Rprintf("\n pv[%d]=%f\n",0, pv[0]);
+  //Rprintf("\n chpt=%d, p-val=%f\n", chpt[0], pv[0]);
 }
 /*///////////////////////////////////////*/
 /*       Gamma Change-point Method       */
@@ -424,75 +441,75 @@ void chpt_exp(double *lk, double *lr, double *pv, int *chpt){
 // MLE theta[0:1]=(alpha, beta) of Gamma Model 
 // and loglikelihood theta[2] based on x[i], k<= i < n.
 void mle_gamma(double *x, int k, int n, double *res){
-    int i, it=0, nmk=n-k;
-    double s=1.0, d=0.0, xbar=0.0, tmp=0.0;
-    double del=1.0, eps=1.0e-10, maxit=100;
-    // initial: MME
-    for(i=k;i<n; i++){
-        xbar += x[i];
-        s *= x[i];
-        tmp += x[i]*x[i];
-    }
-    xbar /= (double) nmk;
-    d = log(xbar) - log(s)/(double)nmk;
-    tmp = (tmp-nmk*xbar*xbar)/(double)(nmk-1);
-    tmp = xbar*xbar/tmp; 
-    while(del>eps && it<maxit){
-        del = tmp*(log(tmp)-digamma(tmp)-d)/(1.0-tmp*trigamma(tmp));
-        tmp = tmp-del;
-        del = fabs(del);
-    }
-    res[0] = tmp;
-    res[1] = xbar/tmp;
-    res[2] = (tmp-1)*s-nmk*(tmp*(log(res[1])+1)+lgammafn(tmp));
+  int i, it=0, nmk=n-k;
+  double s=1.0, d=0.0, xbar=0.0, tmp=0.0;
+  double del=1.0, eps=1.0e-10, maxit=100;
+  // initial: MME
+  for(i=k;i<n; i++){
+    xbar += x[i];
+    s *= x[i];
+    tmp += x[i]*x[i];
+  }
+  xbar /= (double) nmk;
+  d = log(xbar) - log(s)/(double)nmk;
+  tmp = (tmp-nmk*xbar*xbar)/(double)(nmk-1);
+  tmp = xbar*xbar/tmp; 
+  while(del>eps && it<maxit){
+    del = tmp*(log(tmp)-digamma(tmp)-d)/(1.0-tmp*trigamma(tmp));
+    tmp = tmp-del;
+    del = fabs(del);
+  }
+  res[0] = tmp;
+  res[1] = xbar/tmp;
+  res[2] = (tmp-1)*s-nmk*(tmp*(log(res[1])+1)+lgammafn(tmp));
 }    
 
 void chpt_gamma(double *lk, double *lr, double *pv, int *chpt){
-    int i, k=chpt[0]; 
-    double mLR=0.0, *res, *x, lnk=log(k), llnk=log(lnk);
-    res = Calloc(3, double);
-    x = Calloc(k, double);
-    for(i=0;i<k;i++) x[i]=lk[i+1]-lk[i];
-    //chpt[0]=k;
-    lr[k-1]=0.0;
-    for(i=1;i<k;i++){
-        mle_gamma(x, 0, i, res);
-        lr[i-1] = res[2];
-        mle_gamma(x, i, k, res);
-        lr[i-1] += res[2];
-        mle_gamma(x, 0, k, res);
-        lr[i-1] -= res[2];
-        if(lr[i-1]>mLR){
-            chpt[0] = i; 
-            mLR=lr[i-1];
-        }
-     //Rprintf("\n lr[%d]=%f\n",i, lr[i-1]);
+  int i, k=chpt[0]; 
+  double mLR=0.0, *res, *x, lnk=log(k), llnk=log(lnk);
+  res = Calloc(3, double);
+  x = Calloc(k, double);
+  for(i=0;i<k;i++) x[i]=lk[i+1]-lk[i];
+  //chpt[0]=k;
+  lr[k-1]=0.0;
+  for(i=1;i<k;i++){
+    mle_gamma(x, 0, i, res);
+    lr[i-1] = res[2];
+    mle_gamma(x, i, k, res);
+    lr[i-1] += res[2];
+    mle_gamma(x, 0, k, res);
+    lr[i-1] -= res[2];
+    if(lr[i-1]>mLR){
+      chpt[0] = i; 
+      mLR=lr[i-1];
     }
-    // p-value of change-point
-    pv[0]=1.0-exp(-2*lnk*lnk*llnk*exp(-2*sqrt(mLR*llnk)));
-    //Rprintf("\n pv[%d]=%f\n",0, chpt[0]);
-    //Rprintf("\n chpt=%d, p-val=%f\n", chpt[0], pv[0]);
-    Free(x); Free(res);
+   //Rprintf("\n lr[%d]=%f\n",i, lr[i-1]);
+  }
+  // p-value of change-point
+  pv[0]=1.0-exp(-2*lnk*lnk*llnk*exp(-2*sqrt(mLR*llnk)));
+  //Rprintf("\n pv[%d]=%f\n",0, chpt[0]);
+  //Rprintf("\n chpt=%d, p-val=%f\n", chpt[0], pv[0]);
+  Free(x); Free(res);
 }
 //choosing optimal degree based on lk using gamma chage-point model
 void optim_gcp(int *M, double *lk, double *lr, int *m, 
-        double *pval, int *chpts){
-    int i, *cp, k=M[1]-M[0];
-    double *res; 
-    cp = Calloc(1, int);
-    res = Calloc(1, double);
-    for(i=0;i<3;i++){            
-        pval[i]=1.0;
-        chpts[i]=i;
-    }
-    for(i=3;i<=k;i++){
-        cp[0]=i;
-        chpt_exp(lk, lr, res, cp);
-        pval[i]=res[0];
-        chpts[i]=cp[0];
-    }
-    m[0] = cp[0]+M[0];
-    Free(cp); Free(res);
+      double *pval, int *chpts){
+  int i, *cp, k=M[1]-M[0];
+  double *res; 
+  cp = Calloc(1, int);
+  res = Calloc(1, double);
+  for(i=0;i<3;i++){            
+    pval[i]=1.0;
+    chpts[i]=i;
+  }
+  for(i=3;i<=k;i++){
+    cp[0]=i;
+    chpt_exp(lk, lr, res, cp);
+    pval[i]=res[0];
+    chpts[i]=cp[0];
+  }
+  m[0] = cp[0]+M[0];
+  Free(cp); Free(res);
 }
 /*///////////////////////////////////////////////////////////////////*/
 /*  Calculate the integral of B_{m1,i}(x)*B_{m2,j}(x) from 0 to 1,   */  
@@ -501,39 +518,39 @@ void optim_gcp(int *M, double *lk, double *lr, int *m,
 /* B_{m1,i}(x)*B_{m2,j}(x) */
 static void Bm1ixBm2j(double *x, int n, void *ex)
 {
-    int i, j, m1, m2, k, *par;
-    par = (int *) ex;
-    m1 = par[0];
-    m2 = par[1];
-    i = par[2];
-    j = par[3];
-    for(k = 0; k < n; k++){
-	   x[k] = pbeta(x[k],i+1,m1-i+1,TRUE,FALSE)*pbeta(x[k],j+1,m2-j+1,TRUE,FALSE);
-    }
-    return;
+  int i, j, m1, m2, k, *par;
+  par = (int *) ex;
+  m1 = par[0];
+  m2 = par[1];
+  i = par[2];
+  j = par[3];
+  for(k = 0; k < n; k++){
+    x[k] = pbeta(x[k],i+1,m1-i+1,TRUE,FALSE)*pbeta(x[k],j+1,m2-j+1,TRUE,FALSE);
+  }
+  return;
 }
 /* integral_0^1 B_{m1,i}(x)*B_{m2,j}(x) dx */
 void int_Bm1xBm2(int m1, int m2, double *B){
-    int i, j, m1p1=m1+1, *ex;
-    double lo=0.0, up=1.0, epsabs=.00001, epsrel=.00001;
-    double result=0.0, abserr=0.0, work[400]; 
-    int lenw=400, last=0, neval=0, ier=0, iwork[100]; 
-    int limit=100; 
-    ex = Calloc(4, int);
-    ex[0] = m1;
-    ex[1] = m2;
-    for(i=0; i<=m1; i++){
-        ex[2] = i; 
-        for(j=0; j<=m2; j++){
-            ex[3] = j;
-            Rdqags(Bm1ixBm2j, ex, &lo, &up, &epsabs, &epsrel, 
-                &result, &abserr, &neval, &ier, &limit, &lenw, &last, 
-                iwork, work);
-            B[i+j*m1p1] = result;
-            //Rprintf("i=%d, j=%d, m1=%d, m2=%d, B=%g\n",i,j,m1,m2, result);
-        }
+  int i, j, m1p1=m1+1, *ex;
+  double lo=0.0, up=1.0, epsabs=.00001, epsrel=.00001;
+  double result=0.0, abserr=0.0, work[400]; 
+  int lenw=400, last=0, neval=0, ier=0, iwork[100]; 
+  int limit=100; 
+  ex = Calloc(4, int);
+  ex[0] = m1;
+  ex[1] = m2;
+  for(i=0; i<=m1; i++){
+    ex[2] = i; 
+    for(j=0; j<=m2; j++){
+      ex[3] = j;
+      Rdqags(Bm1ixBm2j, ex, &lo, &up, &epsabs, &epsrel, 
+          &result, &abserr, &neval, &ier, &limit, &lenw, &last, 
+          iwork, work);
+      B[i+j*m1p1] = result;
+      //Rprintf("i=%d, j=%d, m1=%d, m2=%d, B=%g\n",i,j,m1,m2, result);
     }
-    Free(ex);
+  }
+  Free(ex);
 }
 // End of file "mable-utility.c
 /*////////////////////////////////////////////////////////*/
@@ -823,7 +840,7 @@ void mable_optim(int *M, int *n, double *p, double *x, int *maxit,
     Rprintf("\n");}
   if(m==M[1] && pval[i-1]>*level){
     convergence[0]+=1; 
-    Rprintf("\nThe maximum candidate degree has been reached. \nA model degree with the smallest p-value,  %f, of the change-point is returned.\n", pv0);
+    Rprintf("\nThe maximum candidate degree has been reached. \nA model degree m=%d with the smallest p-value,  %f, of the change-point is returned.\n", m, pv0);
 //        warning("The maximum candidate degree has been reached \n with a p-value of the change-point %f.\n", res[0]);
   }
   M[1]=m;
@@ -942,7 +959,7 @@ void mable_optim_group(int *M, int *N, double *p, double *t, int *n, int *maxit,
   if(convergence[0]>0) convergence[0]=1;
   if(m==M[1]){
     convergence[0]+=1; 
-    Rprintf("\n The maximum candidate degree has been reached \n with a p-value of the change-point %f.\n", res[0]);}
+    Rprintf("\n The maximum candidate degree has been reached: \nm=%d with a p-value of the change-point %f.\n", m, res[0]);}
   M[1]=m;
   tmp=cp0*(M[0]*2+(cp0+1))/2;
   optim[0]=cp0+M[0];
@@ -1000,7 +1017,7 @@ void rbeta_mi(int *n, int *m, int *w, double *v){
 /*                    C Program for                       */
 /*  Maximum Approximate Bernstein likelihood Estimation   */
 /*  in Accelerated Failure Time Regression model based    */
-/*                  Interval Censored data                */
+/*               on Interval Censored data                */
 /*////////////////////////////////////////////////////////*/
 /*////////////////////////////////////////////////////////////*/
 /*                                                            */
@@ -1045,7 +1062,7 @@ void rbeta_mi(int *n, int *m, int *w, double *v){
 
 //log_blik_aft(p, m, gx, n0, n1, betay, BSz, BSz2);
 double log_blik_aft(double *p, int m, double *gx, int n0, int n1, 
-          double *BSz, double *BSz2){
+          double *BSz, double *BSz2, double *tau){
   int i,j, n=n0+n1;
   double llkhd, fz, dSz;
   llkhd = 0.0;
@@ -1054,7 +1071,7 @@ double log_blik_aft(double *p, int m, double *gx, int n0, int n1,
     for(j=0; j<=m; j++){
       fz += p[j]*BSz2[i+n*j];
     }
-    llkhd += -gx[i]+log(fz);
+    llkhd += gx[i]+log(fz);
   }
   for(i=n0; i<n; i++){
     dSz=0.0;
@@ -1063,6 +1080,7 @@ double log_blik_aft(double *p, int m, double *gx, int n0, int n1,
     }
     llkhd += log(dSz);
   }
+  llkhd -= n0*log(tau[0]);
   return llkhd;
 }
 /*/////////////////////////////////////////////////////////////////*/
@@ -1070,23 +1088,20 @@ double log_blik_aft(double *p, int m, double *gx, int n0, int n1,
 /*/////////////////////////////////////////////////////////////////*/
 // 
 void logblik_aft_derv(double *gama, double *p, int d, int m, 
-    double *y, double *y2, double *x, double *x0, double *tau,
-    double *gx, double *z, double *z2, int n0, int n1, double *ell, 
-    double *dell, double *ddell){
-  int i,j,k, n=n0+n1, mp2=m+2;
+    double *x, double *x0, double *tau, double *gx, double *z, double *z2, 
+    int n0, int n1, double *ell, double *dell, double *ddell){
+  int i,j,k, n=n0+n1, nmp2=n*(m+2);
   double tmp1=0.0, tmp2=0.0, A, B, C;
   double *BSz, *BSz2, *bz, *bz2;   
-  //z = Calloc(n, double);
-  //z2 = Calloc(n, double);
-  bz = Calloc(n*mp2, double);  
-  bz2 = Calloc(n*mp2, double); 
-  BSz = Calloc(n*mp2, double);  
-  BSz2 = Calloc(n*mp2, double); 
+  bz = Calloc(nmp2, double);  
+  bz2 = Calloc(nmp2, double); 
+  BSz = Calloc(nmp2, double);  
+  BSz2 = Calloc(nmp2, double); 
   ell[0]=0.0;
-  for(i=0; i<d; i++){ dell[i]=0.0; 
+  for(i=0; i<d; i++){ 
+    dell[i]=0.0; 
     for(j=0; j<d; j++) ddell[i+d*j]=0.0;}
-  // egx, z, z2 have been evaluated???
-  for(k=0; k<n0; k++) ell[0] -= gx[k];
+  for(k=0; k<n0; k++) ell[0] += gx[k];
   Bdata(z, m, 0, n, BSz);//1-B(z),1-B(z2) 
   Bdata(z2, m, 0, n, BSz2);
   Bdata(z, m, n, 0, bz); // beta(z), beta(z2)
@@ -1107,11 +1122,12 @@ void logblik_aft_derv(double *gama, double *p, int d, int m,
     tmp1 = B/A;
     tmp2 = C/A;
     for(i=0; i<d; i++){
-      dell[i] -= (1+tmp1)*(x[k+n*i]-x0[i]); 
+      dell[i] += (1.0+tmp1)*(x[k+n*i]-x0[i]); 
       for(j=0; j<d; j++)
         ddell[i+d*j] -= (tmp1*tmp1-tmp2)*(x[k+n*i]-x0[i])*(x[k+n*j]-x0[j]);
     }
   }
+  ell[0] -= n0*log(tau[0]); //????
   for(k=n0; k<n; k++){
     A = 0.0;
     B = 0.0;
@@ -1128,56 +1144,209 @@ void logblik_aft_derv(double *gama, double *p, int d, int m,
     tmp2 = z[k]*B-z2[k]*C;
     ell[0] += log(tmp1);
     for(i=0; i<d; i++){
-      dell[i]+=A*(x[k+n*i]-x0[i])/tmp1;           
+      dell[i]-=A*(x[k+n*i]-x0[i])/tmp1;           
       for(j=0;j<d;j++){
-        ddell[i+d*j]-=(A/tmp1)*(A/tmp1+1)*(x[k+n*i]-x0[i])*(x[k+n*j]-x0[j]);
+        ddell[i+d*j]-=(A/tmp1)*(A/tmp1+1.0)*(x[k+n*i]-x0[i])*(x[k+n*j]-x0[j]);
         ddell[i+d*j]-=(tmp2/tmp1)*(x[k+n*i]-x0[i])*(x[k+n*j]-x0[j]);
       }
     }
   }
   //for(i=0; i<d; i++)
-     //for(j=0;j<d;j++) Rprintf("\n ddell[%d,%d]=%f", i,j, ell[i+d*j]);
+     //for(j=0;j<d;j++) Rprintf("\n ddell[%d,%d]=%f", i,j, ddell[i+d*j]);
 
-  //Free(z); Free(z2); 
   Free(bz); Free(bz2);
   Free(BSz); Free(BSz2);
 }
-/*////////////////////////////////////////////////////*/
-/*  Maximizer gamma of ell(gamma, p) for a gvien p    */
-/*                   for AFT model                    */
-/*////////////////////////////////////////////////////*/
 
-void gofp_aft(double *gama, int d, double *p, int m, double *y, double *y2, 
-      double *x, double *x0, double *tau, double *gx, double *z, double *z2, int n0, int n1, 
-      double *ell, double *dell, double *ddell, double eps, int maxit, int prog, int known_tau){
+/* Extended version of struct opt_struct */
+typedef struct mable_aft_struct
+{
+    int m, n0, n1, known_tau;
+    double *x0, *x, *p, *y, *y2;
+    double *tau;    
+} mable_aft_struct, *MableAFTStruct;
+
+// minus log-likelihood of AFT model
+static double deviance_aft(int npar, double *par, void *ex)
+{
+  int i, j, m, n0, n1, n;
+  double val=0.0, vz, *z, *z2, *gx, *BSz, *BSz2;
+  MableAFTStruct AS = (MableAFTStruct) ex;
+  m = AS->m; n0 = AS->n0; n1 = AS->n1; n = n0+n1;
+  
+  z = Calloc(n, double);  
+  z2 = Calloc(n, double);  
+  gx = Calloc(n, double);  
+  BSz = Calloc(n*(m+2), double);  
+  BSz2 = Calloc(n*(m+2), double);  
+  egxmx0(par, npar, AS->x, n, gx, AS->x0);
+  if(AS->known_tau!=1){
+    AS->tau[0]=AS->tau[1];
+    for(i=0;i<n;i++){
+      z[i] = AS->y[i]*gx[i];
+      z2[i] = AS->y2[i]*gx[i];
+      AS->tau[0]=fmax(AS->tau[0], z[i]);
+      if(AS->y2[i]<=AS->tau[1]) AS->tau[0]=fmax(AS->tau[0], z2[i]);
+    }
+    AS->tau[0]+=1.0/(double) n;
+    for(i=0;i<n;i++){
+      z[i] = z[i]/AS->tau[0];
+      z2[i] = z2[i]/AS->tau[0];
+      gx[i] = log(gx[i]);
+    }
+  }
+  else{
+    for(i=0;i<n;i++){
+      z[i] = AS->y[i]*gx[i];
+      z2[i] = AS->y2[i]*gx[i];
+      gx[i] = log(gx[i]);
+    }
+  }
+  Bdata(z, m, 0, n, BSz);
+  Bdata(z2, m, n0, n1, BSz2);
+
+
+  for(i=0; i<n0; i++){
+    vz = 0.0; 
+    for(j=0; j<=m; j++){
+      vz += AS->p[j]*BSz2[i+n*j];
+    }
+    val -= gx[i]+log(vz);
+  }
+  //Rprintf("\n val=%f,  \n",val);
+  for(i=n0; i<n; i++){
+    vz=0.0;
+    for(j=0; j <= m; j++){
+      vz += AS->p[j]*(BSz[i+n*j]-BSz2[i+n*j]); 
+    }
+    val -= log(vz);
+  }
+  //Rprintf("\n val=%f,  \n",val);
+  val += n0*log(AS->tau[0]);
+  //Rprintf("\n val=%f,  \n",val);
+  Free(z); Free(z2); Free(gx); Free(BSz); Free(BSz2);
+  return val;
+}
+
+
+// derivative of minus log-likelihood of AFT model
+static void D_deviance_aft(int npar, double *par, double *df, void *ex)
+{
+  int i, j, k, m, n0, n1, n, nmp2;
+  double tmp=0.0, A, B;//, C;
+  double *z, *z2, *gx, *BSz, *BSz2, *bz, *bz2;   
+  MableAFTStruct AS = (MableAFTStruct) ex;
+  m = AS->m; n0 = AS->n0; n1 = AS->n1; n = n0+n1;
+  nmp2=n*(m+2);
+  z = Calloc(n, double);  
+  z2 = Calloc(n, double);  
+  gx = Calloc(n, double);  
+  bz = Calloc(nmp2, double);  
+  bz2 = Calloc(nmp2, double); 
+  BSz = Calloc(nmp2, double);  
+  BSz2 = Calloc(nmp2, double);  
+  egxmx0(par, npar, AS->x, n, gx, AS->x0);
+  if(AS->known_tau!=1){
+    AS->tau[0]=AS->tau[1];
+    for(i=0;i<n;i++){
+      z[i] = AS->y[i]*gx[i];
+      z2[i] = AS->y2[i]*gx[i];
+      AS->tau[0]=fmax(AS->tau[0], z[i]);
+      if(AS->y2[i]<=AS->tau[1]) AS->tau[0]=fmax(AS->tau[0], z2[i]);
+    }
+    AS->tau[0]+=1.0/(double) n;
+    for(i=0;i<n;i++){
+      z[i] = z[i]/AS->tau[0];
+      z2[i] = z2[i]/AS->tau[0];
+      gx[i] = log(gx[i]);
+    }
+  }
+  else{
+    for(i=0;i<n;i++){
+      z[i] = AS->y[i]*gx[i];
+      z2[i] = AS->y2[i]*gx[i];
+      gx[i] = log(gx[i]);
+    }
+  }
+
+  Bdata(z, m, 0, n, BSz);//1-B(z),1-B(z2) 
+  Bdata(z2, m, 0, n, BSz2);
+  Bdata(z, m, n, 0, bz); // beta(z), beta(z2)
+  Bdata(z2, m, n, 0, bz2);
+  for(i=0; i<npar; i++) df[i]=0.0; 
+
+  for(k=0; k<n0; k++){
+    A = 0.0;
+    B = 0.0;
+    //C = 0.0;
+    for(j=0;j<m;j++){
+      A += AS->p[j]*bz[k+n*j];
+      B += AS->p[j]*(j*bz[k+n*j]-(j+1)*bz[k+n*(j+1)]);
+      //C += AS->p[j]*(j*j*bz[k+n*j]-(j+1)*(2*j+1)*bz[k+n*(j+1)]+(j+1)*(j+2)*bz[k+n*(j+2)]);
+    }  
+    A += AS->p[m]*bz[k+n*m]; 
+    B += AS->p[m]*m*bz[k+n*m];
+    //C += AS->p[m]*m*m*bz[k+n*m];       
+    tmp = B/A;
+    for(i=0; i<npar; i++){
+      df[i] -= (1.0+tmp)*(AS->x[k+n*i]-AS->x0[i]); 
+    }
+  }
+  for(k=n0; k<n; k++){
+    A = 0.0;
+    B = 0.0;
+    //C = 0.0;
+    tmp = 0.0;
+    for(j=0;j<=m;j++){
+      A += AS->p[j]*(z[k]*bz[k+n*j]-z2[k]*bz2[k+n*j]);
+      tmp += AS->p[j]*(BSz[k+n*j]-BSz2[k+n*j]);
+      //B += AS->p[j]*(j*bz[k+n*j]-(j+1)*bz[k+n*(j+1)]);
+      //C += AS->p[j]*(j*bz2[k+n*j]-(j+1)*bz2[k+n*(j+1)]);
+    }
+    for(i=0; i<npar; i++){
+      df[i]+=A*(AS->x[k+n*i]-AS->x0[i])/tmp;           
+    }
+  }
+
+  Free(z); Free(z2); Free(gx); Free(BSz); Free(BSz2); Free(bz); Free(bz2);
+}
+
+
+/*////////////////////////////////////////////////////*/
+/*  Find maximizer gamma of ell(gamma, p) by Newton   */
+/*       method for a gvien p for AFT model           */
+/*////////////////////////////////////////////////////*/
+void gofp_aft_nt(double *gama, int d, double *p, int m, double *y, double *y2, 
+      double *x, double *x0, double *tau, double *gx, double *z, double *z2, 
+      int n0, int n1, double *ell, double *dell, double *ddell, double eps, 
+      int maxit, int prog, int known_tau, int *conv){
   int i,j, it=0, n=n0+n1;
-  double del=0.0, *tmp;//, *gx; 
-  //gx = Calloc(n, double);
+  double delta=0.0, *tmp;  
   tmp = Calloc(d, double);
-  logblik_aft_derv(gama, p, d, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
-  for(i=0;i<d;i++) del+=fabs(dell[i]); 
-  while(it<maxit && del>eps){
+//  Rprintf("known_tau=%d\n",known_tau);
+  logblik_aft_derv(gama, p, d, m, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
+  for(i=0;i<d;i++) delta+=fabs(dell[i]); 
+  while(it<maxit && delta>eps){
     minverse(ddell, d);  
     for(i=0;i<d;i++){
       tmp[i] = 0.0;
       for(j=0;j<d;j++) tmp[i] += ddell[i+d*j]*dell[j];
     }
-    del = 0.0;
+    delta = 0.0;
     for(i=0;i<d;i++){
       gama[i] -= tmp[i];
-      del += fabs(tmp[i]);
+      delta += fabs(tmp[i]);
     }
-    ///
     egxmx0(gama, d, x, n, gx, x0);
     if(known_tau!=1){
       tau[0]=tau[1];
       for(i=0;i<n;i++){
-        z[i] = y[i]/gx[i];
-        z2[i] = y2[i]/gx[i];
+        z[i] = y[i]*gx[i];
+        z2[i] = y2[i]*gx[i];
         tau[0]=fmax(tau[0], z[i]);
         if(y2[i]<=tau[1]) tau[0]=fmax(tau[0], z2[i]);
-        tau[0]+=1.0/(double) n;
       }
+      tau[0]+=1.0/(double) n;
       for(i=0;i<n;i++){
         z[i] = z[i]/tau[0];
         z2[i] = z2[i]/tau[0];
@@ -1186,17 +1355,18 @@ void gofp_aft(double *gama, int d, double *p, int m, double *y, double *y2,
     }
     else{
       for(i=0;i<n;i++){
-        z[i] = y[i]/gx[i];
-        z2[i] = y2[i]/gx[i];
+        z[i] = y[i]*gx[i];
+        z2[i] = y2[i]*gx[i];
+        gx[i] = log(gx[i]);
       }
     }
-    ///
-    logblik_aft_derv(gama, p, d, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
-    for(i=0;i<d;i++) del+=fabs(dell[i]);
+    logblik_aft_derv(gama, p, d, m, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
+    for(i=0;i<d;i++) delta+=fabs(dell[i]);
     it++;
     R_CheckUserInterrupt();
   }
-  if(prog==0) Rprintf("NT: m=%d, it=%d, del=%e, llik=%f\n",m,  it, del, ell[0]);
+  *conv = (it<maxit) ? 0:1;
+  if(prog==0) Rprintf("NT: m=%d, it=%d, del=%e, llik=%f\n",m,  it, delta, ell[0]);
   Free(tmp); 
 }
 
@@ -1208,54 +1378,358 @@ void gofp_aft(double *gama, int d, double *p, int m, double *y, double *y2,
 /*  ss: step-size epsilon:  p = (1-ss)p+ss Psi(p),    */
 /*        default ss=1 so that p = Psi(p)             */
 /*////////////////////////////////////////////////////*/
-void pofg_aft(double *p, int m, double *gx, int n0, int n1, double *BSz, double *BSz2, 
-      double *llik, double eps, int maxit, int prog, int *conv, double *delta){
+void pofg_aft(double *p, int m, double *gx, int n0, int n1, 
+    double *BSz, double *BSz2, double *tau, double *llik, 
+    double eps, int maxit, int prog, int *conv, double *delta){
   int i, j, n=n0+n1, mp1=m+1, it=0;
-  double  del=1.0, dSz;
-  double *Tmp, *Tmp2, *pnu, llik_nu;
-  Tmp=Calloc(mp1, double); // Tmp's can be independent of i ???
-  Tmp2=Calloc(mp1, double);
+  double  dlt=1.0, dSz;
+  double *Tmp, *pnu, lik_nu; 
+  Tmp=Calloc(mp1, double); 
   pnu=Calloc(mp1, double);
-  llik[0]=log_blik_aft(p, m, gx, n0, n1, BSz, BSz2); 
   conv[0]=0;
-  while(del>eps && it<maxit){
+  while(dlt>eps && it<maxit){
     for(j=0;j<=m;j++) pnu[j]=0.0;
     // p = p *Psi(p) 
+    lik_nu=0.0;
     for(i=0; i<n0;i++){
       dSz=0.0; 
-      for(j=0;j<=m;j++) {
-        Tmp2[j]=BSz2[i+n*j]*p[j];
-        dSz+=Tmp2[j];
+      for(j=0;j<=m;j++){
+        Tmp[j]=BSz2[i+n*j]*p[j];
+        dSz+=Tmp[j];
       }
-      for(j=0;j<=m;j++) {
-        pnu[j]+=Tmp2[j]/dSz;
+      for(j=0;j<=m;j++){
+        pnu[j]+=Tmp[j]/dSz;
       }
+      lik_nu += gx[i]+log(dSz);
     }
     for(i=n0; i<n;i++){
       dSz=0.0;  
       for(j=0;j<=m;j++){
-        Tmp[j]=BSz[i+n*j]*p[j];
-        Tmp2[j]=BSz2[i+n*j]*p[j];
-        dSz+=Tmp[j]-Tmp2[j];
+        Tmp[j]=(BSz[i+n*j]-BSz2[i+n*j])*p[j];
+        dSz+=Tmp[j];
       }
       for(j=0;j<=m;j++){
-        pnu[j]+=(Tmp[j]-Tmp2[j])/dSz;
+        pnu[j]+=Tmp[j]/dSz;
       }
+      lik_nu += log(dSz);
     }  
     for(j=0;j<=m;j++) pnu[j] /= (double) n;
     //pnu<-(1-ss)*p+ss*pnu
-    llik_nu=log_blik_aft(pnu, m, gx, n0, n1, BSz, BSz2); 
-    del=fabs(llik[0]-llik_nu);
-    it++;  
-    llik[0]=llik_nu;
+    lik_nu -= n0*log(tau[0]);
+    if(it>0) dlt=fabs(llik[0]-lik_nu);
+    llik[0]=lik_nu;
     for(j=0;j<=m;j++) p[j]=pnu[j];
+    it++;  
     R_CheckUserInterrupt();
   }
-  if(prog==0) Rprintf("EM: m=%d, it=%d, del=%e, llik=%f\n",m,  it, del, llik[0]);
-  if(it==maxit){
-    conv[0]+=1;
-    delta[0]=del;}
-  Free(Tmp);  Free(Tmp2); Free(pnu);
+  if(prog==0) Rprintf("EM: m=%d, it=%d, del=%e, llik=%f\n",m,  it, dlt, llik[0]);
+  conv[0]=(it<maxit)? 0:1;
+  delta[0]=dlt;
+   Free(pnu); Free(Tmp); 
+}
+/*////////////////////////////////////////////////////*/
+/*  Maximum approx. Bernstein likelihood estimate of  */
+/*   (gamma, p) with a fixed degree m for AFT model   */
+/*////////////////////////////////////////////////////*/
+void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double *y2, 
+       double *tau, int *N, double *x0, double *ell, double *ddell, double *EPS, 
+       int *MAXIT, int *progress, int *conv, double *delta, int *known_tau, int *method){
+  int i, n0=N[0], n1=N[1], n=n0+n1, d=dm[0], m=dm[1],  nmp2 =n*(m+2), it=0;
+  int maxit=MAXIT[0], maxit_em=MAXIT[1], prog=1, nbt1=0; 
+  double eps=EPS[0], eps_em=EPS[1], pct=0.0;
+  double *z, *z2, *gx, *BSz, *BSz2, dlt=1.0;//*xt, tini, 
+  double *new_ell, *dell, val = 0.0, abstol=-INFINITY, reltol=eps;
+  int *mask, trace=0, fncount = 0, grcount = 0, nREPORT=10;
+  int ifail = 0, conv_nt=0;
+  MableAFTStruct AS;
+  AS = (MableAFTStruct) R_alloc(1, sizeof(mable_aft_struct));
+  //tini=0.00001;// tini is used to make sure p is in interior of S(m+1)
+  new_ell = Calloc(1, double);  
+  dell = Calloc(d, double);  
+  z = Calloc(n, double);  
+  z2 = Calloc(n, double);  
+  gx = Calloc(n, double);  
+  BSz = Calloc(nmp2, double);  
+  BSz2 = Calloc(nmp2, double);  
+	mask = Calloc(d, int);
+	for (i = 0; i < d; i++) mask[i] = 1;
+  egxmx0(gama, d, x, n, gx, x0);
+  if(*known_tau!=1){
+    tau[0]=tau[1];
+    for(i=0;i<n;i++){
+      z[i] = y[i]*gx[i];
+      z2[i] = y2[i]*gx[i];
+      tau[0]=fmax(tau[0], z[i]);
+      if(y2[i]<=tau[1]) tau[0]=fmax(tau[0], z2[i]);   
+    }
+    tau[0]+=1.0/(double) n;
+    for(i=0;i<n;i++){
+      z[i] = z[i]/tau[0];
+      z2[i] = z2[i]/tau[0];
+      gx[i] = log(gx[i]);
+    }
+  }
+  else{
+    for(i=0;i<n;i++){
+      z[i] = y[i]*gx[i];
+      z2[i] = y2[i]*gx[i];
+      gx[i] = log(gx[i]); //???
+      if(y2[i]<=1 && z2[i]>1) nbt1++;
+    }
+    if(nbt1==n){
+      Rprintf("\n");
+      warning("May need to try another baseline 'x0' and/or a larger truncation time 'tau'.\n");}
+  }
+  Bdata(z, m, 0, n, BSz);
+  Bdata(z2, m, n0, n1, BSz2);
+  if(*progress==1){
+    Rprintf("\n Mable fit of AFT model with a given degree ... \n"); 
+    ProgressBar(pct,"");} 
+  pofg_aft(p, m, gx, n0, n1, BSz, BSz2, tau, ell, eps_em, maxit_em, prog, conv, delta);
+  //Rprintf("\n ell=%f, ell0=%f\n",ell[0], ell[1]);
+  //ell[1]=ell[0];
+  
+  if(*method==1){
+    logblik_aft_derv(gama, p, d, m, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
+    if(matrix_singular(ddell, d)==1){
+      *method=0;
+      //Rprintf("\n Singular Hessian matrix. Use Quasi-Newton Method.");
+    }
+  }
+
+  AS->m=m; AS->n0=n0; AS->n1=n1; AS->known_tau=*known_tau;
+  AS->x0=x0; AS->x=x; AS->y=y; AS->y2=y2; AS->p=p; AS->tau=tau;
+  //Rprintf("\n gamma = (%f",gama[0]);
+  //for(i=1;i<d;i++) Rprintf(" ,%f", gama[i]);
+  //Rprintf(").\n");
+  //Rprintf("\n Initial value = %f.\n", deviance_aft(d, gama, AS));
+  while(it<maxit && (dlt>eps || ell[0]<ell[1])){
+  //while(it<maxit && del>eps){
+    if(*method==0){
+      vmmin(d, gama, &val, deviance_aft, D_deviance_aft, maxit, trace, mask, abstol, 
+	      reltol, nREPORT, (void *)AS, &fncount, &grcount, &ifail);
+      new_ell[0]=-val;
+      conv[1]=ifail;
+      egxmx0(gama, d, x, n, gx, x0);
+      if(*known_tau!=1){
+        tau[0]=AS->tau[1];
+        for(i=0;i<n;i++){
+          z[i] = y[i]*gx[i];
+          z2[i] = y2[i]*gx[i];
+          tau[0]=fmax(tau[0], z[i]);
+          if(y2[i]<=tau[1]) tau[0]=fmax(tau[0], z2[i]);
+        }
+        tau[0]+=1.0/(double) n;
+        for(i=0;i<n;i++){
+          z[i] = z[i]/tau[0];
+          z2[i] = z2[i]/tau[0];
+          gx[i] = log(gx[i]);
+        }
+      }
+      else{
+        for(i=0;i<n;i++){
+          z[i] = y[i]*gx[i];
+          z2[i] = y2[i]*gx[i];
+          gx[i] = log(gx[i]);
+        }
+      }
+    }
+    else {//if(*method==1)
+      gofp_aft_nt(gama, d, p, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, 
+            new_ell, dell, ddell, eps, maxit, prog, known_tau[0], &conv_nt); 
+      conv[1]=conv_nt;
+    }
+    nbt1=0;
+    Bdata(z, m, 0, n, BSz);
+    Bdata(z2, m, n0, n1, BSz2);
+    pofg_aft(p, m, gx, n0, n1, BSz, BSz2, tau, new_ell, eps_em, maxit_em, prog, conv, delta);
+    dlt = fabs(new_ell[0]-ell[0]);
+    ell[0]=new_ell[0];
+// 
+    logblik_aft_derv(gama, p, d, m, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
+    if(matrix_singular(ddell, d)==1) *method=0;
+    else *method=1;
+    
+    AS->p=p; AS->tau=tau;
+    
+    //Rprintf("\n ell=%f, ell0=%f\n", ell[0], new_ell[0]);
+    //Rprintf("\n pmp1=%d, x0=%f,  %f\n", *pmp1, x0[0], x0[1]);
+    pct=fmin(it/(double)maxit, fmax(0.0, 1-fabs(dlt-eps)));
+    if(*progress==1) ProgressBar(pct,""); 
+    it++;
+    R_CheckUserInterrupt();
+    // Rprintf("         mable-m: it=%d, del=%f, ell=%f\n", it, del, ell[0]);
+  }
+  if(*progress==1){
+    ProgressBar(1.0,""); 
+    Rprintf("\n");}
+  delta[0]=dlt;
+  conv[0]*=2; 
+  if(it<maxit) conv[0] += 1;
+    //warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", dlt);
+  
+  //Rprintf("mable-m: it=%d, delta=%f\n", it, dlt);
+  // calculate Hessian matrix?? 
+  // this is unnecessary because the model will be fit again after m is selected
+  if(*method==0)
+    logblik_aft_derv(gama, p, d, m, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
+  if(matrix_singular(ddell, d)==0) 
+      minverse(ddell, d); //Sig=-n*ddell
+  //else Rprintf("\n Singular Hessian matrix.\n");
+  Free(new_ell); Free(dell); Free(z); Free(z2); 
+  Free(gx); Free(BSz); Free(BSz2); Free(mask);
+}
+/*///////////////////////////////////////////////////////////*/
+/*  MABLE of (gamma, p) and an optimal degree m              */
+/*         for AFT model                                     */
+/*       M: set of positive integers as candidate degrees    */
+/*            of Bernstein poly model, M=m0:m1, k=m1-m0      */
+/*gama_hat: k-vector, initial values of gamma, an efficient  */
+/*           estimate of regression coefficient gamma        */
+/*    phat: (m1+1)-vector, phat[0:m0] is initial of p        */
+/*            for degree m=m0, used to return phat           */
+/*      dm: (d,m)                                            */
+/*       x: d-dim covariate                                  */
+/*      x0: baseline covariate value, default is 0           */
+/*///////////////////////////////////////////////////////////*/
+void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y,    
+      double *y2, double *tau, int *N, double *x0, double *lk, double *lr, 
+      double *ddell, double *EPS, int *MAXIT, int *progress, double *pval, 
+      int *chpts, double *level, int *conv, int *known_tau){
+  int i, j, d=dm[0], k=M[1]-M[0], tmp=0, cp0=1, m1=1; //, cp1=1
+  int m, mp1, lp, prg=1-*progress, *cp, method=1, *icon; 
+  double pct=0.0, ttl, lnn=-1.0e20, pv0=1.0, delta=0.0;//, pv1=1.0;   
+  double *res, *phat, *ghat, *ell, *lrcp, *dlt;//, sm=0.0; 
+  m=M[0]; 
+  lp=(k+1)*(2*m+k+2)/2;
+  icon = Calloc(2, int); // (conv_em,conv_nt)
+  cp = Calloc(1, int);
+  res = Calloc(1, double);
+  phat=Calloc(lp, double);
+  ghat=Calloc(d*(k+1), double);
+  ell=Calloc(2, double);
+  lrcp=Calloc(k+1, double); // k or k+1 ??
+  dlt=Calloc(1, double);
+  if(*progress==1) {Rprintf("\n Mable fit of AFT model ... \n");
+      ProgressBar(0.0,""); }
+  ttl=(double) (k+2)*(k+1);
+  mp1=m+1;
+  dm[1]=m;
+  ell[1]=lnn;
+  icon[0]=0;
+  icon[1]=0;
+  // change to use "Nelder-Mead" method???? with maxit=500
+  mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell, EPS, MAXIT, &prg, 
+        icon, dlt, known_tau, &method);
+  method=1; //??
+  tmp=mp1;
+  for(i=0;i<tmp;i++) phat[i]=p[i];
+  for(i=0;i<d;i++) ghat[i]=gama[i];
+  lk[0]=ell[0];
+  ell[1]=ell[0];
+  pval[0]=1.0;
+  chpts[0]=0;
+  delta=dlt[0];
+  pct += 2;
+  if(*progress==1) ProgressBar(pct/ttl,""); 
+  i=1;
+  while(i<=k && pval[i-1]>*level){
+    p[mp1] = mp1*p[m]/(double)(m+2);
+    for(j=m; j>=1; j--) p[j] = (p[j-1]*j+p[j]*(mp1-j))/(double)(m+2);
+    p[0] = mp1*p[0]/(double)(m+2);
+    m=M[0]+i; 
+    dm[1]=m;
+    mp1=m+1; 
+    for(j=0;j<mp1;j++) p[j]=(p[j]+.000001/(double)mp1)/1.000001;
+    //Rprintf("\n m0=%d, m1=%d, m=%d, k=%d, lp=%d, tmp=%d\n",M[0], M[1], m, k, lp, tmp+mp1);
+    mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell, EPS, MAXIT, &prg, 
+      icon, dlt, known_tau, &method);
+    method=1; //??
+    for(j=0;j<mp1;j++) phat[j+tmp]=p[j];
+    tmp+=mp1;
+    //if((i+1)*d>(k+1)*d) error("\n (i+1)*d>(k+1)*d\n");
+    for(j=0;j<d; j++) ghat[j+i*d]=gama[j];
+    lk[i]=ell[0]; 
+    ell[1]=ell[0]; 
+    //Rprintf("\n lk[%d]=%f, lp=%d, temp=%d\n",i, lk[i], lp, tmp);
+    if(i>=3){
+      cp[0]=i;
+      chpt_exp(lk, lr, res, cp);
+      pval[i]=res[0];
+      chpts[i]=cp[0];
+    }
+    else{            
+      pval[i]=1.0;
+      chpts[i]=0;
+    }
+    if(pval[i]<pv0){
+      pv0=pval[i];
+      cp0=chpts[i];
+      delta=dlt[0];
+      m1 = m;
+      for(j=0;j<i; j++) lrcp[j]=lr[j];
+    }
+    //Rprintf("\n chpts[%d]=%d, pval[%d]=%f\n",i, chpts[i], i, pval[i]);
+ 
+    R_CheckUserInterrupt();
+    pct +=2*(i+1); 
+    if(*progress==1) ProgressBar(fmin(1.0,pct/ttl),""); 
+    i++;
+  }
+  if(*progress==1){
+    ProgressBar(1.00,"");
+    Rprintf("\n");}
+  //if(icon[0]>0) Rprintf("\nAt least one EM iteration did not converge.\n"); 
+  //if(icon[1]>0) Rprintf("\nAt least one (quasi) Newton iteration did not converge.\n"); 
+  if(m==M[1]){
+    Rprintf("\nMaximum degree reached.\n"); 
+    if(pv0>.2) conv[0]=1; 
+    else conv[0]=0;
+    //if(pv0<=0.1) 
+    Rprintf("A degree with smallest p-value of the change-point %f is returned.\n", pv0); 
+    //else error("Search for a model degree failed with smallest p-value of the change-point %f.\n", pv0);
+  }
+  else M[1]=m1;
+  tmp=cp0*(M[0]*2+(cp0+1))/2;
+  m=cp0+M[0];
+  dm[1]=m;
+  //if(tmp+m+1>lp) error("\n tmp+m+1>lp\n");
+  for(j=0;j<=m;j++) p[j]=phat[tmp+j];
+  for(j=0; j<d; j++) gama[j]=ghat[d*cp0+j];
+  // print gamma
+  //Rprintf("\n gamma = (%.3f",gama[0]);
+  //for(i=1;i<d;i++) Rprintf(" ,%.3f", gama[i]);
+  //Rprintf(").");
+  // print p
+  //Rprintf("\n p = (%.4f",p[0]);
+  //for(i=1;i<=m;i++) Rprintf(" ,%.4f", p[i]);
+  //Rprintf(").");
+  // Add an argument method = 0 (quasi-newton) or 1 (newton) or other methods???
+  // if ddell is singular method=0, or method = 1 in the last mable fit below
+  //logblik_aft_derv(gama, p, d, m, x, x0, tau, gx, z, z2, n0, n1, ell, dell, ddell);
+  //if(matrix_singular(ddell, d)==0) 
+  icon[0]=0;
+  icon[1]=0;
+  method=1;
+  mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell, EPS, MAXIT, &prg, 
+        icon, dlt, known_tau, &method);
+  // print gamma
+  //Rprintf("\n gamma = (%.3f",gama[0]);
+  //for(i=1;i<d;i++) Rprintf(" ,%.3f", gama[i]);
+  //Rprintf(").");
+  // print p
+  //Rprintf("\n p = (%.4f",p[0]);
+  //for(i=1;i<=m;i++) Rprintf(" ,%.4f", p[i]);
+  //Rprintf(").");
+  /* decimal convergence code :            */
+  /* conv=(cp>0)+2*(em>0 || nt>0 || it=maxit in mablem) */
+  if(icon[0]>0 || icon[1]>0) conv[0]+=2;
+  //if(icon[1]>0) conv[0]+=4;
+  for(j=0;j<M[1]-M[0]; j++) lr[j]=lrcp[j];
+  *level=delta;
+  dm[0]=M[1]-M[0];
+  Free(icon); Free(cp); Free(phat); Free(ghat);
+  Free(res); Free(ell); Free(lrcp); Free(dlt); 
 }
 
 /*//////////////////////////////////////////////////////////////*/
@@ -1292,13 +1766,13 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y,
   egxmx0(gama, d, x, n, gx, x0);
   if(*known_tau!=1){
     tau[0]=tau[1]; 
-    for(i=0;i<n;i++) {
-      z[i] = y[i]/gx[i];
-      z2[i] = y2[i]/gx[i];
+    for(i=0;i<n;i++){
+      z[i] = y[i]*gx[i];
+      z2[i] = y2[i]*gx[i];
       tau[0]=fmax(tau[0],z[i]);
       if(y2[i]<=tau[1]) tau[0]=fmax(tau[0],z2[i]);
-      tau[0]+=1.0/(double) n;
     }
+    tau[0]+=1.0/(double) n;
     for(i=0;i<n;i++) {
       z[i] = z[i]/tau[0];
       z2[i] = z2[i]/tau[0];
@@ -1306,9 +1780,9 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y,
     }
   }
   else{
-    for(i=0;i<n;i++) {
-      z[i] = y[i]/gx[i];
-      z2[i] = y2[i]/gx[i];
+    for(i=0;i<n;i++){
+      z[i] = y[i]*gx[i];
+      z2[i] = y2[i]*gx[i];
       gx[i] = log(gx[i]);
       // add check to see any z, z2 are bigger than 1
       if (y2[i]<=1 && z2[i]>1)  nbt1++;
@@ -1323,8 +1797,8 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y,
   mp2=m+2;
   Bdata(z, m, 0, n, BSz);
   Bdata(z2, m, n0, n1, BSz2);
-  for(i=0;i<=m;i++) p[i]=1.0/(double) mp1; 
-  pofg_aft(p, m, gx, n0, n1, BSz, BSz2, ell, *eps, *maxit, *progress, conv, delta);
+  //for(i=0;i<=m;i++) p[i]=1.0/(double) mp1; 
+  pofg_aft(p, m, gx, n0, n1, BSz, BSz2, tau, ell, *eps, *maxit, *progress, conv, delta);
   itmp+=conv[0];
   tmp=mp1;
   for(i=0;i<mp1;i++) phat[i]=p[i];
@@ -1344,7 +1818,7 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y,
     Bdata(z, m, 0, n, BSz);
     Bdata(z2, m, n0, n1, BSz2);
     for(j=0;j<mp1;j++) p[j]=(p[j]+tini/(double) mp1)/(1.0+tini);
-    pofg_aft(p, m, gx, n0, n1, BSz, BSz2, ell, *eps, *maxit, *progress, conv, delta);
+    pofg_aft(p, m, gx, n0, n1, BSz, BSz2, tau, ell, *eps, *maxit, *progress, conv, delta);
     for(j=0;j<mp1;j++) phat[j+tmp]=p[j];
     tmp+=mp1;
     lk[i]=ell[0];
@@ -1384,7 +1858,8 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y,
     if(m==M[1]){
       conv[0]+=1; 
       Rprintf("\nThe maximum candidate degree has been reached. \nA model degree with the smallest p-value,  %f, of the change-point is returned.\n", pv0);
-      //warning("\nThe maximum candidate degree has been reached \nwith a p-value of the change-point %f.\n", res[0]);
+      //warning("\nThe maximum candidate degree has been reached \n
+      //with a p-value of the change-point %f.\n", res[0]);
       delta[0]=res[0];
     }
   }
@@ -1399,207 +1874,13 @@ void mable_aft_gamma(int *M, double *gama, int *dm, double *x, double *y,
   Free(BSz); Free(BSz2); Free(z); Free(z2); 
   Free(gx);  Free(cp); Free(res);
 }
-/*////////////////////////////////////////////////////*/
-/*  Maximum approx. Bernstein likelihood estimate of  */
-/*   (gamma, p) with a fixed degree m for AFT model   */
-/*////////////////////////////////////////////////////*/
-void mable_aft_m(double *gama, double *p, int *dm, double *x, double *y, double *y2, 
-       double *tau, int *N, double *x0, double *ell, double *ddell, double *EPS, 
-       int *MAXIT, int *progress, int *conv, double *delta, int *known_tau){
-  int i, n0=N[0], n1=N[1], n=n0+n1, d=dm[0], m=dm[1],  mp2 =m+2, it=0;
-  int maxit=MAXIT[0], maxit_em=MAXIT[1], prog=1, nbt1=0; 
-  double eps=EPS[0], eps_em=EPS[1], pct=0.0;
-  double *z, *z2, *BSz, *BSz2, *gnu, del=1.0;//*xt, tini, 
-  double *ell1, *dell, *gx, *tmp;
-  tmp = Calloc(d, double);
-  //tini=0.00001;// tini is used to make sure p is in interior of S(m+1)
-  ell1 = Calloc(1, double);  
-  dell = Calloc(d, double);  
-  z = Calloc(n, double);  
-  z2 = Calloc(n, double);  
-  gx = Calloc(n, double);  
-  BSz = Calloc(n*mp2, double);  
-  BSz2 = Calloc(n*mp2, double);  
-  gnu = Calloc(d, double);  
-  egxmx0(gama, d, x, n, gx, x0);
-  if(*known_tau!=1){
-    tau[0]=tau[1];
-    for(i=0;i<n;i++){
-      z[i] = y[i]/gx[i];
-      z2[i] = y2[i]/gx[i];
-      tau[0]=fmax(tau[0], z[i]);
-      if(y2[i]<=tau[1]) tau[0]=fmax(tau[0], z2[i]);
-      tau[0]+=1.0/(double) n;
-    }
-    for(i=0;i<n;i++){
-      z[i] = z[i]/tau[0];
-      z2[i] = z2[i]/tau[0];
-      gx[i] = log(gx[i]);
-    }
-  }
-  else{
-    for(i=0;i<n;i++){
-      z[i] = y[i]/gx[i];
-      z2[i] = y2[i]/gx[i];
-      if(y2[i]<=1 && z2[i]>1) nbt1++;
-    }
-    if(nbt1==n){
-      Rprintf("\n");
-      warning("May need to try another baseline 'x0' and/or a larger truncation time 'tau'.\n");}
-  }
-  Bdata(z, m, 0, n, BSz);
-  Bdata(z2, m, n0, n1, BSz2);
-  if(*progress==1){
-    Rprintf("\n Mable fit of AFT model with a given degree ... \n"); 
-    ProgressBar(pct,"");} 
-  pofg_aft(p, m, gx, n0, n1, BSz, BSz2, ell, eps_em, maxit_em, prog, conv, delta);
-  //Rprintf("\n ell=%f, ell0=%f\n",ell[0], ell[1]);
-  while(it<maxit && (del>eps || ell[0]<ell[1])){
-    gofp_aft(gama, d, p, m, y, y2, x, x0, tau, gx, z, z2, n0, n1, ell1, dell, ddell, eps, maxit, prog, known_tau[0]);
-    //egxmx0(gama, d, x, n, gx, x0);
-    nbt1=0;
-    Bdata(z, m, 0, n, BSz);
-    Bdata(z2, m, n0, n1, BSz2);
-    pofg_aft(p, m, gx, n0, n1, BSz, BSz2, ell1, eps_em, maxit_em, prog, conv, delta);
-    del = fabs(ell1[0]-ell[0]);
-    ell[0]=ell1[0];
-    //Rprintf("\n ell=%f, ell0=%f\n",ell[0], ell1[0]);
-    //Rprintf("\n pmp1=%d, x0=%f,  %f\n", *pmp1, x0[0], x0[1]);
-    //pct=fmax(1-fabs(del-eps)/(.00001+eps),1-fabs(ell[1]-ell[0])/fabs(ell[1]));
-    pct=fmin(it/(double)maxit, fmax(0.0, 1-fabs(del-eps)));
-    if(*progress==1) ProgressBar(pct,""); 
-    it++;
-    R_CheckUserInterrupt();
-    // Rprintf("         mable-m: it=%d, del=%f, ell=%f\n", it, del, ell[0]);
-  }
-  if(*progress==1){
-    ProgressBar(1.0,""); 
-    Rprintf("\n");}
-  delta[0]=del;
-  if(it==maxit){
-    conv[0] = 1;
-    //warning("\nThe maximum iterations were reached \nwith a delta = %f.\n", del);
-  }
-  //Rprintf("mable-m: it=%d, del=%f\n", it, del);
-  minverse(ddell, d); //Sig=-n*ddell
-  Free(tmp); Free(z); Free(z2); Free(BSz); Free(BSz2); 
-  Free(gnu); Free(ell1); Free(dell); Free(gx); 
-}
-/*///////////////////////////////////////////////////////////*/
-/*  MABLE of (gamma, p) and an optimal degree m              */
-/*         for AFT model                                     */
-/*       M: set of positive integers as candidate degrees    */
-/*            of Bernstein poly model, M=m0:m1, k=m1-m0      */
-/*gama_hat: k-vector, initial values of gamma, an efficient  */
-/*           estimate of regression coefficient gamma        */
-/*    phat: (m1+1)-vector, phat[0:m0] is initial of p        */
-/*            for degree m=m0, used to return phat           */
-/*      dk: (d,k)                                            */
-/*       x: d-dim covariate                                  */
-/*      x0: baseline covariate value, default is 0           */
-/*///////////////////////////////////////////////////////////*/
-void mable_aft(int *M, double *gama, int *dm, double *p, double *x, double *y,    
-      double *y2, double *tau, int *N, double *x0, double *lk, double *lr, 
-      double *ddell, double *EPS, int *MAXIT, int *progress, double *pval, 
-      int *chpts, double *level, int *conv, int *known_tau){
-  int i, j, d=dm[0], k=M[1]-M[0], tmp=0,*cp, cp0=1, cp1=1;//, n0=N[0], n1=N[1], n=n0+n1
-  int m=M[1], mp1=m+1, lp=(k+1)*M[0]+(k+1)*(k+2)/2, prg=1-*progress; 
-  double *phat, *ghat, *ell, pct=0.0, ttl, lnn=-1.0e20, *res, pv0=1.0, pv1=1.0;    
-  cp = Calloc(1, int);
-  res = Calloc(1, double);
-  phat=Calloc(lp, double);
-  ghat=Calloc(d*(k+1), double);
-  ell=Calloc(2, double);
-  //egx=Calloc(n, double);
-  if(*progress==1) {Rprintf("\n Mable fit of AFT model ... \n");
-      ProgressBar(0.0,""); }
-  ttl=(double) (k+2)*(k+1);
-  m=M[0]; 
-  mp1=m+1;
-  dm[1]=m;
-  for(i=0;i<mp1;i++) p[i]=1.0/(double)mp1;
-  ell[1]=lnn;
-  mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell, EPS, MAXIT, &prg, conv, res, known_tau);
-  tmp=mp1;
-  for(i=0;i<tmp;i++) phat[i]=p[i];
-  for(i=0;i<d;i++) ghat[i]=gama[i];
-  lk[0]=ell[0];
-  ell[1]=ell[0];
-  pval[0]=1.0;
-  chpts[0]=0;
-  pct += 2;
-  if(*progress==1) ProgressBar(pct/ttl,""); 
-  i=1;
-  while(i<=k && pval[i-1]>*level){
-    p[mp1] = mp1*p[m]/(double)(m+2);
-    for(j=m; j>=1; j--) p[j] = (p[j-1]*j+p[j]*(mp1-j))/(double)(m+2);
-    p[0] = mp1*p[0]/(double)(m+2);
-    m=M[0]+i; 
-    dm[1]=m;
-    mp1=m+1; 
-    for(j=0;j<mp1;j++) p[j]=(p[j]+.000001/(double)mp1)/1.000001;
-    mable_aft_m(gama, p, dm, x, y, y2, tau, N, x0, ell, ddell,  EPS, MAXIT, &prg, conv, res, known_tau);
-    for(j=0;j<mp1;j++) phat[j+tmp]=p[j];
-    tmp+=mp1;
-    for(j=0;j<d; j++) ghat[j+i*d]=gama[j];
-    lk[i]=ell[0]; 
-    ell[1]=ell[0]; 
-    // Rprintf("\n lk[%d]=%f, lpt=%d, temp=%d\n",i, lk[i], lpt, tmp);
-    if(i>=3){
-      cp[0]=i;
-      chpt_exp(lk, lr, res, cp);
-      pval[i]=res[0];
-      chpts[i]=cp[0];
-    }
-    else{            
-      pval[i]=1.0;
-      chpts[i]=0;
-    }
-    if(chpts[i]>chpts[i-1]){
-      cp1=chpts[i];
-    }
-    if(cp0<cp1) pv1=pval[i];
-    else pv0=pval[i];
-    if(pv1<pv0){
-      cp0=cp1;
-      pv0=pv1;
-    }
-    else pv0=pval[i];
-    R_CheckUserInterrupt();
-    pct +=2*(i+1);
-    if(*progress==1) ProgressBar(pct/ttl,""); 
-    i++;
-  }
-  if(*progress==1){
-    ProgressBar(1.00,"");
-    Rprintf("\n");}
-  // Rprintf("mable-aft done!\n"); 
-  if(m==M[1]){
-    conv[0]+=1; 
-    Rprintf("\nThe maximum candidate degree has been reached. \nA model degree with the smallest p-value of the change-point %f is returned.\n", pv0); 
-    //warning("\nThe maximum candidate degree has been reached \nwith a p-value of the change-point %f.\n", res[0]);
-  }
-  //else conv[0]=0;
-  M[1]=m;
-  tmp=cp0*(M[0]*2+(cp0+1))/2;
-  dm[1]=cp0+M[0];
-  //tmp=cp[0]*(M[0]*2+(cp[0]+1))/2;
-  //dm[1]=cp[0]+M[0];
-  m=dm[1];
-  for(j=0;j<=m;j++) p[j]=phat[tmp+j];
-  for(j=0; j<dm[0]; j++) gama[j]=ghat[dm[0]*cp0+j];
-  //for(j=0; j<dm[0]; j++) gama[j]=ghat[dm[0]*cp[0]+j];
-  Free(cp); Free(phat); Free(ghat);
-  Free(res); Free(ell); 
-  //Free(egx);
-}
 /*////////////////////////////////////////////////////////*/
 /*////////////////////////////////////////////////////////*/
 /*                                                        */
 /*                    C Program for                       */
 /*  Maximum Approximate Bernstein likelihood Estimation   */
 /*     in Proportional Hazards Regression model based     */
-/*                  Interval Censored data                */
+/*               on Interval Censored data                */
 /*////////////////////////////////////////////////////////*/
 /*////////////////////////////////////////////////////////////*/
 /*                                                            */
@@ -1902,8 +2183,8 @@ void mable_ph_gamma(int *M, double *gama, int *dm, double *pi0, double *x,
   m=M[0]; 
   mp1=m+1;
   mp2=m+2;
-  for(i=0;i<=m;i++) p[i]=*pi0/(double) mp1; 
-  p[mp1]=1.0-*pi0;
+  //for(i=0;i<=m;i++) p[i]=*pi0/(double) mp1; 
+  //p[mp1]=1.0-*pi0;
   if(m>0){
     Bdata(y, m, 0, n, BSy);
     Bdata(y2, m, n0, n1, BSy2);
@@ -2098,21 +2379,22 @@ void mable_ph(int *M, double *gama, int *dm, double *p, double *pi0, double *x,
       double *ddell, double *EPS, int *MAXIT, int *progress, double *level,
       double *pval, int *chpts, int *conv){
   int d=dm[0], i, j, k=M[1]-M[0], prg=1-*progress;
-  int m, *cp, tmp, lp, cp0=1, cp1=1;  
-  double *ghat, *phat, *res, *ell, pct, ttl, pv0=1.0, pv1=1.0; 
+  int m, *cp, tmp, lp, m1=1, cp0=1;//, cp1=1;  
+  double *ghat, *phat, *res, *ell, pct, ttl, *lrcp, pv0=1.0;//, pv1=1.0; 
   lp=M[0]*(k+1)+(k+1)*(k+4)/2;
   cp = Calloc(1, int);
   res = Calloc(1, double);
   phat=Calloc(lp, double);
   ghat=Calloc(d*(k+1), double);
   ell=Calloc(1, double);
+  lrcp=Calloc(k, double);
   //egx=Calloc(n, double);
   if(*progress==1) {Rprintf("\n Mable fit of Cox PH regression model ... \n");
       ProgressBar(0.0,""); }
   ttl=(double)(k+2)*(k+1);
   m=M[0]; 
-  for(i=0;i<=m;i++) p[i]=*pi0/(double)(m+1);
-  p[m+1] = 1-*pi0;
+  //for(i=0;i<=m;i++) p[i]=*pi0/(double)(m+1);
+  //p[m+1] = 1-*pi0;
   dm[1]=m;
   mable_ph_m(gama, p, dm, x, y, y2, N, x0, ell, ddell, EPS, MAXIT, &prg, conv, res);
   for(i=0;i<dm[0];i++) ghat[i]=gama[i];
@@ -2148,16 +2430,22 @@ void mable_ph(int *M, double *gama, int *dm, double *p, double *pi0, double *x,
       pval[i]=1.0;
       chpts[i]=0;
     }
-    if(chpts[i]>chpts[i-1]){
-      cp1=chpts[i];
+    if(pval[i]<pv0){
+      pv0=pval[i];
+      cp0=chpts[i];
+      m1 = m;
+      for(j=0;j<i; j++) lrcp[j]=lr[j];
     }
-    if(cp0<cp1) pv1=pval[i];
-    else pv0=pval[i];
-    if(pv1<pv0){
-      cp0=cp1;
-      pv0=pv1;
-    }
-    else pv0=pval[i];
+//    if(chpts[i]>chpts[i-1]){
+//      cp1=chpts[i];
+//    }
+//    if(cp0<cp1) pv1=pval[i];
+//    else pv0=pval[i];
+//    if(pv1<pv0){
+//      cp0=cp1;
+//      pv0=pv1;
+//    }
+//    else pv0=pval[i];
     R_CheckUserInterrupt();
     pct +=2*(i+1)/ttl;
     if(*progress==1) ProgressBar(pct,""); 
@@ -2169,24 +2457,19 @@ void mable_ph(int *M, double *gama, int *dm, double *p, double *pi0, double *x,
   if(m==M[1]){
     conv[0]+=1; 
     Rprintf("\nThe maximum candidate degree has been reached. \nA model degree with the smallest p-value of the change-point %f is returned.\n", pv0);}
-    //warning("\nThe maximum candidate degree has been reached \nwith a p-value of the change-point %f.\n", res[0]);}
   //else conv[0]=0;
-  M[1]=m;
+  M[1]=m1;
   tmp=cp0*(M[0]*2+(cp0+3))/2;
   dm[1]=cp0+M[0];
-  //tmp=cp[0]*(M[0]*2+(cp[0]+3))/2;
-  //dm[1]=cp[0]+M[0];
   m=dm[1];
   for(j=0;j<=m+1;j++) p[j]=phat[tmp+j];
-  //for(j=0; j<dm[0]; j++) gama[j]=ghat[dm[0]*cp[0]+j];
   for(j=0; j<dm[0]; j++) gama[j]=ghat[dm[0]*cp0+j];
+  mable_ph_m(gama, p, dm, x, y, y2, N, x0,  ell, ddell, EPS, MAXIT, &prg, conv, res);
+  for(j=0;j<m1-M[0]; j++) lr[j]=lrcp[j];
   if(*progress==1) Rprintf("\n");
-  Free(phat);
-  Free(ghat);
-  Free(ell); 
+  Free(phat); Free(ghat); Free(ell); 
   //Free(egx);
-  Free(cp);
-  Free(res);
+  Free(cp); Free(res); Free(lrcp);
 }
 /*///////////////////////////////////////////*/
 /*       Without Covariate                   */

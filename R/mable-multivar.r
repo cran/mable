@@ -23,10 +23,10 @@
 #'    the maximum candidate or the given model degrees for the joint density.
 #' @param search logical, whether to search optimal degrees between \code{M0} and \code{M} 
 #'    or not but use \code{M} as the given model degrees for the joint density.
-#' @param interval a vector of two endpoints or a \code{d x 2} matrix, each row containing 
+#' @param interval a vector of two endpoints or a \code{2 x d} matrix, each column containing 
 #'    the endpoints of support/truncation interval for each marginal density.
-#'    If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.
-#' @param use.mar.deg logical, if TRUE, the optimal degrees are selected based  
+#'    If missing, the i-th column is assigned as \code{c(min(x[,i]), max(x[,i]))}.
+#' @param mar.deg logical, if TRUE, the optimal degrees are selected based  
 #'    on marginal data, otherwise, the optimal degrees are those minimize the maximum
 #'    L2 distance between marginal cdf or pdf estimated based on marginal data and the
 #'    joint data. See details.   
@@ -75,7 +75,7 @@
 #' \donttest{
 #'  a<-c(0, 40); b<-c(7, 110)
 #'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, 
-#'          interval = cbind(a,b), progress=FALSE)
+#'          interval = rbind(a,b), progress=FALSE)
 #'  plot(ans, which="density") 
 #'  plot(ans, which="cumulative")
 #' }
@@ -87,7 +87,7 @@
 #' @references Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density,    
 #'    \emph{Statistics}, Vol. 53, no. 2, 321-338  
 #' @export
-mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE, 
+mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, mar.deg=TRUE, 
       high.dim=FALSE, criterion=c("cdf", "pdf"), controls = mable.ctrl(), progress=TRUE){
   data.name<-deparse(substitute(x))
   n<-nrow(x)
@@ -98,19 +98,19 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE,
     for(i in 1:d) xNames[i]<-paste("x",i,sep='')
   x<-as.matrix(x)   
   if(is.null(interval))  
-    interval<-cbind(apply(x, 2, min), apply(x, 2, max))
+    interval<-apply(x, 2, range) 
   else if(is.matrix(interval)){
-    if(nrow(interval)!=d || ncol(interval)!=2)
-      stop("Invalid argument 'interval'.\n")
+    if(nrow(interval)!=2 || ncol(interval)!=d)
+      stop("Invalid 'interval'.\n")
   }
   else{
     if(length(interval)!=2) 
-      stop("Invalid argument 'interval'.\n")
+      stop("Invalid 'interval'.\n")
     else if(any(apply(x, 2, min)<interval[1])||any(apply(x, 2, max)>interval[2]))
-      stop("Invalid argument 'interval'.\n")
-    else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
+      stop("Invalid 'interval'.\n")
+    else interval<-matrix(rep(interval, d), nrow=2)
   }
-  for(i in 1:d) x[,i]<-(x[,i]-interval[i,1])/(interval[i,2]-interval[i,1])
+  x<-t((t(x)-interval[1,])/apply(interval,2,diff))
   if(any(x<0) || any(x>1)) stop("All data values must be contained in 'interval'.")
   if(missing(M) || length(M)==0) stop("'M' is missing.\n")
   else if(length(M)==1) M<-rep(M,d)
@@ -156,7 +156,7 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE,
     m[i]<-res$m
     pl[[i]]<-res$p
   }
-  if(!search | use.mar.deg){
+  if(!search | mar.deg){
     M<-m
     search=FALSE
     km<-c(1,cumprod(m+1))
@@ -208,8 +208,12 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE,
   if(search){
     cat("Optimal degrees m = (", m[1], sep='')
     for(i in 2:d) cat(", ",m[i],sep='')
-    cat(") are selected between M0 and M, inclusive, where \n",sep='')
-    cat("M0 = ", M0, "\nM = ",M,"\n")
+    if(mar.deg)
+      cat(") are selected based on marginal data m=", m, "\n")
+    else{
+      cat(") are selected between M0 and M, inclusive, where \n",sep='')
+      cat("M0 = ", M0, "\nM = ",M,"\n")
+    }
     out$M0<-M0
     out$M<-M
     #out<-list(p=res[[6]][1:K], mloglik=res[[11]], 
@@ -218,12 +222,7 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE,
     #  m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
   }
   else{
-    if(use.mar.deg){
-      cat("Optimal degrees m = (", m[1], sep='')
-          for(i in 2:d) cat(", ",m[i],sep='')
-      cat(") are selected based on marginal data m=", m, "\n")
-    }
-    else cat("Model degrees are specified: M=", m, "\n")
+    cat("Model degrees are specified: M=", m, "\n")
   }
   out$data.type<-"mvar"
   class(out)<-"mable"
@@ -242,9 +241,9 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, use.mar.deg=TRUE,
 #'  nonnegative and sum to one for the mixture multivariate beta distribution. See 'Details'. 
 #' @param m a vector of degrees, \eqn{(m_1, \ldots, m_d)} 
 #' @param n sample size
-#' @param interval a vector of two endpoints or a \code{d x 2} matrix, each row containing 
+#' @param interval a vector of two endpoints or a \code{2 x d} matrix, each column containing 
 #'    the endpoints of support/truncation interval for each marginal density.
-#'    If missing, the i-th row is assigned as \code{c(min(x[,i]), max(x[,i]))}.
+#'    If missing, the i-th column is assigned as \code{c(0,1))}.
 #' @details 
 #'  \code{dmixmvbeta()} returns a linear combination \eqn{f_m} of \eqn{d}-variate beta densities 
 #'  on \eqn{[a, b]}, \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},   
@@ -270,24 +269,23 @@ dmixmvbeta<-function(x, p, m, interval=NULL){
     #else if(abs(sum(p)-1)>.Machine$double.eps)
     #    warning("Sum of 'p's is not 1.\n")
     if(is.null(interval))  
-        interval<-cbind(rep(0,d), rep(1,d))
+        interval<-rbind(rep(0,d), rep(1,d))
     else if(is.matrix(interval)){
-        if(nrow(interval)!=d || ncol(interval)!=2)
-            stop("Invalid argument 'interval'.\n")
+        if(nrow(interval)!=2 || ncol(interval)!=d)
+            stop("Invalid 'interval'.\n")
     }
     else{
         if(length(interval)!=2) 
-            stop("Invalid argument 'interval'.\n")
-        else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
+            stop("Invalid 'interval'.\n")
+        else interval<-matrix(rep(interval, d), nrow=2)
     }
-    int<-interval
     if(is.matrix(x)){
         nx<-nrow(x)
         if(d!=ncol(x)) stop("Wrong dim of 'x'.\n")
-        if(any(x-matrix(rep(int[,1],nx), ncol=d, byrow=TRUE)<0) 
-            || any(x-matrix(rep(int[,2],nx), ncol=d, byrow=TRUE)>0))
+        if(any(x-matrix(rep(interval[1,],nx), ncol=d, byrow=TRUE)<0) 
+            || any(x-matrix(rep(interval[2,],nx), ncol=d, byrow=TRUE)>0))
             stop("'x' must be in the hyperrectangle 'interval'.\n")
-        for(i in 1:d) x[,i]<-(x[,i]-int[i,1])/(int[i,2]-int[i,1])
+        x<-t((t(x)-interval[1,])/apply(interval,2,diff))
     }
     else {
         if(d!=length(x)) stop("'x' is a vector. Its length must be the same as 'm'.\n") 
@@ -299,7 +297,7 @@ dmixmvbeta<-function(x, p, m, interval=NULL){
     res<-.C("mable_mvdf",
       as.integer(d), as.integer(m), as.integer(km), as.integer(nx), as.double(x),  
       as.double(p), as.double(fb), as.logical(density))
-    fb<-res[[7]]/prod(int[,2]-int[,1])
+    fb<-res[[7]]/prod(interval[2,]-interval[1,])
     return(fb)
 }
 #' @rdname dmixmvbeta
@@ -315,24 +313,23 @@ pmixmvbeta<-function(x, p, m, interval=NULL){
     #else if(abs(sum(p)-1)>.Machine$double.eps)
     #    warning("Sum of 'p's is not 1.\n")
     if(is.null(interval))  
-        interval<-cbind(rep(0,d), rep(1,d))
+        interval<-rbind(rep(0,d), rep(1,d))
     else if(is.matrix(interval)){
-        if(nrow(interval)!=d || ncol(interval)!=2)
-            stop("Invalid argument 'interval'.\n")
+        if(nrow(interval)!=2 || ncol(interval)!=d)
+            stop("Invalid 'interval'.\n")
     }
     else{
         if(length(interval)!=2) 
-            stop("Invalid argument 'interval'.\n")
-        else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
+            stop("Invalid 'interval'.\n")
+        else interval<-matrix(rep(interval, d), nrow=2)
     }
-    int<-interval
-    if(is.matrix(x)){
+     if(is.matrix(x)){
         nx<-nrow(x)
         if(d!=ncol(x)) stop("Wrong dim of 'x'.\n")
-        if(any(x-matrix(rep(int[,1],nx), ncol=d, byrow=TRUE)<0) 
-            || any(x-matrix(rep(int[,2],nx), ncol=d, byrow=TRUE)>0))
+        if(any(x-matrix(rep(interval[1,],nx), ncol=d, byrow=TRUE)<0) 
+            || any(x-matrix(rep(interval[2,],nx), ncol=d, byrow=TRUE)>0))
             stop("'x' must be in the hyperrectangle 'interval'.\n")
-        for(i in 1:d) x[,i]<-(x[,i]-int[i,1])/(int[i,2]-int[i,1])
+        x<-t((t(x)-interval[1,])/apply(interval,2,diff))
     }
     else {
         if(d!=length(x)) stop("'x' is a vector. Its length must be the same as 'm'.\n") 
@@ -364,15 +361,15 @@ rmixmvbeta<-function(n, p, m, interval=NULL){
         p<-p/sum(p)
     }
     if(is.null(interval))  
-        interval<-cbind(rep(0,d), rep(1,d))
+        interval<-rbind(rep(0,d), rep(1,d))
     else if(is.matrix(interval)){
-        if(nrow(interval)!=d || ncol(interval)!=2)
-            stop("Invalid argument 'interval'.\n")
+        if(nrow(interval)!=2 || ncol(interval)!=d)
+            stop("Invalid 'interval'.\n")
     }
     else{
         if(length(interval)!=2) 
-            stop("Invalid argument 'interval'.\n")
-        else interval<-matrix(rep(interval, d), nrow=d, byrow=TRUE)
+            stop("Invalid 'interval'.\n")
+        else interval<-matrix(rep(interval, d), nrow=2)
     }
     if(d==1) x<-rmixbeta(n, p, interval)
     else{

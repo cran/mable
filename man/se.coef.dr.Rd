@@ -7,7 +7,7 @@
 se.coef.dr(
   obj,
   grouped = FALSE,
-  B = 500,
+  B = 500L,
   parallel = FALSE,
   ncore = NULL,
   controls = mable.ctrl()

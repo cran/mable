@@ -12,8 +12,7 @@ mable.decon(
   interval = c(0, 1),
   IC = c("none", "aic", "hqic", "all"),
   vanished = TRUE,
-  controls = mable.ctrl(maxit.em = 1e+05, eps.em = 1e-05, maxit.nt = 100, eps.nt =
-    1e-10),
+  controls = mable.ctrl(maxit.em = 1e+05, eps.em = 1e-05, maxit.nt = 100, eps.nt = 1e-10),
   progress = TRUE
 )
 }

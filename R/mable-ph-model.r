@@ -15,12 +15,14 @@
 #' Mable fit of Cox's proportional hazards regression model 
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
 #' @param data a dataset
-#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
-#'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of 
+#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1},  
+#'   then \code{m0} is a preselected degree. If \code{m0<m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.  
 #' @param g initial guess of \eqn{d}-vector of regression coefficients.  See 'Details'. 
 #' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
+#' @param p an initial coefficients of Bernstein polynomial model of degree \code{m0}, 
+#'   default is the uniform initial. 
 #' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param x0 a working baseline covariate. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
@@ -30,7 +32,7 @@
 #' based on interal censored event time data.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on \eqn{[0, \tau_n]} can be approximated by  
@@ -113,7 +115,7 @@
 # @useDynLib mable-ph-model .registration = TRUE
 #' @importFrom icenReg ic_sp
 #' @export
-mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL, 
+mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL, 
         controls = mable.ctrl(), progress=TRUE){
     data.name<-deparse(substitute(data)) 
     fmla<-Reduce(paste, deparse(formula))
@@ -159,7 +161,7 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
         m<-M[1]
         dm<-c(d,m)
         ell<-0  
-        p<-rep(1, m+2)/(m+2)
+        if(is.null(p)) p<-rep(1, m+2)/(m+2)
         ## Call C mable_ph_m
         res<-.C("mable_ph_m",
             as.double(g), as.double(p), as.integer(dm), as.double(x), as.double(y),  
@@ -181,7 +183,9 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
         lr<-rep(0, k)
         pval<-rep(0,k+1)
         chpts<-rep(0,k+1)
-        p<-rep(0, M[2]+2)
+        if(is.null(p)) p<-rep(pi0, M[1]+1)/(M[1]+1)
+        p[M[1]+2] = 1-pi0;
+        p<-c(p, rep(0, k))
         ## Call C mable_ph
         res<-.C("mable_ph",
             as.integer(M), as.double(g), as.integer(dm), as.double(p), as.double(pi0),
@@ -218,12 +222,14 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' Mable fit of the PH model with given regression coefficients 
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
 #' @param data a dataset
-#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},  
-#'   then \code{m} is a preselected degree. If \code{m0 < m1} it specifies the set of 
+#' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1},  
+#'   then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
 #'   where \code{m1-m0>3}.  
 #' @param g the given \eqn{d}-vector of regression coefficients 
 #' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
+#' @param p an initial coefficients of Bernstein polynomial model of degree \code{m0}, 
+#'   default is the uniform initial. 
 #' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
 #' @param x0 a working baseline covariate. See 'Details'. 
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
@@ -235,7 +241,7 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'  estimates provided by other semiparametric methods.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma'(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma'(x-x_0)\ge 0}.   
+#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
@@ -253,7 +259,7 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' containing the event time. Data is uncensored if \code{l = u}, right censored 
 #' if \code{u = Inf} or \code{u = NA}, and  left censored data if \code{l = 0}.
 #' The associated covariate contains \eqn{d} columns. The baseline \code{x0} should chosen so that 
-#' \eqn{\gamma'(x-x_0)} is nonnegative for all the observed \eqn{x}.
+#' \eqn{\gamma^T(x-x_0)} is nonnegative for all the observed \eqn{x}.
 #'
 #'  The search for optimal degree \code{m} stops if either \code{m1} is reached or the test 
 #'  for change-point results in a p-value \code{pval} smaller than \code{sig.level}.
@@ -310,73 +316,75 @@ mable.ph<-function(formula, data, M, g=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' @concept interval censoring
 #' @seealso \code{\link{mable.ph}}
 #' @export
-maple.ph<-function(formula, data, M, g, pi0=NULL, tau=Inf, x0=NULL, 
-        controls = mable.ctrl(), progress=TRUE){
-    data.name<-deparse(substitute(data)) 
-    fmla<-Reduce(paste, deparse(formula))
-    Dta<-get.mableData(formula, data)
-    x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
-    delta<-Dta$delta
-    if(is.null(pi0)) pi0<-mean(y2<Inf)
-    b<-max(y2[y2<Inf], y);
-    if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
-    y<-y/b; y2<-y2/b
-    if(tau==Inf) y2[y2==Inf]<-.Machine$double.xmax/2
-    else y2[y2==Inf]<-tau
-    x<-as.matrix(x)
-    d<-length(g)
-    if(d!=ncol(x)) stop("length of g and number of covariates do not match.")
-    n<-length(y)
-    n0<-sum(delta==0)
-    n1<-sum(delta==1)
-    N<-c(n0,n1) 
-    ord<-order(delta)
-    x<-as.matrix(x[ord,]); y<-y[ord]; y2<-y2[ord]
-    if(missing(M) || length(M)==0) stop("'M' is missing.\n")
-    else if(length(M)==1) M<-c(M,M)
-    else if(length(M)>=2) {
-        M<-c(min(M), max(M))
-    }
-    k<-M[2]-M[1]
-    if(k>0 && k<=3) stop("Too few candidate model degrees.")
-    k<-M[2]-M[1]; 
-    lk<-rep(0, k+1)
-    lr<-rep(0, k)
-    pval<-rep(0,k+1)
-    level<-controls$sig.level
-    chpts<-rep(0,k+1)
-    dm<-c(d,0)
-    conv<-0
-    del<-c(0,0)
-    p<-rep(0, M[2]+2) 
-    if(is.null(x0)) 
-        for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
-    ddell<-diag(0,d)
-    ## Call C mable_ph_gamma
-    res<-.C("mable_ph_gamma",
-        as.integer(M), as.double(g), as.integer(dm), as.double(pi0), as.double(x), 
-        as.double(y), as.double(y2), as.integer(N), as.double(x0), as.double(lk), 
-        as.double(lr), as.double(p), as.double(ddell), as.double(controls$eps.em),
-        as.integer(controls$maxit.em), as.logical(progress), as.double(level),
-        as.double(pval), as.integer(chpts), as.integer(conv), as.double(del))
-    M<-res[[1]]
-    k<-M[2]-M[1]
-    lk<-res[[10]][1:(k+1)]
-    x0<-res[[9]]
-    egx0<-exp(sum(g*x0))
-    m<-res[[3]][2]  
-    llik<-lk[m-M[1]+1]
-    mp2<-m+2
-    ans<-list(m=m, mloglik=llik-n0*log(b), tau.n=b, tau=tau, p=res[[12]][1:mp2], coefficients=g, 
-    x0=x0, egx0=egx0, convergence=res[[20]],delta=res[[21]][1], xNames=Dta$xNames)
-    if(k>0){
-        ans$M<-M; ans$lk<-lk-n0*log(b); ans$lr<-res[[11]][1:k]; ans$pval<-res[[18]][1:(k+1)];
-        ans$chpts<-res[[19]][1:(k+1)]+M[1]; ans$pom<-res[[21]][2];}
-    ans$model<-"ph"
-    ans$callText<-fmla
-    ans$data.name<-data.name
-    class(ans)<-"mable_reg"
-    return(ans)
+maple.ph<-function(formula, data, M, g, pi0=NULL, p=NULL, tau=Inf, x0=NULL, 
+      controls = mable.ctrl(), progress=TRUE){
+  data.name<-deparse(substitute(data)) 
+  fmla<-Reduce(paste, deparse(formula))
+  Dta<-get.mableData(formula, data)
+  x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
+  delta<-Dta$delta
+  if(is.null(pi0)) pi0<-mean(y2<Inf)
+  b<-max(y2[y2<Inf], y);
+  if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
+  y<-y/b; y2<-y2/b
+  if(tau==Inf) y2[y2==Inf]<-.Machine$double.xmax/2
+  else y2[y2==Inf]<-tau
+  x<-as.matrix(x)
+  d<-length(g)
+  if(d!=ncol(x)) stop("length of g and number of covariates do not match.")
+  n<-length(y)
+  n0<-sum(delta==0)
+  n1<-sum(delta==1)
+  N<-c(n0,n1) 
+  ord<-order(delta)
+  x<-as.matrix(x[ord,]); y<-y[ord]; y2<-y2[ord]
+  if(missing(M) || length(M)==0) stop("'M' is missing.\n")
+  else if(length(M)==1) M<-c(M,M)
+  else if(length(M)>=2) {
+    M<-c(min(M), max(M))
+  }
+  k<-M[2]-M[1]
+  if(k>0 && k<=3) stop("Too few candidate model degrees.")
+  k<-M[2]-M[1]; 
+  lk<-rep(0, k+1)
+  lr<-rep(0, k)
+  pval<-rep(0,k+1)
+  level<-controls$sig.level
+  chpts<-rep(0,k+1)
+  dm<-c(d,0)
+  conv<-0
+  del<-c(0,0)
+  if(is.null(p)) p<-rep(pi0, M[1]+1)/(M[1]+1)
+  p[M[1]+2] = 1-pi0;
+  p<-c(p, rep(0, k))
+  if(is.null(x0)) 
+    for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
+  ddell<-diag(0,d)
+  ## Call C mable_ph_gamma
+  res<-.C("mable_ph_gamma",
+    as.integer(M), as.double(g), as.integer(dm), as.double(pi0), as.double(x), 
+    as.double(y), as.double(y2), as.integer(N), as.double(x0), as.double(lk), 
+    as.double(lr), as.double(p), as.double(ddell), as.double(controls$eps.em),
+    as.integer(controls$maxit.em), as.logical(progress), as.double(level),
+    as.double(pval), as.integer(chpts), as.integer(conv), as.double(del))
+  M<-res[[1]]
+  k<-M[2]-M[1]
+  lk<-res[[10]][1:(k+1)]
+  x0<-res[[9]]
+  egx0<-exp(sum(g*x0))
+  m<-res[[3]][2]  
+  llik<-lk[m-M[1]+1]
+  mp2<-m+2
+  ans<-list(m=m, mloglik=llik-n0*log(b), tau.n=b, tau=tau, p=res[[12]][1:mp2], coefficients=g, 
+  x0=x0, egx0=egx0, convergence=res[[20]],delta=res[[21]][1], xNames=Dta$xNames)
+  if(k>0){
+    ans$M<-M; ans$lk<-lk-n0*log(b); ans$lr<-res[[11]][1:k]; ans$pval<-res[[18]][1:(k+1)];
+    ans$chpts<-res[[19]][1:(k+1)]+M[1]; ans$pom<-res[[21]][2];}
+  ans$model<-"ph"
+  ans$callText<-fmla
+  ans$data.name<-data.name
+  class(ans)<-"mable_reg"
+  return(ans)
 }
 ###############################################
 #  Mable fit based on interval censored data without covariate
@@ -585,7 +593,8 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
   if(any(which=="density")||any(which=="survival")||any(which=="all")) {
     if(missing(y) && is.null(newdata)) {
       y<-data.frame(t(x$x0))
-      message("missing y and newdata, assigned as x=x0")}
+      #message("missing y and newdata, assigned as x=x0")
+    }
     else if(missing(y)) y<-newdata
     nr=dim(y)[1]
     tau.n<-x$tau.n
@@ -609,11 +618,12 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
         fbx<-egxt*fb*Sb^(egxt-1)              
         Sbx<-Sb^egxt}
       if(x$model == "aft"){	
-        Sbx<-1-pmixbeta(time, p=p, c(0, tau))
-        fbx<-dmixbeta(time, p=p, c(0, tau))
         egxt<-as.vector(exp(sum(y[i,]*gama))/x$egx0)
-        time<-time/egxt
-        tau<-tau.n}
+        Sbx<-1-pmixbeta(time*egxt, p=p, c(0, tau/egxt))
+        fbx<-dmixbeta(time*egxt, p=p, c(0, tau/egxt))
+        #time<-time/egxt
+        #tau<-tau.n
+      }
       if(x$model == "po"){	          
         xlb<-time[time<=tau.n]
         xgb<-time[time>tau.n]
@@ -625,10 +635,12 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
         fbx<-egxt*fb/(egxt+(1-egxt)*Sb^eta)^(1+1/eta)              
         Sbx<-Sb/(egxt+(1-egxt)*Sb^eta)^(1/eta)}
       if(any(which=="density")||any(which=="all"))
-        if(!add && i==1) plot(time, fbx, xlab=xlab, ylab="Density", xlim=c(0,tau),...)
+        if(!add && i==1) 
+          plot(time, fbx, xlab=xlab, ylab="Density", xlim=c(0,tau), ...)
         else lines(time, fbx, xlab=xlab, ylab="Density",  xlim=c(0,tau), ...)
       if(any(which=="survival")||any(which=="all")) # default is "survival" for plotting "all" 
-        if(!add && i==1) plot(time, Sbx, xlab=xlab, ylab="Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
+        if(!add && i==1) 
+          plot(time, Sbx, xlab=xlab, ylab="Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
         else lines(time, Sbx, xlab=xlab, ylab="Probability",xlim=c(0,tau),  ylim=c(0,1),...)  
     }
   }
@@ -656,32 +668,32 @@ readingCall <- function(mf){
 #' @importFrom stats model.matrix model.response 
 #' @noRd
 get.mableData<-function(formula, data){
-    if (missing(data)) 
-        data <- environment(formula)
-    mf <- match.call(expand.dots = FALSE)
-    callInfo <- readingCall(mf)
-    mf <- callInfo$mf
-    mt <- callInfo$mt
-    rvar <- model.response(mf, "numeric")
-    x <- model.matrix(mt, mf)
-    if (is.matrix(x)) xNames <- colnames(x)
-    else {
-        xNames <- as.character(formula[[3]])
-        x<-matrix(x, ncol=1)}
-    if ("(Intercept)" %in% colnames(x)) {
-        ind <- which(colnames(x) == "(Intercept)")
-        x <- x[, -ind]
-        xNames <- xNames[-ind]
-    } # This should not happen.
-    y<-rvar[,1]
-    y2<-rvar[,2]
-    y2[is.na(y2)]<-Inf
-    delta<-1*(y<y2)# rvar[,3]
-    if (sum(is.na(x)) > 0) 
-        stop("NA's not allowed in covariates")
-    callText <- mf$formula
-    out<-list(x=x, y=y, y2=y2, delta=delta, callText=callText, xNames=xNames)
-    return(out)
+  if (missing(data)) 
+      data <- environment(formula)
+  mf <- match.call(expand.dots = FALSE)
+  callInfo <- readingCall(mf)
+  mf <- callInfo$mf
+  mt <- callInfo$mt
+  rvar <- model.response(mf, "numeric")
+  x <- model.matrix(mt, mf)
+  if (is.matrix(x)) xNames <- colnames(x)
+  else {
+      xNames <- as.character(formula[[3]])
+      x<-matrix(x, ncol=1)}
+  if ("(Intercept)" %in% colnames(x)) {
+      ind <- which(colnames(x) == "(Intercept)")
+      x <- x[, -ind]
+      xNames <- xNames[-ind]
+  } # This should not happen.
+  y<-rvar[,1]
+  y2<-rvar[,2]
+  y2[is.na(y2)]<-Inf
+  delta<-1*(y<y2)# rvar[,3]
+  if (sum(is.na(x)) > 0) 
+      stop("NA's not allowed in covariates")
+  callText <- mf$formula
+  out<-list(x=x, y=y, y2=y2, delta=delta, callText=callText, xNames=xNames)
+  return(out)
 }
 ######################################################
 # Wrap all MABLE for regression fit in one function
