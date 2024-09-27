@@ -3,6 +3,7 @@
 ##  of Multivariate Density Function
 ##
 ## References:
+##  Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
 ##  Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model    
 ##     for Nonparametric Multivariate Density, Statistics,     
 ##              Vol. 53, no. 2, 321-338                        
@@ -27,13 +28,10 @@
 #'    the endpoints of support/truncation interval for each marginal density.
 #'    If missing, the i-th column is assigned as \code{c(min(x[,i]), max(x[,i]))}.
 #' @param mar.deg logical, if TRUE, the optimal degrees are selected based  
-#'    on marginal data, otherwise, the optimal degrees are those minimize the maximum
-#'    L2 distance between marginal cdf or pdf estimated based on marginal data and the
-#'    joint data. See details.   
-#' @param high.dim logical, data are high dimensional/large sample or not
-#'    if TRUE, run a slower version procedure which requires less memory  
-#' @param criterion either cdf or pdf should be used for selecting optimal degrees.
-#'    Default is "cdf"
+#'    on marginal data, otherwise, the optimal degrees are chosen the joint data. See details.   
+#' @param method method for finding maximum likelihood estimate. "cd": coordinate-descent;
+#     "em": the EM like algorithm; "lmem": a slower version EM like algorithm which requires 
+#'    less memory for data that are high dimensional/large sample.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit
 #' and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.
 #' @param progress if TRUE a text progressbar is displayed
@@ -43,19 +41,13 @@
 #'   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
 #'   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
 #'   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-#'   Let \eqn{\tilde F_i} (\eqn{\tilde f_i}) be an estimate with degree \eqn{\tilde m_i} of  
-#'   the i-th marginal cdf (pdf) based on marginal data \code{x[,i]}, \eqn{i=1, \ldots, d}. 
-#'   If \code{search=TRUE} and \code{use.marginal=TRUE}, then the optimal degrees
-#'   are \eqn{(\tilde m_1,\ldots,\tilde m_d)}. If \code{search=TRUE} and 
-#'   \code{use.marginal=FALSE}, then the optimal degrees \eqn{(\hat m_1,\ldots,\hat m_d)}
-#'   are those that minimize the maximum of \eqn{L_2}-distance between 
-#'   \eqn{\tilde F_i} (\eqn{\tilde f_i}) and the estimate of \eqn{F_i} (\eqn{f_i}) 
-#'   based on the joint data with degrees \eqn{m=(m_1,\ldots,m_d)} for all \eqn{m}
-#'    between \eqn{M_0} and \eqn{M} if \code{criterion}="cdf" (\code{criterion}="pdf"). 
-#'
+#'   If \code{search=TRUE} then the model degrees are chosen using a method of change-point based on 
+#'   the marginal data if \code{mar.deg=TRUE} or the joint data if \code{mar.deg=FALSE}. 
+#'   If \code{search=FALSE}, then the model degree is specified by \eqn{M}.
 #'   For large data and multimodal density, the search for the model degrees is 
-#'   very time-consuming. In this case, it is suggested that the degrees are selected  
-#'   based on marginal data using \code{\link{mable}} or \code{\link{optimable}}.
+#'   very time-consuming. In this case, it is suggested that use \code{method="cd"} 
+#'   and select the degrees based on marginal data using \code{\link{mable}} or 
+#'   \code{\link{optimable}}.
 #' @return  A list with components
 #' \itemize{
 #'  \item \code{m} a vector of the selected optimal degrees by the method of change-point
@@ -74,7 +66,7 @@
 #' ## Old Faithful Data
 #' \donttest{
 #'  a<-c(0, 40); b<-c(7, 110)
-#'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, 
+#'  ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, method="em",
 #'          interval = rbind(a,b), progress=FALSE)
 #'  plot(ans, which="density") 
 #'  plot(ans, which="cumulative")
@@ -83,17 +75,20 @@
 #' @keywords distribution nonparametric multivariate 
 #' @concept multivariate Bernstein polynomial model
 #' @concept density estimation
-#' @author Zhong Guan <zguan@iusb.edu>
-#' @references Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density,    
+#' @author Zhong Guan <zguan@iu.edu>
+#' @references 
+#' Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. 
+#'    \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
+#' Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density,    
 #'    \emph{Statistics}, Vol. 53, no. 2, 321-338  
 #' @export
-mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, mar.deg=TRUE, 
-      high.dim=FALSE, criterion=c("cdf", "pdf"), controls = mable.ctrl(), progress=TRUE){
+mable.mvar<-function(x, M0=1L, M, search=TRUE, interval=NULL, mar.deg=TRUE, 
+      method=c("cd","em","lmem"), controls = mable.ctrl(), progress=TRUE){
   data.name<-deparse(substitute(x))
-  n<-nrow(x)
-  d<-ncol(x)
+  n<-NROW(x)
+  d<-NCOL(x)
   xNames<-names(x)
-  criterion <- match.arg(criterion)
+  method <- match.arg(method)
   if(is.null(xNames)) 
     for(i in 1:d) xNames[i]<-paste("x",i,sep='')
   x<-as.matrix(x)   
@@ -112,16 +107,20 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, mar.deg=TRUE,
   }
   x<-t((t(x)-interval[1,])/apply(interval,2,diff))
   if(any(x<0) || any(x>1)) stop("All data values must be contained in 'interval'.")
-  if(missing(M) || length(M)==0) stop("'M' is missing.\n")
-  else if(length(M)==1) M<-rep(M,d)
-  else if(length(M)!=d){
-    if(search){
-      if(max(M)>=5) warning("Length of 'M' does not match 'ncol(x)'. Use largest 'M'.\n")
-      else stop("'M' are too small for searching optimal degrees.\n")
-      M<-rep(max(M),d)}
-    else stop("Invalide 'M'.\n")
+  if(d==1){
+    xbar<-mean(x); s2<-var(x); 
+    m0<-max(1,ceiling(xbar*(1-xbar)/s2-3)-2)
+    if(is.vector(x)) x<-matrix(x,ncol=d)
   }
-  else M<-M[1:d]
+  else{
+    xbar<-colMeans(x)
+    s2<-colSums(t(t(x)-xbar)^2)/(n-1)
+    m0<-pmax(1,ceiling(xbar*(1-xbar)/s2-3)-2)
+  }
+  if(missing(M) || length(M)==0 || any(M<=0)) stop("'M' is missing or nonpositvie.\n")
+  else if(length(M)<d) M<-rep(M,d)
+  M<-M[1:d]
+  if(min(M)<5 && search) warning("'M' are too small for searching optimal degrees.\n")
   if(length(M0)==1) M0<-rep(M0,d)
   else if(length(M0)!=d){
     if(search){
@@ -130,104 +129,109 @@ mable.mvar<-function(x, M0=1, M, search=TRUE, interval=NULL, mar.deg=TRUE,
       else stop("'M0' are too big for searching optimal degrees.\n")
       M0<-rep(max(M0),d)}
   }
-  m<-rep(0, d)
-  pl<-list()
-  mlik<-0    
+  #cat("m0=",m0,"M=",M,"\n")
   convergence<-0
-  cdf<-ifelse(criterion=="cdf", TRUE, FALSE)
-  D<-0
   Ord<-function(i){
     if(any(1:3==i%%10) && !any(11:13==i)) switch(i%%10, "st", "nd", "rd")
     else "th"}
-  #mar<-list()# estimates based on marginal data
-  k<-1
-  for(i in 1:d){
-    if(search){
-      cat("mable fit of the ",i, Ord(i), " marginal data.\n", sep='')
+  if(search && mar.deg && d>1){
+    M0<-pmax(m0,M0)
+    for(i in 1:d){
+      message("mable fit of the ",i, Ord(i), " marginal data.\n")
       res<-mable(x[,i], M=c(M0[i],M[i]), c(0,1), controls=controls, progress = TRUE)
       pval<-res$pval
-      #m1<-res$M[2]
-      cat("m[",i,"]=", res$m," with p-value ",  pval[length(pval)],"\n", sep='')
+      message("m[",i,"]=", res$m," with p-value ",  pval[length(pval)],"\n")
+      M[i]<-res$m
     }
-    else{
-      cat("mable fit of the ",i, Ord(i), " marginal data with the given degree m[",i,"]=",M[i],".\n", sep='')
-      res<-mable(x[,i], M=M[i], c(0,1), controls=controls, progress = TRUE) 
-    }
-    m[i]<-res$m
-    pl[[i]]<-res$p
+    search<-FALSE
   }
-  if(!search | mar.deg){
-    M<-m
-    search=FALSE
-    km<-c(1,cumprod(m+1))
-    K<-km[d+1]
-    p<-rep(1,K)
-    j<-rep(0,d)
-    for(l in 1:K){
-      r <- l-1
-      s<-d-1
-      while(s > 0){
-        jj <- r%%km[s+1] 
-        i <- (r-jj)/km[s+1] 
-        j[s+1]<-i
-        r <- jj 
-        s<-s-1
-      }
-      j[1]<-r
-      for(i in 1:d) p[l]<-p[l]*pl[[i]][j[i]+1] 
-    }
-  }
-  else if(search) {
-    M<-2*m
-    K<-prod(M+1)
-    p<-rep(0,K)
-    k<-1
-    for(i in 1:d){
-      p[k+(0:m[i])]<-pl[[i]]
-      k<-k+m[i]+1}
-  }
-  rm(pl)
 
-  #if(search){
-  #  Kn<-prod(M)
-  #  lk<-rep(0, Kn)}
-  #else lk<-0
-  lk<-0
-  ## Call C mable_mvar
-  res<-.C("mable_mvar",
-    as.integer(M0), as.integer(M), as.integer(n), as.integer(d), as.integer(search), 
-    as.double(p), as.integer(m), as.double(x), as.integer(controls$maxit), 
-    as.double(controls$eps), as.double(lk), as.logical(progress), 
-    as.integer(convergence), as.double(D), #as.double(mlik), 
-    as.logical(cdf), as.logical(high.dim))
-  m<-res[[7]]
-  K<-prod(m+1)
-  out<-list(p=res[[6]][1:K], mloglik=res[[11]], interval=interval, 
-       m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
-  cat("\n MABLE for ", d,"-dimensional data:\n",sep='')
+  out<-list(interval=interval, xNames=xNames)  
+  
+  pd<-sum(M) # polynomial degree
+  #cat("Maximum polynomial degree=",pd,"\n")
+  lk<-rep(0, pd+1)
+  p<-rep(0, ceiling((pd/d+1)^d))
+  high.dim<-ifelse(method=="lmem", TRUE, FALSE)
   if(search){
-    cat("Optimal degrees m = (", m[1], sep='')
-    for(i in 2:d) cat(", ",m[i],sep='')
+  #cat("M0=",M0,"M=",M,"length p=",length(p),"\n")
+      pval<-rep(1, pd+1)
+      lr<-rep(0, pd+1)
+      chpts<-rep(0, pd+1)
+      d<-c(d,pd)
+      ## Call C mable_cd
+      if(method=="cd"){
+          res<-.C("mable_cd",
+            as.integer(M0), as.integer(M), as.integer(n), as.integer(d), 
+            as.double(p), as.double(x), as.integer(controls$maxit), as.double(controls$eps), 
+            as.double(controls$sig.level), as.double(pval), as.double(lk), as.double(lr), 
+            as.integer(chpts), as.logical(progress))
+      }
+      else{
+      ## Call C mable_mvar
+          res<-.C("mable_mvar",
+            as.integer(M0), as.integer(M), as.integer(n), as.integer(d), 
+            as.double(p), as.double(x), as.integer(controls$maxit), as.double(controls$eps), 
+            as.double(controls$sig.level), as.double(pval), as.double(lk), as.double(lr), 
+        as.integer(chpts), as.logical(progress), as.integer(convergence), as.logical(high.dim))
+        out$convergence=res[[15]] 
+      }
+      m<-res[[2]]; K<-prod(m+1); 
+      out$p<-res[[5]][1:K]; out$m=m; 
+      k<-res[[4]];  
+      out$khat<-k
+      lk<-res[[11]][1:(k+1)]
+      out$lk<-lk
+      out$lr<-res[[12]][1:(k+1)]
+      out$chpts<-res[[13]][1:(k+1)]
+      out$mloglik<-lk[out$chpts[k]+1]
+  }
+  else{
+      m<-M; K<-prod(m+1); 
+      p<-rep(1, K)/K
+      ## Call C mable_m_cd
+      if(method=="cd"){
+          res<-.C("mable_m_cd",
+            as.integer(M), as.integer(n), as.integer(d), as.double(p), as.double(x),
+            as.integer(controls$maxit), as.double(controls$eps), as.double(lk))
+      }
+      else{
+      ## Call C mable_m_mvar
+          res<-.C("mable_m_mvar",
+            as.integer(M), as.integer(n), as.integer(d), as.double(p), as.double(x),
+            as.integer(controls$maxit), as.double(controls$eps), as.double(lk), 
+            as.logical(progress), as.integer(convergence), as.logical(high.dim))
+          out$convergence=res[[10]] 
+      }
+      out$p<-res[[4]][1:K]; out$m=m; 
+      lk<-res[[8]][1]
+      out$lk<-lk
+      out$mloglik<-lk
+  }
+  
+  message("\n MABLE for ", d,"-dimensional data:")
+  if(search){
+    message("Model degrees m = (", m[1], append=FALSE)
+    for(i in 2:d) message(", ",m[i], append=FALSE)
     if(mar.deg)
-      cat(") are selected based on marginal data m=", m, "\n")
+      message(") are selected based on marginal data m=", m, "\n")
     else{
-      cat(") are selected between M0 and M, inclusive, where \n",sep='')
-      cat("M0 = ", M0, "\nM = ",M,"\n")
+      message(") are selected between M0 and M, inclusive, where \n", append=FALSE)
+      message("M0 = ", M0, "\nM = ",M,"\n")
     }
     out$M0<-M0
     out$M<-M
-    #out<-list(p=res[[6]][1:K], mloglik=res[[11]], 
-    #mloglik=res[[15]][1], lk=res[[11]][1:Kn], 
-    #interval=interval, M0=M0, M=M,
-    #  m=m, xNames=xNames,  convergence=res[[13]], D=res[[14]])
   }
   else{
-    cat("Model degrees are specified: M=", m, "\n")
+    message("Model degrees are specified: M=", m)
   }
-  out$data.type<-"mvar"
+  if(d[1]>1) out$data.type<-"mvar"
   class(out)<-"mable"
   invisible(out)
 }
+
+
+
 #########################################################
 #' Multivariate Mixture Beta Distribution
 #' @description Density, distribution function,  and 
@@ -282,16 +286,16 @@ dmixmvbeta<-function(x, p, m, interval=NULL){
     if(is.matrix(x)){
         nx<-nrow(x)
         if(d!=ncol(x)) stop("Wrong dim of 'x'.\n")
-        if(any(x-matrix(rep(interval[1,],nx), ncol=d, byrow=TRUE)<0) 
-            || any(x-matrix(rep(interval[2,],nx), ncol=d, byrow=TRUE)>0))
+        eps<-.Machine$double.eps^.5
+        #cat("interval=",interval,"\n")
+        if(any(matrix(rep(interval[1,],nx), ncol=d, byrow=TRUE)-x>eps) 
+            || any(x-matrix(rep(interval[2,],nx), ncol=d, byrow=TRUE)>eps))
             stop("'x' must be in the hyperrectangle 'interval'.\n")
         x<-t((t(x)-interval[1,])/apply(interval,2,diff))
     }
     else {
         if(d!=length(x)) stop("'x' is a vector. Its length must be the same as 'm'.\n") 
         nx<-1}
-#    obj<-list(m=m, p=p, interval=interval)
-#    ans<-mvbern.poly(x, obj, density=TRUE)
     fb<-rep(0, nx)
     density<-TRUE
     res<-.C("mable_mvdf",
@@ -313,7 +317,7 @@ pmixmvbeta<-function(x, p, m, interval=NULL){
     #else if(abs(sum(p)-1)>.Machine$double.eps)
     #    warning("Sum of 'p's is not 1.\n")
     if(is.null(interval))  
-        interval<-rbind(rep(0,d), rep(1,d))
+        interval<-rbind(rep(0L,d), rep(1L,d))
     else if(is.matrix(interval)){
         if(nrow(interval)!=2 || ncol(interval)!=d)
             stop("Invalid 'interval'.\n")
@@ -326,8 +330,9 @@ pmixmvbeta<-function(x, p, m, interval=NULL){
      if(is.matrix(x)){
         nx<-nrow(x)
         if(d!=ncol(x)) stop("Wrong dim of 'x'.\n")
-        if(any(x-matrix(rep(interval[1,],nx), ncol=d, byrow=TRUE)<0) 
-            || any(x-matrix(rep(interval[2,],nx), ncol=d, byrow=TRUE)>0))
+        eps<-.Machine$double.eps^.5
+        if(any(matrix(rep(interval[1,],nx), ncol=d, byrow=TRUE)-x>eps) 
+            || any(x-matrix(rep(interval[2,],nx), ncol=d, byrow=TRUE)>eps))
             stop("'x' must be in the hyperrectangle 'interval'.\n")
         x<-t((t(x)-interval[1,])/apply(interval,2,diff))
     }
@@ -361,7 +366,7 @@ rmixmvbeta<-function(n, p, m, interval=NULL){
         p<-p/sum(p)
     }
     if(is.null(interval))  
-        interval<-rbind(rep(0,d), rep(1,d))
+        interval<-rbind(rep(0L,d), rep(1L,d))
     else if(is.matrix(interval)){
         if(nrow(interval)!=2 || ncol(interval)!=d)
             stop("Invalid 'interval'.\n")
@@ -381,7 +386,7 @@ rmixmvbeta<-function(n, p, m, interval=NULL){
         x<-rep(NULL, d)
         for(i in 1:n){
             tmp<-rbeta(d, shape1 = ii[w[i],]+1, shape2 = m-ii[w[i],]+1)
-            x<-rbind(x, interval[,1]+(interval[,2]-interval[,1])*tmp)
+            x<-rbind(x, interval[1,]+(interval[2,]-interval[1,])*tmp)
         }
     }
     return(x)

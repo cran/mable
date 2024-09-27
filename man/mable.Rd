@@ -2,12 +2,13 @@
 % Please edit documentation in R/mable.r
 \name{mable}
 \alias{mable}
-\title{Mable fit of one-sample raw data with an optimal or given degree.}
+\title{Maximum Approximate Bernstein Likelihood Estimate
+ of Univariate or Multivariate Density Function}
 \usage{
 mable(
   x,
   M,
-  interval = c(0, 1),
+  interval = 0:1,
   IC = c("none", "aic", "hqic", "all"),
   vb = 0,
   controls = mable.ctrl(),
@@ -15,7 +16,8 @@ mable(
 )
 }
 \arguments{
-\item{x}{a (non-empty) numeric vector of data values.}
+\item{x}{a (non-empty) numeric \code{n}-vector or \code{n x d} matrix or \code{data.frame}
+of \code{n} observations.}
 
 \item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
 then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of
@@ -157,12 +159,14 @@ moment and a method of mode which are implemented by function \code{optimal()}.
 }
 \references{
 Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
+    Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density, Statistics,     
+            Vol. 53, no. 2, 321-338
 }
 \seealso{
 \code{\link{optimable}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Bernstein polynomial model}
 \keyword{distribution}

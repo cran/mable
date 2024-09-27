@@ -41,5 +41,5 @@ a list of the arguments' values
 Control parameters for mable fit
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }

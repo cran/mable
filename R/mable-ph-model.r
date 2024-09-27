@@ -14,7 +14,7 @@
 ##################################################################
 #' Mable fit of Cox's proportional hazards regression model 
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
-#' @param data a dataset
+#' @param data a data frame containing variables in \code{formula}.
 #' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1},  
 #'   then \code{m0} is a preselected degree. If \code{m0<m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
@@ -24,7 +24,7 @@
 #' @param p an initial coefficients of Bernstein polynomial model of degree \code{m0}, 
 #'   default is the uniform initial. 
 #' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
-#' @param x0 a working baseline covariate. See 'Details'. 
+#' @param x0 a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
@@ -32,7 +32,12 @@
 #' based on interal censored event time data.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
+#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0},
+#' where \eqn{x} and \eqn{x_0} may
+#' contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+#' contains only the values of terms excluding dummy variables and interaction terms 
+#' in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+#' the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on \eqn{[0, \tau_n]} can be approximated by  
@@ -85,7 +90,7 @@
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references 
 #' Guan, Z. Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
 #' Statistics in Medicine. 2020; 1–21. https://doi.org/10.1002/sim.8801.
@@ -98,7 +103,7 @@
 #'    ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, 
 #'         futime2=futime2)
 #'    ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, 
-#'         M=c(2,35), g=.16, x0=35)
+#'         M=c(2,35), g=.16, x0=data.frame(age=35))
 #'    op<-par(mfrow=c(2,2))
 #'    plot(ova, which = "likelihood")
 #'    plot(ova, which = "change-point")
@@ -119,12 +124,35 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
         controls = mable.ctrl(), progress=TRUE){
     data.name<-deparse(substitute(data)) 
     fmla<-Reduce(paste, deparse(formula))
-    Dta<-get.mableData(formula, data)
-    x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
-    delta<-Dta$delta
     if(is.null(g)){
         g<-ic_sp(formula, data, model = 'ph')$coefficients
     }
+    d<-length(g)
+    Dta<-get.mableData(formula, data)
+    x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
+    delta<-Dta$delta; n<-length(y)
+#    if(is.null(x0)) 
+#        for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
+
+#    vars<-get.facMatrix(formula, data)
+#    allvars<-vars$allvars  # all variables 
+    allvars<-all.vars(formula)  # all variables 
+  if(!is.null(x0)){
+    if(length(x0)!=length(allvars)-2 || !is.data.frame(x0)){
+        message("Baseline 'x0' must be a dataframe with names matching the RHS of 'formula'.\n")
+        message("I will assign an 'x0' for you.\n")
+        x0<-NULL}
+    data0<-data.frame(cbind(0,1,x0))
+    names(data0)<-c(allvars[1:2], names(x0))
+    data1<-rbind(data[,names(data0)],data0)
+#    data1<-rbind(data[,allvars],data0)
+    Dta0<-get.mableData(formula, data1)
+    x0<-as.matrix(Dta0$x)[n+1,]
+  }
+  if(is.null(x0)){
+      for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
+    }
+
     if(is.null(pi0)) pi0<-mean(y2<Inf)
     b<-max(y2[y2<Inf], y) 
     if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
@@ -132,9 +160,8 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
     if(tau==Inf) y2[y2==Inf]<-.Machine$double.xmax/2
     else y2[y2==Inf]<-tau
     if(!is.matrix(x)) x<-matrix(x, ncol=1)
-    d<-length(g)
-    if(d!=ncol(x)) stop("length of gama does not match number of covariates.")
-    n<-length(y)
+    if(d!=ncol(x)) stop("Invalid argument 'g'.")
+#    n<-length(y)
     n0<-sum(delta==0)
     n1<-sum(delta==1)
     n<-n0+n1
@@ -145,8 +172,6 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
     del<-0
     ord<-order(delta)
     x<-as.matrix(x[ord,]); y<-y[ord]; y2<-y2[ord]
-    if(is.null(x0)) 
-        for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
     Eps<-c(controls$eps, controls$eps.em, controls$eps.nt, .Machine$double.eps)
     MaxIt<-c(controls$maxit, controls$maxit.em, controls$maxit.nt)
     level<-controls$sig.level
@@ -213,15 +238,18 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
     ans$model<-"ph"
     ans$callText<-fmla
     ans$data.name<-data.name
+    ans$allvars<-allvars
     class(ans)<-"mable_reg"
     return(ans)
 }
+
+
 ##################################################################
 #  Select optimal degree m with a given gamma
 ##################################################################
 #' Mable fit of the PH model with given regression coefficients 
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
-#' @param data a dataset
+#' @param data a data frame containing variables in \code{formula}.
 #' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1},  
 #'   then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
@@ -231,7 +259,7 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' @param p an initial coefficients of Bernstein polynomial model of degree \code{m0}, 
 #'   default is the uniform initial. 
 #' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
-#' @param x0 a working baseline covariate. See 'Details'. 
+#' @param x0 a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
@@ -241,7 +269,12 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'  estimates provided by other semiparametric methods.
 #' @details
 #' Consider Cox's PH model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
+#' \eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0},
+#' where \eqn{x} and \eqn{x_0} may
+#' contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+#' contains only the values of terms excluding dummy variables and interaction terms 
+#' in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+#' the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}.  
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
@@ -282,7 +315,7 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'   \item \code{chpts} the change-points among the candidate degrees;
 #'   \item \code{pom} the p-value of the selected optimal degree \code{m} as a change-point;
 #'  }  
-#' @author Zhong Guan <zguan@iusb.edu>   
+#' @author Zhong Guan <zguan@iu.edu>   
 #' @references 
 #' Guan, Z. (2019) Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
 #' arXiv:1906.08882 .
@@ -301,11 +334,11 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #'    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, 
 #'       g=c(.5,-.5), tau=7)
 #'    op<-par(mfrow=c(1,2))
-#'    plot(res1, y=data.frame(x=0, x2=0), which="density", add=FALSE, type="l", 
+#'    plot(res1, y=data.frame(x1=0, x2=0), which="density", add=FALSE, type="l", 
 #'        xlab="Time", main="Desnity Function")
 #'    lines(xx<-seq(0, 7, len=512), dweibull(xx, 2,2), lty=2, col=2)
 #'    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
-#'    plot(res1, y=data.frame(x=0, x2=0), which="survival", add=FALSE, type="l", 
+#'    plot(res1, y=data.frame(x1=0, x2=0), which="survival", add=FALSE, type="l", 
 #'        xlab="Time", main="Survival Function")
 #'    lines(xx, 1-pweibull(xx, 2, 2), lty=2, col=2)
 #'    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
@@ -318,11 +351,33 @@ mable.ph<-function(formula, data, M, g=NULL, p=NULL, pi0=NULL, tau=Inf, x0=NULL,
 #' @export
 maple.ph<-function(formula, data, M, g, pi0=NULL, p=NULL, tau=Inf, x0=NULL, 
       controls = mable.ctrl(), progress=TRUE){
+  if(missing(g)) stop("missing argument 'g'.")
+  d<-length(g)
   data.name<-deparse(substitute(data)) 
   fmla<-Reduce(paste, deparse(formula))
   Dta<-get.mableData(formula, data)
   x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
-  delta<-Dta$delta
+  delta<-Dta$delta; n<-length(y)
+#   vars<-get.facMatrix(formula, data)
+#   allvars<-vars$allvars  # all variables   
+   allvars<-all.vars(formula)  # all variables   
+#   if(d!=length(allvars)-2) stop("Invalid argument 'g'.")
+  if(!is.null(x0)){
+    if(length(x0)!=length(allvars)-2 || !is.data.frame(x0)){
+        message("Baseline 'x0' must be a dataframe with names matching the RHS of 'formula'.\n")
+        message("I will assign an 'x0' for you.\n")
+        x0<-NULL}
+    data0<-data.frame(cbind(0,1,x0))
+    names(data0)<-c(allvars[1:2], names(x0))
+    data1<-rbind(data[,names(data0)],data0)
+#    data1<-rbind(data[,allvars],data0)
+    Dta0<-get.mableData(formula, data1)
+    x0<-as.matrix(Dta0$x)[n+1,]
+  }
+  if(is.null(x0)){
+     for(i in 1:d) x0[i]<-ifelse(g[i]>=0, min(x[,i]), max(x[,i]))
+   }
+
   if(is.null(pi0)) pi0<-mean(y2<Inf)
   b<-max(y2[y2<Inf], y);
   if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
@@ -331,7 +386,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, p=NULL, tau=Inf, x0=NULL,
   else y2[y2==Inf]<-tau
   x<-as.matrix(x)
   d<-length(g)
-  if(d!=ncol(x)) stop("length of g and number of covariates do not match.")
+  if(d!=ncol(x)) stop("Invalid argument 'g'.")
   n<-length(y)
   n0<-sum(delta==0)
   n1<-sum(delta==1)
@@ -383,6 +438,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, p=NULL, tau=Inf, x0=NULL,
   ans$model<-"ph"
   ans$callText<-fmla
   ans$data.name<-data.name
+  ans$allvars<-allvars
   class(ans)<-"mable_reg"
   return(ans)
 }
@@ -447,7 +503,7 @@ maple.ph<-function(formula, data, M, g, pi0=NULL, p=NULL, tau=Inf, x0=NULL,
 #'   \item \code{delta} the final \code{pval} of the change-point for selecting the optimal degree \code{m};
 #' }
 #' @seealso \code{\link{mable.group}}
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references 
 #' Guan, Z. (2019) Maximum Approximate Bernstein Likelihood Estimation in Proportional Hazard Model for Interval-Censored Data, 
 #' arXiv:1906.08882 .
@@ -567,18 +623,19 @@ mable.ic<-function(data, M, pi0=NULL, tau=Inf, IC=c("none", "aic", "hqic", "all"
 #'  \code{which} can contain more than one options.
 #' @param add logical add to an existing plot or not
 #' @param ... additional arguments to be passed to the base plot function
-#' @author Zhong Guan <zguan@iusb.edu>
-#' @importFrom stats dexp pexp 
+#' @author Zhong Guan <zguan@iu.edu>
+#' @importFrom stats dexp pexp as.formula
+#' @importFrom rlang dots_list
 #' @export  
 plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
-      which=c("survival", "likelihood", "change-point", "density", "all"), add=FALSE,...){
+      which=c("survival", "likelihood", "change-point", "density", "all"), add=FALSE, ...){
   which <- match.arg(which, several.ok=TRUE)
   #model<-substr(x$model, 7,9) 
   if(any(which=="likelihood")||any(which=="all")) {
     if(is.null(x$lk)) stop("Cannot plot 'likelihood'.")
     if(!add) plot(x$M[1]:x$M[2], x$lk, type="p", xlab="m",ylab="Loglikelihood",
         main="Loglikelihood")
-    else points(x$M[1]:x$M[2], x$lk, pch=1,...)
+    else points(x$M[1]:x$M[2], x$lk, pch=1, ...)
     segments(x$m[1], min(x$lk), x$m[1], x$mloglik[1], lty=2)
     axis(1, x$m[1], as.character(x$m[1]), col=2)
   }
@@ -591,14 +648,50 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
     axis(1, x$m[1], as.character(x$m[1]), col=2)
   }
   if(any(which=="density")||any(which=="survival")||any(which=="all")) {
+    
+    allvars<-x$allvars 
     if(missing(y) && is.null(newdata)) {
       y<-data.frame(t(x$x0))
       #message("missing y and newdata, assigned as x=x0")
     }
-    else if(missing(y)) y<-newdata
-    nr=dim(y)[1]
+    else {
+      if(missing(y)) {
+        y<-newdata 
+      }
+#      cat("y=",unlist(y),"\n")
+      nx<-length(allvars)-2
+      if(!is.data.frame(y) || ncol(y)!=nx)
+        stop("Invalid 'newdata' or 'y'.")
+      dimy<-dim(y)
+      nr=dim(y)[1]
+
+        data0<-data.frame(cbind(0,1,y))
+        names(data0)<-c(allvars[1:2], names(y))
+        data1<-rbind(get(x$data.name)[,names(data0)],data0)
+        Dta0<-get.mableData(as.formula(x$callText), data1)
+#        y<-as.matrix(as.matrix(Dta0$x)[1:nr,])
+        n<-length(Dta0$y)-nr
+        y<-matrix(as.matrix(Dta0$x)[n+(1:nr),], nrow=nr)
+#        y<-new.y
+#        cat("y.new=",unlist(y),"\n")    
+    }
     tau.n<-x$tau.n
     tau<-x$tau
+
+#    ellipsis<-dots_list(...)
+#    if(is.null(ellipsis$col)) cl<-1:nr
+#    else if(length(ellipsis$col)<nr) cl<-1:nr
+#    else cl<-ellipsis$col
+#    if(is.null(ellipsis$lty)) lt<-1:nr
+#    else if(length(ellipsis$lty)<nr) lt<-1:nr
+#    else lt<-ellipsis$lty
+    ddd<-dots_list(...)
+    if(length(ddd$col)<nr) ddd$col<-1:nr
+    if(length(ddd$lty)<nr) ddd$lty<-1:nr
+    if(is.null(ddd$xlim)) ddd$xlim<-c(0,min(tau.n,tau))
+#    if(!("xlim" %in% names(ellipsis))) ellipsis$xlim<-c(0,min(tau.n,tau))
+    
+    
     #cat("y=",y[1,],"\n")
     gama<-x$coefficients
     p<-x$p
@@ -625,23 +718,25 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
         #tau<-tau.n
       }
       if(x$model == "po"){	          
-        xlb<-time[time<=tau.n]
-        xgb<-time[time>tau.n]
-        rate<-(m+1)*p[m+1]/p[m+2]/tau.n
-        Sb<-c(1-suppressMessages(pmixbeta(xlb, p=p[-(m+2)], c(0, tau.n))), p[m+2]*(1-pexp(xgb-tau.n,rate)))
-        fb<-c(suppressMessages(dmixbeta(xlb, p=p[-(m+2)], c(0, tau.n))), p[m+2]*dexp(xgb-tau.n, rate))
+        xlb<-time[time<=tau]
+        xgb<-time[time>tau]
+        #rate<-(m+1)*p[m+1]/p[m+2]/tau.n
+        Sb<-1-suppressMessages(pmixbeta(xlb, p=p, c(0, tau)))
+        fb<-suppressMessages(dmixbeta(xlb, p=p, c(0, tau)))
         egxt<-as.vector(exp(sum(y[i,]*gama))/x$egx0)
         eta<-x$eta
         fbx<-egxt*fb/(egxt+(1-egxt)*Sb^eta)^(1+1/eta)              
         Sbx<-Sb/(egxt+(1-egxt)*Sb^eta)^(1/eta)}
       if(any(which=="density")||any(which=="all"))
         if(!add && i==1) 
-          plot(time, fbx, xlab=xlab, ylab="Density", xlim=c(0,tau), ...)
-        else lines(time, fbx, xlab=xlab, ylab="Density",  xlim=c(0,tau), ...)
+          plot(time, fbx, xlab=xlab, ylab="Density", ...)
+        #else lines(time, fbx, xlab=xlab, ylab="Density",  col=cl[i], lty=lt[i])
+        #else lines(time, fbx, xlab=xlab, ylab="Density",  unlist(ddd))
       if(any(which=="survival")||any(which=="all")) # default is "survival" for plotting "all" 
         if(!add && i==1) 
-          plot(time, Sbx, xlab=xlab, ylab="Probability", xlim=c(0,tau),  ylim=c(0,1), ...)
-        else lines(time, Sbx, xlab=xlab, ylab="Probability",xlim=c(0,tau),  ylim=c(0,1),...)  
+          plot(time, Sbx, xlab=xlab, ylab="Probability",  ylim=c(0,1), ...)
+        #else lines(time, Sbx, xlab=xlab, ylab="Probability", col=cl[i], lty=lt[i])  
+        #else lines(time, Sbx, xlab=xlab, ylab="Probability", unlist(ddd))  
     }
   }
 }
@@ -679,10 +774,10 @@ get.mableData<-function(formula, data){
   if (is.matrix(x)) xNames <- colnames(x)
   else {
       xNames <- as.character(formula[[3]])
-      x<-matrix(x, ncol=1)}
+      x<-as.matrix(x, ncol=1)}
   if ("(Intercept)" %in% colnames(x)) {
       ind <- which(colnames(x) == "(Intercept)")
-      x <- x[, -ind]
+      x <- as.matrix(x[, -ind])
       xNames <- xNames[-ind]
   } # This should not happen.
   y<-rvar[,1]
@@ -695,28 +790,55 @@ get.mableData<-function(formula, data){
   out<-list(x=x, y=y, y2=y2, delta=delta, callText=callText, xNames=xNames)
   return(out)
 }
+
+#################################################
+#' get the dummy variable matrices of factors
+#' @keywords internal
+# @importFrom stats model.matrix model.response 
+#' @noRd
+get.facMatrix<-function(formula, data){
+  if (missing(data)) 
+      data <- environment(formula)
+  allvars<-all.vars(formula)
+  covNames<-allvars[-(1:2)]
+  data0<-data[,allvars]
+  factors<-names(Filter(is.factor,data0))
+  nf<-length(factors)
+  factMat<-NULL
+  if(nf>0) {
+    for(i in 1:nf) {
+        fct<-unique(data0[,factors[i]])
+        mat<-unname(get.mableData(~fct)$x)
+        row.names(mat)<-fct
+        factMat<-c(factMat, list(mat))
+    }
+    names(factMat)<-factors
+  }
+  list(factMat, allvars=allvars, factors=factors, whichisfactor=which(covNames==factors))
+}
+
 ######################################################
 # Wrap all MABLE for regression fit in one function
 ######################################################
 #' Mable fit of semiparametric regression model based on interval censored data 
-#' @description Wrapping all code{mable} fit of regression models in one function.
+#' @description Wrapping all \code{mable} fit of regression models in one function.
 #' Using maximum approximate Bernstein/Beta likelihood
 #' estimation to fit semiparametric regression models: Cox ph model,
 #' proportional odds(po) model, accelerated failure time model, and so on.
 #' @param formula regression formula. Response must be of the form \code{cbind(l, u)}.  See 'Details'.
-#' @param data a dataset
+#' @param data a data frame containing variables in \code{formula}.
 #' @param model the model to fit. Current options are "\code{ph}"
 #'  (Cox PH) or "\code{aft}" (accelerated failure time model)
 #' @param M a vector \code{(m0, m1)} specifies the set of consective integers as candidate degrees
 #' @param g  an initial guess of the regression coefficients 
 #' @param pi0 Initial guess of \eqn{\pi(x_0) = F(\tau_n|x_0)}. Without right censored data, \code{pi0 = 1}. See 'Details'.
 #' @param tau right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time
-#' @param x0 a working baseline covariate. See 'Details'. 
-#' @param eta the given positive value of \eqn{\eta}. Used when \code{model="po"}.
+#' @param x0 a data frame containing working baseline covariates on the right-hand-side of \code{formula}. See 'Details'. 
+# @param eta the given positive value of \eqn{\eta}. Used when \code{model="po"}.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @return A 'mable_reg' class object
 #' @details For "\code{ph}"  model a missing initial guess of the regression coefficients 
 #'    \code{g} is obtained by \code{ic_sp()} of package \code{icenReg}. For "\code{aft}" model a
@@ -729,15 +851,16 @@ get.mableData<-function(formula, data){
 #' @concept Cox proportional hazards model 
 #' @concept accelerated failure time model 
 #' @concept interval censoring
-#' @seealso \code{\link{mable.aft}}, \code{\link{mable.ph}} 
+#' @seealso \code{\link{mable.aft}}, \code{\link{mable.ph}}, \code{\link{mable.po}} 
 #' @export
-mable.reg<-function(formula, data, model=c("ph","aft"), M, g=NULL, pi0=NULL, tau=Inf, 
-        x0=NULL, eta=1, controls = mable.ctrl(), progress = TRUE){
+mable.reg<-function(formula, data, model=c("ph","aft","po"), M, g=NULL, pi0=NULL, tau=Inf, 
+        x0=NULL, controls = mable.ctrl(), progress = TRUE){
     model=match.arg(model)
     out<-switch(model,
-        ph = mable.ph(formula, data, M, g, pi0, tau, x0, controls, progress), 
-        #po = mable.po(formula, data, M, g, pi0, tau, x0, eta, controls, progress), 
-        aft = mable.aft(formula, data, M, g, tau, x0, controls, progress))
+        ph = mable.ph(formula, data, M=M, g=g, pi0=pi0, tau=tau, x0=x0, controls=controls, progress=progress), 
+        aft = mable.aft(formula, data, M=M, g=g, tau=tau, x0=x0, controls=controls, progress=progress),
+        po = mable.po(formula, data, M=M, g=g, tau=tau, x0=x0, controls=controls, progress=progress) 
+    )
     class(out)<-"mable_reg" # 
     return(out)
 } 

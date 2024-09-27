@@ -29,6 +29,6 @@ Select a Bernstein polynomial model degree for density
    of moment of choosing the model degree
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \keyword{internal}

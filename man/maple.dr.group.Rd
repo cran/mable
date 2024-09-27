@@ -24,7 +24,7 @@ maple.dr.group(
 \item{t}{cutpoints of class intervals}
 
 \item{n0, n1}{frequencies of two sample data grouped by the classes 
-specified by \code{t}. code{n0}:"Control", \code{n1}: "Case".}
+specified by \code{t}. \code{n0}:"Control", \code{n1}: "Case".}
 
 \item{M}{a positive integer or a vector \code{(m0, m1)}.}
 
@@ -95,5 +95,5 @@ Guan, Z., Application of Bernstein Polynomial Model to Density
  and ROC Estimation in a Semiparametric Density Ratio Model
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }

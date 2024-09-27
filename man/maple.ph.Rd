@@ -20,7 +20,7 @@ maple.ph(
 \arguments{
 \item{formula}{regression formula. Response must be \code{cbind}.  See 'Details'.}
 
-\item{data}{a dataset}
+\item{data}{a data frame containing variables in \code{formula}.}
 
 \item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1},
 then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
@@ -36,7 +36,7 @@ default is the uniform initial.}
 
 \item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
-\item{x0}{a working baseline covariate. See 'Details'.}
+\item{x0}{a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}
@@ -72,7 +72,12 @@ Maximum approximate profile likelihood estimation of Bernstein
 }
 \details{
 Consider Cox's PH model with covariate for interval-censored failure time data: 
-\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
+\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0},
+where \eqn{x} and \eqn{x_0} may
+contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+contains only the values of terms excluding dummy variables and interaction terms 
+in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}.  
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on \eqn{[0,\tau_n]} can be approximated by  
@@ -110,11 +115,11 @@ The associated covariate contains \eqn{d} columns. The baseline \code{x0} should
    res1<-mable.ph(cbind(l, u) ~ x1 + x2, data = simdata, M=res0$m, 
       g=c(.5,-.5), tau=7)
    op<-par(mfrow=c(1,2))
-   plot(res1, y=data.frame(x=0, x2=0), which="density", add=FALSE, type="l", 
+   plot(res1, y=data.frame(x1=0, x2=0), which="density", add=FALSE, type="l", 
        xlab="Time", main="Desnity Function")
    lines(xx<-seq(0, 7, len=512), dweibull(xx, 2,2), lty=2, col=2)
    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
-   plot(res1, y=data.frame(x=0, x2=0), which="survival", add=FALSE, type="l", 
+   plot(res1, y=data.frame(x1=0, x2=0), which="survival", add=FALSE, type="l", 
        xlab="Time", main="Survival Function")
    lines(xx, 1-pweibull(xx, 2, 2), lty=2, col=2)
    legend("topright", bty="n", lty=1:2, col=1:2, c("Estimated","True"))
@@ -129,7 +134,7 @@ arXiv:1906.08882 .
 \code{\link{mable.ph}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Cox proportional hazards model}
 \concept{interval censoring}

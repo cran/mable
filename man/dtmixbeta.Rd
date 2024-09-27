@@ -77,7 +77,7 @@ Guan, Z., Application of Bernstein Polynomial Model to Density
 \code{\link{mable}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Bernstein polynomial model}
 \concept{Mixture beta distribution}

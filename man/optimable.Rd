@@ -97,8 +97,8 @@ erupt1<-mable(x1, M=mb[1], interval=c(a[1],b[1]))
 erupt2<-mable(x1, M=m1, interval=c(a[1],b[1])) 
 wait1<-mable(x2, M=mb[2],interval=c(a[2],b[2])) 
 wait2<-mable(x2, M=m2,interval=c(a[2],b[2])) 
-ans1<- mable.mvar(faithful, M = mb, search =FALSE, interval = cbind(a,b))
-ans2<- mable.mvar(faithful, M = c(m1,m2), search =FALSE, interval = cbind(a,b))
+ans1<- mable.mvar(faithful, M = mb, search =FALSE, method="em",  interval = cbind(a,b))
+ans2<- mable.mvar(faithful, M = c(m1,m2), search =FALSE, method="em", interval = cbind(a,b))
 op<-par(mfrow=c(1,2), cex=0.8)
 hist(x1, probability = TRUE, col="grey", border="white", main="", 
       xlab="Eruptions", ylim=c(0,.65), las=1)
@@ -122,5 +122,5 @@ par(op)
 }
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }

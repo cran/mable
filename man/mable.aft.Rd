@@ -17,9 +17,9 @@ mable.aft(
 )
 }
 \arguments{
-\item{formula}{regression formula. Response must be \code{cbind}.  See 'Details'.}
+\item{formula}{regression formula. Response must be \code{cbind}. See 'Details'.}
 
-\item{data}{a dataset}
+\item{data}{a data frame containing variables in \code{formula}.}
 
 \item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1 = m},
 then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
@@ -35,7 +35,7 @@ default is the uniform initial.}
 baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
 then it is taken as a known value of \eqn{\tau}.  See 'Details'.}
 
-\item{x0}{a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'.}
+\item{x0}{a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}
@@ -79,7 +79,11 @@ accelerated failure time model based on interval censored data.
 }
 \details{
 Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-\eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+\eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x} and \eqn{x_0} may
+contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+contains only the values of terms excluding dummy variables and interaction terms 
+in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}.   
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
@@ -105,15 +109,14 @@ all the observed \eqn{x}.
 \examples{
 \donttest{
 ## Breast Cosmesis Data
-  bcos=cosmesis
-  bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
   g <- 0.41 #Hanson and  Johnson 2004, JCGS
-  aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=g, tau=100, x0=1)
+  aft.res<-mable.aft(cbind(left, right)~treat, data=cosmesis, M=c(1, 30), 
+              g=g, tau=100, x0=data.frame(treat="RCT"))
   op<-par(mfrow=c(1,2), lwd=1.5)
   plot(x=aft.res, which="likelihood")
-  plot(x=aft.res, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 
+  plot(x=aft.res, y=data.frame(treat="RT"), which="survival", model='aft', type="l", col=1, 
       add=FALSE, main="Survival Function")
-  plot(x=aft.res, y=data.frame(x=1), which="survival", model='aft', lty=2, col=1)
+  plot(x=aft.res, y=data.frame(treat="RCT"), which="survival", model='aft', lty=2, col=1)
   legend("bottomleft", bty="n", lty=1:2, col=1, c("Radiation Only", "Radiation and Chemotherapy"))
   par(op)
 }
@@ -126,7 +129,7 @@ arXiv:1911.07087.
 \code{\link{maple.aft}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Accelerated failure time model}
 \concept{interval censoring}

@@ -24,10 +24,8 @@ Produces a summary of a mable fit.
 \examples{
 \donttest{
 ## Breast Cosmesis Data
-  bcos=cosmesis
-  bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
-  aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=.41, 
-       tau=100, x0=1)
+  aft.res<-mable.aft(cbind(left, right)~treat, data=cosmesis, M=c(1, 30), g=.41, 
+       tau=100, x0=data.frame(treat="RCT"))
   summary(aft.res)
 }
 }

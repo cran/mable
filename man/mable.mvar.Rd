@@ -7,13 +7,12 @@
 \usage{
 mable.mvar(
   x,
-  M0 = 1,
+  M0 = 1L,
   M,
   search = TRUE,
   interval = NULL,
   mar.deg = TRUE,
-  high.dim = FALSE,
-  criterion = c("cdf", "pdf"),
+  method = c("cd", "em", "lmem"),
   controls = mable.ctrl(),
   progress = TRUE
 )
@@ -35,15 +34,10 @@ the endpoints of support/truncation interval for each marginal density.
 If missing, the i-th column is assigned as \code{c(min(x[,i]), max(x[,i]))}.}
 
 \item{mar.deg}{logical, if TRUE, the optimal degrees are selected based
-on marginal data, otherwise, the optimal degrees are those minimize the maximum
-L2 distance between marginal cdf or pdf estimated based on marginal data and the
-joint data. See details.}
+on marginal data, otherwise, the optimal degrees are chosen the joint data. See details.}
 
-\item{high.dim}{logical, data are high dimensional/large sample or not
-if TRUE, run a slower version procedure which requires less memory}
-
-\item{criterion}{either cdf or pdf should be used for selecting optimal degrees.
-Default is "cdf"}
+\item{method}{method for finding maximum likelihood estimate. "cd": coordinate-descent;
+less memory for data that are high dimensional/large sample.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit
 and the convergence criterion \code{eps}. Default is \code{\link{mable.ctrl}}. See Details.}
@@ -76,31 +70,27 @@ A \eqn{d}-variate density \eqn{f} on a hyperrectangle \eqn{[a, b]
   by a mixture of \eqn{d}-variate beta densities on \eqn{[a, b]}, 
   \eqn{\beta_{mj}(x) = \prod_{i=1}^d\beta_{m_i,j_i}[(x_i-a_i)/(b_i-a_i)]/(b_i-a_i)},
   with proportion \eqn{p(j_1, \ldots, j_d)}, \eqn{0 \le j_i \le m_i, i = 1, \ldots, d}. 
-  Let \eqn{\tilde F_i} (\eqn{\tilde f_i}) be an estimate with degree \eqn{\tilde m_i} of  
-  the i-th marginal cdf (pdf) based on marginal data \code{x[,i]}, \eqn{i=1, \ldots, d}. 
-  If \code{search=TRUE} and \code{use.marginal=TRUE}, then the optimal degrees
-  are \eqn{(\tilde m_1,\ldots,\tilde m_d)}. If \code{search=TRUE} and 
-  \code{use.marginal=FALSE}, then the optimal degrees \eqn{(\hat m_1,\ldots,\hat m_d)}
-  are those that minimize the maximum of \eqn{L_2}-distance between 
-  \eqn{\tilde F_i} (\eqn{\tilde f_i}) and the estimate of \eqn{F_i} (\eqn{f_i}) 
-  based on the joint data with degrees \eqn{m=(m_1,\ldots,m_d)} for all \eqn{m}
-   between \eqn{M_0} and \eqn{M} if \code{criterion}="cdf" (\code{criterion}="pdf"). 
-
+  If \code{search=TRUE} then the model degrees are chosen using a method of change-point based on 
+  the marginal data if \code{mar.deg=TRUE} or the joint data if \code{mar.deg=FALSE}. 
+  If \code{search=FALSE}, then the model degree is specified by \eqn{M}.
   For large data and multimodal density, the search for the model degrees is 
-  very time-consuming. In this case, it is suggested that the degrees are selected  
-  based on marginal data using \code{\link{mable}} or \code{\link{optimable}}.
+  very time-consuming. In this case, it is suggested that use \code{method="cd"} 
+  and select the degrees based on marginal data using \code{\link{mable}} or 
+  \code{\link{optimable}}.
 }
 \examples{
 ## Old Faithful Data
 \donttest{
  a<-c(0, 40); b<-c(7, 110)
- ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, 
+ ans<- mable.mvar(faithful, M = c(46,19), search =FALSE, method="em",
          interval = rbind(a,b), progress=FALSE)
  plot(ans, which="density") 
  plot(ans, which="cumulative")
 }
 }
 \references{
+Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. 
+   \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
 Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density,    
    \emph{Statistics}, Vol. 53, no. 2, 321-338
 }
@@ -108,7 +98,7 @@ Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multiv
 \code{\link{mable}}, \code{\link{optimable}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{density estimation}
 \concept{multivariate Bernstein polynomial model}

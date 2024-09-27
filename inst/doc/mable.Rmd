@@ -1,23 +1,22 @@
 ---
 title: "Maximum Approximate Bernstein/Beta Likelihood Estimation in R package 'mable'"
 author: "Zhong Guan"
-date: "02/08/2021"
+date: "24/09/2024"
 output:
   pdf_document:
     number_sections: yes
     toc: yes
     toc_depth: 3
+    #keep_tex: true
 vignette: >
   %\VignetteIndexEntry{Maximum Approximate Bernstein/Beta Likelihood Estimation in R package 'mable'}
   %\VignetteEncoding{UTF-8}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
 header-includes: \usepackage{bm}
 link-citations: yes
 bibliography:
 - bernstein.bib
-- por-model.bib
-- chpt.bib
-- wieand.bib
+
 biblio-style: chicago
 ---
 
@@ -46,7 +45,7 @@ Let $x_1,\ldots,x_n$ be a sample from a population with cumulative distribution 
 
 ### Example: Vaal River Annual Flow Data
 For the annual flow data of Vaal River at Standerton as given by Table 1.1 of @Linhart-and-Zucchini-model-selection-book give the flow in millions of cubic metres, 
-```{r}
+```{r Vaal-Flow-data}
 data(Vaal.Flow)
 head(Vaal.Flow, 3)
 ```
@@ -55,7 +54,7 @@ we want to estimate the density and the distribution functions of annual flow
 vaal<-mable(Vaal.Flow$Flow, M = c(2,100), interval = c(0, 3000), IC = "all",
        controls = mable.ctrl(sig.level = 1e-8, maxit = 2000, eps = 1.0e-9))
 ```
-% the following hided data contain object vaal 
+% the following hided data contain object vaal obtained by dput(vaal) 
 ```{r echo=FALSE}
 vaal<-structure(list(p = c(6.66395112071704e-142, 0.104927778267183, 
 0.759431290544939, 2.3090355435799e-08, 2.50844096058296e-16, 
@@ -294,27 +293,26 @@ where $\lambda_i$ and $\mu_i$ are, respectively, the mixing proportion and mean 
 ### Example: The Old Faithful data \label{old-faithful-data-mme}
 
 ```{r old-faithful-data-mme, echo=TRUE, message=FALSE, warning=FALSE, results = "hide"}
-x<-faithful                                                                                                                 
-x1<-faithful[,1]                                                                                                            
-x2<-faithful[,2]                                                                                                            
-a<-c(0, 40); b<-c(7, 110)                                                                                                   
-mu<-(apply(x,2,mean)-a)/(b-a)                                                                                               
+x<-faithful 
+x1<-faithful[,1] 
+x2<-faithful[,2] 
+a<-c(0, 40); b<-c(7, 110)
+mu<-(apply(x,2,mean)-a)/(b-a) 
 s2<-apply(x,2,var)/(b-a)^2                                                                                                  
-# mixing proportions                                                                                                        
-lambda<-c(mean(x1<3),mean(x2<65))                                                                                           
-# guess component mean                                                                                                      
-mu1<-(c(mean(x1[x1<3]), mean(x2[x2<65]))-a)/(b-a)                                                                           
-mu2<-(c(mean(x1[x1>=3]), mean(x2[x2>=65]))-a)/(b-a)                                                                         
-# estimate lower bound for m                                                                                                
+# mixing proportions
+lambda<-c(mean(x1<3),mean(x2<65))                                                                  # guess component mean
+mu1<-(c(mean(x1[x1<3]), mean(x2[x2<65]))-a)/(b-a)
+mu2<-(c(mean(x1[x1>=3]), mean(x2[x2>=65]))-a)/(b-a) 
+# estimate lower bound for m 
 mb<-ceiling((mu*(1-mu)-s2)/(s2-lambda*(1-lambda)*(mu1-mu2)^2)-2)
 ```
 
 ```{r old-faithful-data-optimable, echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE, results = "hide"}
-m1<-optimable(x1, interval=c(a[1],b[1]), nmod=2, modes=c(2,4.5))$m                                                          
+m1<-optimable(x1, interval=c(a[1],b[1]), nmod=2, modes=c(2,4.5))$m
 m2<-optimable(x2, interval=c(a[2],b[2]), nmod=2, modes=c(52.5,80))$m
-erupt1<-mable(x1, M=mb[1], interval=c(a[1],b[1]))                                                                           
+erupt1<-mable(x1, M=mb[1], interval=c(a[1],b[1]))
 erupt2<-mable(x1, M=m1, interval=c(a[1],b[1]))
-wait1<-mable(x2, M=mb[2],interval=c(a[2],b[2])) 
+wait1<-mable(x2, M=mb[2],interval=c(a[2],b[2]))
 wait2<-mable(x2, M=m2,interval=c(a[2],b[2]))
 ```
 
@@ -651,12 +649,11 @@ Consider the breast cosmesis data as described in @Finkelstein-and-Wolfe-1985-bi
 We fit the Breast Cosmesis Data as two-sample data separately.
 
 ```{r}
-bcos=cosmesis
-head(bcos, 3)
+head(cosmesis, 3)
 ```
 ```{r results = "hide", eval=FALSE}
-bc.res0 <- mable.ic(bcos[bcos$treat == "RT",1:2], M = c(1,50), IC = "none")
-bc.res1 <- mable.ic(bcos[bcos$treat == "RCT",1:2], M = c(1,50), IC = "none")
+bc.res0 <- mable.ic(cosmesis[cosmesis$treat == "RT",1:2], M = c(1,50), IC = "none")
+bc.res1 <- mable.ic(cosmesis[cosmesis$treat == "RCT",1:2], M = c(1,50), IC = "none")
 ```
 
 ```{r echo=FALSE}
@@ -725,7 +722,7 @@ bc.res0<-structure(list(m = 6L, mloglik = -63.8031655794969, tau.n = 48,
     -94.4640638597796)), chpts = c(1L, 1L, 1L, 2L, 2L, 2L, 6L, 
     7L, 7L, 7L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 
     6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 
-    6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L), xNames = "bcos[bcos$treat == \"RT\", 1:2]", 
+    6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L), xNames = "cosmesis[cosmesis$treat == \"RT\", 1:2]", 
     data.type = "icen"), class = "mable")
 bc.res1<-structure(list(m = 3L, mloglik = -75.9639126133468, tau.n = 60, 
     tau = Inf, interval = c(0, 60), convergence = 0L, delta = 0.00938045116286756, 
@@ -744,7 +741,7 @@ bc.res1<-structure(list(m = 3L, mloglik = -75.9639126133468, tau.n = 60,
     -82.020160987266, -81.7707141297087, -83.6737502496617, -83.4709927280916, 
     -85.1645372320156, -87.0591035877975, -88.9726991454192, 
     -90.8187558394444, -92.7293295951194, -94.6433499649883)), 
-    chpts = c(1L, 1L, 1L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), xNames = "bcos[bcos$treat == \"RCT\", 1:2]", 
+    chpts = c(1L, 1L, 1L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), xNames = "cosmesis[cosmesis$treat == \"RCT\", 1:2]", 
     data.type = "icen"), class = "mable")
 ```
 
@@ -888,11 +885,11 @@ For multivariate density, the model degree can be chosen based on marginal data.
 
 
 ```{r old-faithful-joint-data, message=FALSE, warning=FALSE, results = "hide"}
-x<-faithful                                                                                                                 
-x1<-faithful[,1]                                                                                                            
-x2<-faithful[,2]                                                                                                            
-a<-c(0, 40); b<-c(7, 110)                                                                                                   
-mb<-c(78,28)                                                              
+x<-faithful
+x1<-faithful[,1]
+x2<-faithful[,2]
+a<-c(0, 40); b<-c(7, 110)
+mb<-c(78,28)
 m1<-122                                                            
 m2<-34                                                          
 ```
@@ -1603,12 +1600,109 @@ par(op)
 Let $T$ be an event time and $X$ be an associated $d$-dimensional covariate with distribution $H(x)$ on $\cal{X}$. We denote the marginal and the conditional survival functions of $T$, respectively, by
  $S(t) = \bar F(t)= 1- F(t)=\Pr(T > t)$ and $S(t | x) = \bar F(t | x)=  1- F(t |  x)=\Pr(T > t |  X=x).$
 Let $f(t |  x)$ denote the conditional density of a continuous $T$ given $X=x$. The conditional cumulative hazard function and odds ratio,   respectively,
- $\Lambda(t |  x)=-\log S(t |  x)$ and $O(t |  x)={S(t |  x)}/[{1-S(t |  x)}]$.
+ $\Lambda(t |  x)=-\log S(t |  x)$ and $O(t |  x)={F(t |  x)}/S(t |  x)$.
  We will consider the general situation where the event time is subject to interval censoring.  The observed data are $(X, Y)$, where $Y=(Y_1,Y_2]$, $0\le Y_1\le Y_2\le\infty$.
 The reader is referred to @Huang-and-Wellner-1997 for a review and more references about interval censoring.
 Special cases are right-censoring $Y_2=\infty$, left-censoring $Y_1=0$, and current status data.
 
-## Cox Proportional Hazards Model
+Let $f_0(\cdot)=f(\cdot\mid x_0)$, $F_0(\cdot)=F(\cdot\mid x_0)$, and $S_0(\cdot)=S(\cdot\mid x_0)$ be the baseline density, cumulative distribution, and survival functions, respectively. If the baseline density $f_0$ has support or can be truncated by $[0,\tau]$ then 
+$$f_0(t)\approx f_m(t; \bm p)=\frac{1}{\tau}\sum_{j=0}^m p_j\beta_{mj}\Big(\frac{t}{\tau}\Big),\quad t\in[0,\tau],$$
+where $\bm p=\bm p(\bm x_0)=(p_0,\ldots, p_{m})^\top$, $\sum_{j=0}^{m}p_j=1$, $p_j\ge 0$, $\beta_{mj}(t)=(m+1){m\choose  j}t^j(1-t)^{m-j}$. 
+Thus we have approximations $$F_0(t)\approx F_m(t; \bm p)= \sum_{j=0}^{m} p_j B_{mj}\Big(\frac{t}{\tau}\Big),\quad  t\in[0,\tau],$$
+$$S_0(t)\approx S_m(t; \bm p)= \sum_{j=0}^{m} p_j \bar B_{mj}\Big(\frac{t}{\tau}\Big),\quad  t\in[0,\tau],$$
+where $B_{mj}(t)=\int_0^t\beta_{mj}(u)du$, and $\bar B_{mj}(t)=1-B_{mj}(t)$, $j=0,\dots,m$.
+
+## Accelerated Failure Time Model
+
+The accelerated failure time (AFT) model can be specified as
+\begin{equation}\label{eq: AFT model in terms of density}
+f(t\mid x)=f(t\mid x;\gamma)=e^{\gamma^T x}f(te^{\gamma^T x}\mid 0),\quad t\in[0,\infty),
+\end{equation}
+where $\gamma\in \mathbb{G}\subset \mathbb{R}^d$. Let $\gamma_0\in \mathbb{G}$ be the true value of $\gamma$.
+The AFT model (\ref{eq: AFT model in terms of density}) is equivalent to
+$$S(t\mid x;\gamma)=S(te^{\gamma^T x}\mid 0),\quad t\in[0,\infty).$$
+Thus this is actually a scale regression model.
+The AFT model can also be written as linear regression $\log(T)=-\gamma^T x +\varepsilon$. It is clear that one can choose any $x_0$ in $\mathcal{X}$ as baseline by transform $\tilde{x}=x-x_0$. If $f_0(t)=f(t\mid x_0)$ has support $[0,\tau)$, $\tau\le\infty$, then 
+$f(t\mid x)$ has support $[0,\tau e^{-\gamma_0^T \tilde x})$. 
+<!-- We define $\tau=\max\{\tau e^{-\gamma_0^T \tilde x}: x\in\mathcal{X}\}$ if $\tau_0<\infty$ and $\tau=\infty$ otherwise. -->
+The above AFT model can also be written as
+$$f(t\mid x;\gamma)=e^{\gamma^T \tilde {x}} f_0(te^{\gamma^T \tilde {x}}), \quad
+S(t\mid x;\gamma)=S_0(te^{\gamma^T \tilde {x}}),$$
+where   $f_0(t)=f(t\mid x_0)$ and $S_0(t)=S(t\mid x_0)=\int_t^\infty f_0(u)du$.
+
+We choose $\tau>y_{(n)}= \max\{y_{i1}, y_{j2}: y_{j2}<\infty;\, i,j=1,\dots,n\}$ so that $S(\tau)$ and $\max_{x\in\mathcal{X}} S(\tau\mid x)$ are believed very small.
+@Guan-SIM-2023  proposed to approximate $f_0(t)$ and $S_0(t)$ on $[0,\tau]$, respectively, by
+\begin{align*}
+f_m(t; p)&=\frac{1}{\tau}\sum_{j=0}^m p_j\beta_{mj}\Big(\frac{t}{\tau}\Big),\quad t\in[0,\tau];\\
+S_m(t; p)&= \sum_{j=0}^{m} p_j \bar B_{mj}\Big(\frac{t}{\tau}\Big),\quad  t\in[0,\tau].
+\end{align*}
+  Then $f(t\mid x; \gamma)$ and $S(t\mid x; \gamma)$  can be approximated, respectively, by
+\begin{align}\nonumber
+f_m(t\mid x; \gamma, p)&=e^{\gamma^T {x}}f_m\Big(te^{\gamma^T {x}}; p\Big)\\
+&=
+ \frac{e^{\gamma^T {x}}}{\tau_0}\sum_{j=0}^m p_j\beta_{mj}\Big(e^{\gamma^T {x}}\frac{t}{\tau_0}\Big),\quad t\in[0,\tau_0e^{-\gamma^T {x}}];\\\nonumber
+S_m(t\mid x;\gamma,p)&=S_m\Big(te^{\gamma^T {x}}; p\Big)\\
+&=  \sum_{j=0}^{m} p_j\bar B_{mj}\Big(e^{\gamma^T {  x}}\frac{t}{\tau_0}\Big),\quad t\in[0,\tau_0e^{-\gamma^T {x}}].
+\end{align}
+@Guan-SIM-2023's proposal is implemented by functions \texttt{mable.aft()} and \texttt{maple.aft()}.
+
+### Example: Breast Cosmesis Data
+
+
+```{r results = "hide", warning=FALSE, message=FALSE, eval=FALSE}
+library(mable)
+g <- 0.41 # Hanson and Johnson 2004, JCGS
+aft.res<-mable.aft(cbind(left, right) ~ treat, data = cosmesis, M =c(1, 30), g=.41,  
+                   tau =100, x0=data.frame(treat = "RCT"))
+```
+
+```{r echo=FALSE}
+aft.res<-
+structure(list(tau.n = 60, tau = 100, xNames = "treatRCT", x0 = 1, 
+    egx0 = 1.78233232862897, coefficients = 0.577922803596607, 
+    SE = 0.138888991045412, z = 4.16104112533762, M = c(1L, 13L
+    ), lk = c(-149.195918793891, -147.122312893587, -146.805263205135, 
+    -144.818686096867, -143.395154013088, -143.152935116853, 
+    -143.089245666885, -142.963504206661, -142.948600114667, 
+    -142.918672815138, -142.830835168889, -142.795663720243, 
+    -142.774833692847), lr = c(1.97816658449391, 1.22644620428721, 
+    4.70424542755593, 11.4650706877448, 11.9783865073313, 10.0832933323407, 
+    9.69514494410889, 7.01982970449579, 4.85182104972307, 4.16479172050901, 
+    2.32465708600656, 0), m = 6L, mloglik = -143.152935116853, 
+    p = c(0.105019596347297, 0.81462133922546, 0.0803590644272423, 
+    2.93130761545064e-17, 7.82383246269338e-28, 1.75136396871527e-34, 
+    5.74593171631315e-37), pval = c(1, 1, 1, 0.286290085033634, 
+    0.574140880339093, 0.424953874506396, 0.23121084068413, 0.150788821414346, 
+    0.0778775395330669, 0.0410203813856562, 0.0283966810218848, 
+    0.0161430173880066, 0.00896652722735714), chpts = c(1L, 1L, 
+    1L, 2L, 2L, 5L, 5L, 5L, 5L, 6L, 6L, 6L, 6L), convergence = 0L, 
+    delta = 9.96236906303238e-08, model = "aft", callText = "cbind(left, right) ~ treat", 
+    data.name = "cosmesis", allvars = c("left", "right", "treat")),  class = "mable_reg")
+```
+
+
+```{r}
+summary(aft.res)
+```
+```{r Breast-Cosmesis-Data-aft-plot, fig.align='center', fig.cap="AFT Model Fit for Breast Cosmesis Data", fig.width=7, fig.height=4, warning = FALSE}
+op <- par(mfrow = c(1,2), lwd = 1.5)
+plot(x = aft.res, which = "likelihood")
+plot(x = aft.res, y = data.frame(treat = "RT"), which = "survival", 
+     type = "l", col = 1, main = "Survival Function")
+plot(x = aft.res, y = data.frame(treat = "RCT"), which = "survival", 
+     lty = 2, col = 1, add = TRUE)
+legend("topright", bty = "n", lty = 1:2, col = 1, c("Radiation Only", 
+    "Radiation & Chemotherapy"), cex = .7)
+par(op)
+```
+Alternatively we can use \texttt{mable.reg()}.
+```{r results = "hide", eval=FALSE}
+aft.res1 <- mable.reg(cbind(left, right) ~ treat, data = cosmesis, model='aft', M = c(1, 30), 
+      g=.41, tau=100, x0=data.frame(treat = "RCT"))
+```
+
+
+## Proportional Hazards Model
 
  Consider the Cox proportional hazard regression model [@Cox1972]
 \begin{equation}\label{eq: Cox PH model-conditional survival function}
@@ -1639,7 +1733,8 @@ ovarian2 <- data.frame(age = ovarian$age, futime1 = ovarian$futime, futime2 = fu
 head(ovarian2, 3)
 ```
 ```{r results = "hide", warning = FALSE, message=FALSE, eval=FALSE}
-ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35), g = .16, x0=35)
+ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35), 
+              g = .16, x0=data.frame(age=35))
 ```
 
 
@@ -1662,31 +1757,31 @@ ova<-structure(list(M = c(2L, 35L), lk = c(-88.7099064570546, -88.6620193993037,
 7.77202866646937, 6.46826391705687, 5.31004650066532, 4.28819289941039, 
 3.43349694885334, 2.58648273185088, 1.91437372126593, 1.50030813623333, 
 0.886993260948897, 0), m = 23L, tau.n = 1227, tau = Inf, mloglik = -85.7358640386468, 
-    p = c(5.00578691357198e-77, 4.63890599398755e-18, 0.00113628909769538, 
-    2.06489209178884e-09, 1.57518116307075e-12, 1.01557329781422e-12, 
-    8.37164666051139e-11, 9.31136041022891e-09, 2.27989567840045e-07, 
-    0.0139227354457905, 0.00162008026644403, 4.39635387607504e-07, 
-    7.23159357443982e-08, 1.20181755306809e-08, 2.16238912626703e-09, 
-    6.00078203501842e-10, 3.12955915494075e-10, 2.76886839233189e-10, 
-    3.2242592200995e-10, 4.09143725977586e-10, 5.51156911645021e-10, 
-    8.5346035201065e-10, 1.56296029304163e-09, 2.94958649779085e-09, 
-    0.9833201217674), x0 = 35, egx0 = 484.940948828593, SE = 0.0105224510461618, 
-    z = 16.7913814577528, coefficients = 0.176686489386633, convergence = 1L, 
-    xNames = "age", pval = c(1, 1, 1, 0.207546359169874, 0.362766381048207, 
-    0.433455588982329, 0.494949581051942, 0.556381521983088, 
-    0.620890131052961, 0.665350546115876, 0.689845769796123, 
-    0.380072973092538, 0.767935580798054, 0.782057828497582, 
-    0.63532367457914, 0.759226925738293, 0.628923385821675, 0.639927577497975, 
-    0.65638732444678, 0.551679856793764, 0.515057274506269, 0.448194300584407, 
-    0.356269076540544, 0.291260323725976, 0.189822051638857, 
-    0.11149881774139, 0.0642389260124165, 0.0411652770436294, 
-    0.0295197991622843, 0.0213389970123636, 0.0170326796719841, 
-    0.0152088066513323, 0.0122032848360507, 0.00899958750363183
-    ), chpts = c(2L, 2L, 2L, 3L, 3L, 3L, 7L, 3L, 3L, 3L, 3L, 
-    12L, 3L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 
-    12L, 20L, 23L, 23L, 23L, 23L, 23L, 23L, 23L, 23L, 23L), delta = 0.00899958750363183, 
-    model = "ph", callText = "cbind(futime1, futime2) ~ age", 
-    data.name = "ovarian2"), class = "mable_reg")
+    p = c(2.56693371155884e-77, 4.17866353417925e-18, 0.00113629152423077, 
+    2.02023368088419e-09, 1.49592034685534e-12, 9.62714381851158e-13, 
+    8.08250811847392e-11, 9.16635704056953e-09, 2.27033359829197e-07, 
+    0.0139227433708654, 0.00162007955037951, 4.38457006844612e-07, 
+    7.17550846126675e-08, 1.18432071956013e-08, 2.116007943926e-09, 
+    5.84101246782658e-10, 3.03802613707742e-10, 2.68652002753205e-10, 
+    3.13034257781426e-10, 3.97618558289567e-10, 5.36293202680539e-10, 
+    8.31949616488662e-10, 1.52738578415643e-09, 2.89001554215835e-09, 
+    0.983320115427131), x0 = c(`27` = 35), egx0 = 484.940411000966, 
+    SE = 0.0105170971976927, z = 16.7999262893574, coefficients = 0.176686457699245, 
+    convergence = 0L, xNames = "age", pval = c(1, 1, 1, 0.207546359169874, 
+    0.362766381048207, 0.433455588982329, 0.494949581051942, 
+    0.556381521983088, 0.620890131052961, 0.665350546115876, 
+    0.689845769796123, 0.380072973092538, 0.767935580798054, 
+    0.782057828497582, 0.63532367457914, 0.759226925738293, 0.628923385821675, 
+    0.639927577497975, 0.65638732444678, 0.551679856793764, 0.515057274506269, 
+    0.448194300584407, 0.356269076540544, 0.291260323725976, 
+    0.189822051638857, 0.11149881774139, 0.0642389260124165, 
+    0.0411652770436294, 0.0295197991622843, 0.0213389970123636, 
+    0.0170326796719841, 0.0152088066513323, 0.0122032848360507, 
+    0.00899958750363183), chpts = c(2L, 2L, 2L, 3L, 3L, 3L, 7L, 
+    3L, 3L, 3L, 3L, 12L, 3L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 
+    12L, 12L, 12L, 12L, 20L, 23L, 23L, 23L, 23L, 23L, 23L, 23L, 
+    23L, 23L), delta = 0.00899958750363183, model = "ph", callText = "cbind(futime1, futime2) ~ age", 
+    data.name = "ovarian2", allvars = c("futime1", "futime2", "age")), class = "mable_reg")
 ```
 
 ```{r}
@@ -1704,98 +1799,196 @@ Alternatively we can use \texttt{mable.reg()}.
 ```{r results = "hide", warning = FALSE, eval=FALSE}
 ova1 <- mable.reg(cbind(futime1, futime2) ~ age, data = ovarian2, M = c(2,35))
 ```
-
-
-
-## Accelerated Failure Time Model
-
-The AFT model can be specified as
-\begin{equation}\label{eq: AFT model in terms of density}
-f(t\mid x)=f(t\mid x;\gamma)=e^{-\gamma^T x}f(te^{-\gamma^T x}\mid 0),\quad t\in[0,\infty),
+## Proportional Odds Model
+As an important alternative of the Cox proportional hazards regression model [@Cox1972] the proportional odds (PO) model [@McCullagh-JRSSB-1980; @Bennett-stats-Med-1983; @Bennett-app-stats-1983; @Pettitt-AS-1984] is defined by
+\begin{equation}\label{eq: proportional odds model}
+    \frac{O(t|\bm x)}{O(t|\bm x_0)}= e^{\bm\gamma^\top\tilde{\bm x}}
 \end{equation}
-where $\gamma\in \mathbb{G}\subset \mathbb{R}^d$. Let $\gamma_0\in \mathbb{G}$ be the true value of $\gamma$.
-The AFT model (\ref{eq: AFT model in terms of density}) is equivalent to
-$$S(t\mid x;\gamma)=S(te^{-\gamma^T x}\mid 0),\quad t\in[0,\infty).$$
-Thus this is actually a scale regression model.
-The AFT model can also be written as linear regression $\log(T)=\gamma^T x +\varepsilon$. It is clear that one can choose any $x_0$ in $\mathcal{X}$ as baseline by transform $\tilde{x}=x-x_0$. If $f(t\mid 0)$ has support $[0,\tau_0)$, $\tau_0\le\infty$, then 
-$f(t\mid x)$ has support $[0,\tau_0 e^{\gamma_0^T x})$.  We define $\tau=\max\{\tau_0 e^{\gamma_0^T x}: x\in\mathcal{X}\}$ if $\tau_0<\infty$ and $\tau=\infty$ otherwise.
-The above AFT model can also be written as
-$$f(t\mid x;\gamma)=e^{-\gamma^T {x}} f_0(te^{-\gamma^T {x}}), \quad
-S(t\mid x;\gamma)=S_0(te^{-\gamma^T {x}}),$$
-where   $f_0(t)=f(t\mid 0)$ and $S_0(t)=S(t\mid 0)=\int_t^\infty f_0(u)du$.
+where $\tilde{\bm x}=\bm x-\bm x_0$ and $O(t|\bm x_0)$ is an unknown increasing baseline odds function on $(0, \infty)$ and $\bm\gamma$ are unknown regression coefficients. If the baseline density $f_0$ has support or can be truncated by $[0,\tau]$ then 
+$$f_0(t)\approx f_m(t; \bm p)=\frac{1}{\tau}\sum_{j=0}^m p_j\beta_{mj}\Big(\frac{t}{\tau}\Big),\quad t\in[0,\tau].$$
 
-As in Cox PH model, we choose $\tau_n>y_{(n)}= \max\{y_{i1}, y_{j2}: y_{j2}<\infty;\, i,j=1,\dots,n\}$ so that $S(\tau_n)$ and $\max_{x\in\mathcal{X}} S(\tau_n\mid x)$ are believed very small.
-Then we approximate $f_0(t)$ and $S_0(t)$ on $[0,\tau_n]$, respectively, by
-\begin{align*}
-f_0(t)&\approx f_m(t; p)=\frac{1}{\tau_n}\sum_{j=0}^m p_j\beta_{mj}\Big(\frac{t}{\tau_n}\Big),\quad t\in[0,\tau_n];\\
-S_0(t)&\approx S_m(t; p)= \sum_{j=0}^{m} p_j \bar B_{mj}\Big(\frac{t}{\tau_n}\Big),\quad  t\in[0,\tau_n],
-\end{align*}
-where $S_m(\infty; p)=0$, and $p= (p_0,\ldots,p_{m})^T\in \mathbb{S}_{m}$.
-  Then $f(t\mid x; \gamma)$ and $S(t\mid x; \gamma)$  can be approximated, respectively, by
+Therefore $f(t\mid\bm x; \bm\gamma, f_0)$, $F(t\mid\bm x; \bm\gamma, f_0)$, and $S(t\mid\bm x; \bm\gamma, f_0)$  can be approximated, respectively, by
 \begin{align}\nonumber
-f_m(t\mid x; \gamma, p)&=e^{-\gamma^T {x}}f_m\Big(te^{-\gamma^T {x}}; p\Big)\\
+f_m(t\mid\bm x; \bm\gamma, \bm p)
 &=
- \frac{e^{-\gamma^T {x}}}{\tau_n}\sum_{j=0}^m p_j\beta_{mj}\Big(e^{-\gamma^T {x}}\frac{t}{\tau_n}\Big),\quad t\in[0,\tau_ne^{\gamma^T {x}}];\\\nonumber
-S_m(t\mid x;\gamma,p)&=S_m\Big(te^{-\gamma^T {x}}; p\Big)\\
-&=  \sum_{j=0}^{m} p_j\bar B_{mj}\Big(e^{-\gamma^T {  x}}\frac{t}{\tau_n}\Big),\quad t\in[0,\tau_ne^{\gamma^T {x}}].
+ \frac{e^{\bm\gamma^\top \tilde{\bm x}}f_m(t;\bm p)}
+{[e^{\bm\gamma^\top\tilde{\bm x}}+(1-e^{\bm\gamma^\top\tilde{\bm x}})S_m(t;\bm p)]^{2}}=
+ \frac{e^{\bm\gamma^\top\tilde{\bm x}}f_m(t;\bm p)}
+{[1+(e^{\bm\gamma^\top\tilde{\bm x}}-1)F_m(t;\bm p)]^{2}},\\\nonumber
+  F_m(t|\bm x; \bm\gamma, \bm p)
+=&
+\frac{e^{\bm\gamma^\top\tilde{\bm x}} F_m(t;\bm p)}
+{e^{\bm\gamma^\top\tilde{\bm x}}+(1-e^{\bm\gamma^\top\tilde{\bm x}})S_m(t;\bm p)}=\frac{e^{\bm\gamma^\top\tilde{\bm x}} F_m(t;\bm p)}
+{1+(e^{\bm\gamma^\top\tilde{\bm x}}-1)F_m(t;\bm p)},\\\nonumber
+S_m(t\mid\bm x; \bm\gamma, \bm p)&=\frac{S_m(t;\bm p)}
+{e^{\bm\gamma^\top\tilde{\bm x}}+(1-e^{\bm\gamma^\top\tilde{\bm x}})S_m(t;\bm p)}=\frac{S_m(t;\bm p)}
+{1+(e^{\bm\gamma^\top\tilde{\bm x}}-1)F_m(t;\bm p)}.
 \end{align}
-@Guan-2019-mable-aft's proposal is implemented by functions \texttt{mable.aft()} and \texttt{maple.aft()}.
 
-### Example: Breast Cosmesis Data
-
-```{r}
-bcos2 <- data.frame(bcos[,1:2], x = 1*(bcos$treat == "RCT"))
+### Example: HIV Infection time Data
+The data set is contained in R package \texttt{Epi}. This is an interval-censored data. The semiparametric methods (package \texttt{icenReg}) are available for PH and PO (but not AFT) models based on interval-censored data. The estimated survival functions are plotted in Fig \ref{fig:HIV-infection-time-data-po}.
+```{r hiv-data, message=FALSE, warning=FALSE}
+## Interval-censored data on times to HIV infection. Carstensen (1996)
+## see also Lawless and Babineau (2006)
+# inspection times(months): started in Dec. 31, 1980,
+it<-c(0, 12, 16, 27, 45, 76, 101, Inf)
+# observed frequencies d[l,r] in interval (it[l], it[r]], 0<=l<r<=7
+x<-c(24, 0, 4, 2,1,4,0,10,0,3,0,3,1,0,5,0,4,0,2,1,1,0,61,8,15,22,34,92)
+n<-sum(x)
+d<-matrix(c(24,rep(0,6),
+            0, 4, rep(0,5),
+            2,1,4,0,0,0,0,
+            0,10,0,3,0,0,0,
+            0,3,1,0,5,0,0,
+            0,4,0,2,1,1,0,
+            0,61,8,15,22,34,92), nrow=7, ncol=7)
+# See Fay's tutorial
+#  us: whether visited the US.
+# byr: birth year
+# age: age at entry
+# age=hiv$bth+30, 
+# pyr: Annual number of sexual partners.
+library(Epi)
+data(hivDK)
+l<-as.numeric(hivDK$well-hivDK$entry)
+l.na<-l
+l[is.na(l)]<-0
+r<- as.numeric(hivDK$ill - hivDK$entry)
+r.na<-r
+r[is.na(r)]<-Inf
+hiv<-data.frame(l,r, us=hivDK$us, byr=hivDK$bth+1950, age=30-hivDK$bth, pyr=hivDK$pyr)
+## icenReg
+library(icenReg)
+#library(interval)
+phfit<-ic_sp(cbind(l,r)~us+age+pyr, data=hiv, bs_samples =100, model = 'ph')
+pofit<-ic_sp(cbind(l,r)~us+age+pyr, data=hiv, bs_samples =100, model = 'po')
 ```
-```{r results = "hide", warning=FALSE, message=FALSE, eval=FALSE}
-g <- 0.41 # Hanson and Johnson 2004, JCGS
-aft.res<-mable.aft(cbind(left, right) ~ x, data = bcos2, M =c(1, 30), g=.41,  
-                   tau =100, x0=1)
+
+```{r hiv-data-mable, message=FALSE, warning=FALSE, results='hide', eval=FALSE}
+# MABLE
+require(mable)
+gama<-phfit$coefficients
+tau<-5500 # truncation interval [0,tau]
+# Mable PH model
+x0<-data.frame(us=0,age=72,pyr=0)
+#mblph<-mable.ph(cbind(l,r)~us+age+pyr, data=hiv, M=c(2,40), g=gama, x0=x0, tau=tau)
+mblph<-mable.ph(cbind(l,r)~us+age+pyr, data=hiv, M=22, g=gama, x0=x0, tau=tau)
+# Mable PO model:  
+mblpo<-mable.po(cbind(l,r)~us+age+pyr, data=hiv, M=c(3,20), g=gama, x0=x0, tau=tau)
+# Mable AFT model: m=12 selected from M=c(5,50)
+mblaft<-mable.aft(cbind(l,r)~us+age+pyr, data=hiv, M=12, g=NULL, x0=x0, tau=tau,
+                  controls=mable.ctrl(sig.level=0.05, eps.em=1e-7, maxit.em=20000))
 ```
 
 ```{r echo=FALSE}
-aft.res<-structure(list(tau.n = 60, tau = 100, xNames = "x", M = c(1L, 
-13L), coefficients = 0.577727331151052, x0 = 1, egx0 = 1.78198396581868, 
-    SE = 0.129305349189261, lk = c(-149.195918910649, -147.122313202153, 
-    -146.80526335503, -144.818686219186, -143.395154072282, -143.152935393756, 
-    -143.089245862901, -142.963504497459, -142.948600408076, 
-    -142.918673160554, -142.830835466953, -142.795664061396, 
-    -142.77483409929), lr = c(1.97816638326472, 1.22644632716039, 
-    4.70424614111728, 11.4650745849899, 11.9783884966994, 10.083296884476, 
-    9.69514766293329, 7.01983199129244, 4.85182210899123, 4.16479533453579, 
-    2.32466006469601, 0), m = 6L, mloglik = -143.152935393756, 
-    p = c(0.105122858016893, 0.813986484599243, 0.0808906573838619, 
-    1.95536547047634e-15, 6.80359923674277e-24, 3.3884962605114e-29, 
-    3.58166309889493e-31), z = -4.46793063684818, pval = c(1, 
-    1, 1, 0.286290100499535, 0.5741409239889, 0.424953704342698, 
-    0.231210762842995, 0.150788738403658, 0.0778774886493685, 
-    0.0410203684068813, 0.0283966794539574, 0.016143013481566, 
-    0.00896652233227913), chpts = c(1L, 1L, 1L, 2L, 2L, 5L, 5L, 
-    5L, 5L, 6L, 6L, 6L, 6L), convergence = 0L, delta = 0.00896652233227913, 
-    model = "aft", callText = "cbind(left, right) ~ x", data.name = "bcos2"), class = "mable_reg")
+mblph<-
+structure(list(m = 22, mloglik = -208.042751008567, p = c(1.75682850946926e-06, 
+7.16025262990964e-06, 0.0465775493817269, 4.13135717852687e-06, 
+1.66167504709294e-06, 1.38201091491393e-06, 1.82952757121039e-06, 
+3.59190486706845e-06, 1.17924558621242e-05, 0.00281528095656942, 
+0.0252282704136703, 4.52368941634259e-05, 1.2407615342838e-05, 
+9.12685173745497e-06, 8.38261188714388e-06, 8.97828025026163e-06, 
+1.10521562623632e-05, 1.58633080269445e-05, 2.91382557261346e-05, 
+0.000132005436900595, 0.000733919530111657, 0.00162875205007509, 
+0.00201297612233121, 0.920697754122638), x0 = c(0, 72, 0), egx0 = 0.175978595652477, 
+    coefficients = c(0.486126041389572, -0.0241304570409818, 
+    0.0116319188258375), tau.n = 3057, tau = 5500, SE = c(0.260468289541968, 
+    0.00432044889869952, 0.0042163832775195), z = c(1.8663540281407, 
+    -5.58517357958919, 2.75874323092386), xNames = c("us", "age", 
+    "pyr"), convergence = 0L, delta = 7.67730073108347e-08, model = "ph", 
+    callText = "cbind(l, r) ~ us + age + pyr", data.name = "hiv", 
+    vars = list(NULL, allvars = c("l", "r", "us", "age", "pyr"
+    ), factors = character(0), whichisfactor = integer(0)), factors = character(0), 
+    allvars = c("l", "r", "us", "age", "pyr"), whichisfactor = integer(0)), class = "mable_reg") 
+
+mblpo<-
+structure(list(M = c(3L, 14L), lk = c(-216.858279050072, -211.950736291022, 
+-210.35173015353, -209.66061916325, -209.200120593601, -208.998472183236, 
+-208.901265244177, -208.829800066113, -208.786712830042, -208.721316417314, 
+-208.67591557321, -208.632937555231), lr = c(6.24463221676229, 
+9.34366853668997, 10.5942280964782, 11.7955447318155, 11.3298717453146, 
+9.7337252913132, 7.88915163074959, 5.64394781106387, 3.94837770478014, 
+1.95567697224068, 0), m = 7L, tau.n = 3057, tau = 5500, mloglik = -209.200120593601, 
+    p = c(0.0535507697532897, 0.0397827336684741, 1.59720172904871e-06, 
+    2.54941702296378e-07, 1.21576532815964e-07, 2.84404211193881e-07, 
+    1.63302813071011e-06, 0.906662605425697), x0 = c(us = 0, 
+    age = 72, pyr = 0), egx0 = 0.225535060130243, coefficients = c(0.596152327381236, 
+    -0.0206844396503996, 0.0122251639155204), SE = c(0.297220207855154, 
+    0.00486515896951955, 0.00520410236906652), z = c(2.00575974185363, 
+    -4.25154445722916, 2.34913978406487), xNames = c("us", "age", 
+    "pyr"), pval = c(1, 1, 1, 0.216793858895794, 0.28079909727226, 
+    0.221090493457461, 0.152999021661578, 0.0985823904940795, 
+    0.050936353455624, 0.029357714628645, 0.0166969379205566, 
+    0.00979634079954406), chpts = c(3L, 3L, 3L, 4L, 5L, 5L, 5L, 
+    7L, 7L, 7L, 7L, 7L), delta = 0.00979634079954406, eta = 1, 
+    convergence = 0L, model = "po", callText = "cbind(l, r) ~ us + age + pyr", 
+    data.name = "hiv", factors = character(0), allvars = c("l", 
+    "r", "us", "age", "pyr"), whichisfactor = integer(0)), class = "mable_reg")
+
+mblaft<-
+structure(list(tau.n = 3057, tau = 5500, xNames = c("us", "age", 
+"pyr"), m = 12, mloglik = -213.949655803757, p = c(0.203561090211269, 
+2.95772257147688e-05, 2.06618228314583e-41, 0.122015840136179, 
+9.11094070082575e-16, 2.59320305614276e-139, 2.53932286576517e-301, 
+5.92878775009496e-323, 7.4109846876187e-323, 3.87879829356296e-239, 
+6.68133929194384e-122, 1.78021102344084e-41, 0.674393492426836
+), x0 = c(0, 72, 0), coefficients = c(0.541728912616348, 0.0153000121168958, 
+0.00380709596742248), egx0 = 3.00897916205085, SE = c(0.192601113353128, 
+0.00612355949928412, 0.00294024362578008), z = c(2.81269875955029, 
+2.49854878011465, 1.29482330445063), convergence = 0L, delta = 6.47917772766959e-08, 
+    model = "aft", callText = "cbind(l, r) ~ us + age + pyr", 
+    data.name = "hiv",  allvars = c("l", 
+    "r", "us", "age", "pyr")), class = "mable_reg")
+
 ```
 
 
-```{r}
-summary(aft.res)
-```
-```{r Breast-Cosmesis-Data-aft-plot, fig.align='center', fig.cap="AFT Model Fit for Breast Cosmesis Data", fig.width=7, fig.height=4, warning = FALSE}
-op <- par(mfrow = c(1,2), lwd = 1.5)
-plot(x = aft.res, which = "likelihood")
-plot(x = aft.res, y = data.frame(x = 0), which = "survival", type = "l", col = 1, 
-    main = "Survival Function")
-plot(x = aft.res, y = data.frame(x = 1), which = "survival", lty = 2, col = 1, add = TRUE)
-legend("bottomleft", bty = "n", lty = 1:2, col = 1, c("Radiation Only", 
-    "Radiation and Chemotherapy"), cex = .7)
-par(op)
-```
-Alternatively we can use \texttt{mable.reg()}.
-```{r results = "hide", eval=FALSE}
-aft.res1 <- mable.reg(cbind(left, right) ~ x, data = bcos2, 'aft', M = c(1, 30), 
-      g=.41, tau=100, x0=1)
+```{r HIV-infection-time-data-po, fig.dim=c(6, 6), fig.cap="Estimated survival functions for HIV infection time data with \\texttt{us}=0 and \\texttt{us}=1, and average values of \\texttt{age} and \\texttt{pyr}. MABLE PO model is compared with semiparametric PH model (upper-left), semiparametric PO model (upper-right), and MABLE AFT model (lower-right).\\label{fig:HIV-infection-time-data-po}"}
+newdata=data.frame(us=0:1,age=mean(hiv$age),pyr=mean(hiv$pyr))
+par(mfrow=c(2,2),lwd=1.5, cex=.7, mar=c(4,4,1,1), oma=c(0,0,3,1))
+# upper-left panel
+plot(c(0,3057), c(.6,1), type="n", xlab="Days", ylab="Probability")
+lines(phfit, y=newdata[1,], lty=3, col="brown")
+lines(phfit, y=newdata[2,], lty=4, col=4)
+plot(mblpo, y=newdata[1,], which="survival", add=TRUE, col=1, lty=1)
+plot(mblpo, y=newdata[2,], which="survival", add=TRUE, col=2, lty=2)
+legend("topright", lty=c(1:4), col=c(1:2,"brown",4), bty="n", 
+       legend=paste0(c("mable-po: us = ", "mable-po: us = ", 
+                       "semip-ph: us = ", "semip-ph: us = "),  c(rep(newdata$us,2))))
+# upper-right panel
+plot(c(0,3057), c(.6,1), type="n", xlab="Days", ylab="Probability")
+lines(pofit, y=newdata[1,], lty=3, col="brown")
+lines(pofit, y=newdata[2,], lty=4, col=4)
+plot(mblpo, y=newdata[1,], which="survival", add=TRUE, col=1, lty=1)
+plot(mblpo, y=newdata[2,], which="survival", add=TRUE, col=2, lty=2)
+legend("topright", lty=c(1:4), col=c(1:2,"brown",4), bty="n", 
+       legend=paste0(c("mable-po: us = ", "mable-po: us = ", 
+                       "semip-po: us = ", "semip-po: us = "),  c(rep(newdata$us,2))))
+# lower-left panel
+#newdata2=data.frame(us=mean(hiv$us),age=c(31,50),pyr=mean(hiv$pyr))
+plot(c(0,3057), c(.6,1), type="n", xlab="Days", ylab="Probability")
+plot(mblpo, y=newdata[1,], which="survival", add=TRUE, col=1, lty=1)
+plot(mblpo, y=newdata[2,], which="survival", add=TRUE, col=2, lty=2)
+plot(mblph, y=newdata[1,], which="survival", add=TRUE, col="brown", lty=3)
+plot(mblph, y=newdata[2,], which="survival", add=TRUE, col=4, lty=4)
+legend("topright", lty=1:4, col=c(1,2,"brown",4), bty="n", 
+       legend=paste0(c("mable-po: us = ", "mable-po: us = ", 
+                       "mable-ph: us = ", "mable-ph: us = "),  c(rep(newdata$us,2))))
+# lower-right panel
+plot(c(0,3057), c(.6,1), type="n", xlab="Days", ylab="Probability")
+plot(mblpo, y=newdata[1,], which="survival", add=TRUE, col=1, lty=1)
+plot(mblpo, y=newdata[2,], which="survival", add=TRUE, col=2, lty=2)
+plot(mblaft, y=newdata[1,], which="survival", add=TRUE, col="brown", lty=3)
+plot(mblaft, y=newdata[2,], which="survival", add=TRUE, col=4, lty=4)
+legend("topright", lty=1:4, col=c(1,2,"brown",4), bty="n", 
+       legend=paste0(c("mable-po: us = ", "mable-po: us = ", 
+                       "mable-aft: us = ", "mable-aft: us = "),  c(rep(newdata$us,2))))
+mtext("Survival Curves: Visited US or Not", side=3, line=1, outer=TRUE, cex=1, font=2)
+
 ```
 
 # Two-sample Data
-In addition to the PH and AFT regression models with single binary covariate, other two-sample semiparametric models can be estimated using the maximum approximate Bernstein/Beta likelihhod method.
+In addition to the AFT, PH and PO regression models with single binary covariate, other two-sample semiparametric models can be estimated using the maximum approximate Bernstein/Beta likelihood method.
 
 ## Density Ratio Model
 

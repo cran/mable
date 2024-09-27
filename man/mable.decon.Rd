@@ -122,7 +122,7 @@ Guan, Z., (2019) Fast Nonparametric Maximum Likelihood Density Deconvolution Usi
 doi:10.5705/ss.202018.0173
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Additive measurement error}
 \concept{Bernstein polynomial model}

@@ -8,8 +8,10 @@
 ################################################
 #          One-sample raw data
 ################################################
-#' Mable fit of one-sample raw data with an optimal or given degree.
-#' @param x a (non-empty) numeric vector of data values.
+#' Maximum Approximate Bernstein Likelihood Estimate
+#'  of Univariate or Multivariate Density Function
+#' @param x a (non-empty) numeric \code{n}-vector or \code{n x d} matrix or \code{data.frame}
+#'   of \code{n} observations.
 #' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1 = m},
 #'   then \code{m} is a preselected degree. If \code{m0<m1} it specifies the set of
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
@@ -80,8 +82,12 @@
 #' degree \eqn{m+1}, the maximum likelihood is increasing in \eqn{m}. The change-point method
 #' is used to choose an optimal degree \eqn{m}. The degree can also be chosen by a method of
 #' moment and a method of mode which are implemented by function \code{optimal()}.
-#' @author Zhong Guan <zguan@iusb.edu>
-#' @references Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
+#' @author Zhong Guan <zguan@iu.edu>
+#' @references 
+#'     Guan, Z. (2016) Efficient and robust density estimation using Bernstein type polynomials. \emph{Journal of Nonparametric Statistics}, 28(2):250-271.
+#'     Wang, T. and Guan, Z.,(2019) Bernstein Polynomial Model for Nonparametric Multivariate Density, Statistics,     
+#'             Vol. 53, no. 2, 321-338                        
+
 #' @seealso \code{\link{optimable}}
 #' @examples
 #' \donttest{
@@ -142,16 +148,19 @@
 #' @concept Bernstein polynomial model
 # @useDynLib mable, .registration = TRUE
 #' @export
-mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
+mable<-function(x, M, interval = 0:1, IC = c("none", "aic", "hqic", "all"),
         vb=0, controls = mable.ctrl(), progress = TRUE){
     IC <- match.arg(IC, several.ok = TRUE)
     n<-length(x)
     xName<-deparse(substitute(x))
-    a<-interval[1]
-    b<-interval[2]
-    if(a>=b) stop("Invalid 'interval'.")
-    x<-(x-a)/(b-a)
-    if(any(x<0) || any(x>1)) stop("All data must be contained in 'interval'.")
+    if(is.null(interval)) interval<-range(x)
+    else{
+        if(diff(interval)<=0 || any(x<interval[1]) || any(x>interval[2])){
+            message("Data are not all contained in 'interval'. Use data range as 'interval'.")
+            interval<-range(x)
+        }
+    }
+    x<-(x-interval[1])/diff(interval)
     convergent<-0
     del<-controls$eps
     eps<-c(controls$eps, .Machine$double.eps)
@@ -162,10 +171,11 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
         M<-c(min(M), max(M))
     }
     xbar<-mean(x); s2<-var(x); 
-    m0<-max(0,ceiling(xbar*(1-xbar)/s2-3)-2)
-    #if(M[1]<m0){
+    m0<-max(1,ceiling(xbar*(1-xbar)/s2-3)-2)
+    if(M[1]<m0){
     #  message("Replace M[1]=",M[1]," by the recommended ", m0,".")
-    #  M[1]=m0; M[2]=max(m0,M[2])}
+      M[1]=m0; M[2]= max(m0+M[2], m0+10)
+    }
     k<-M[2]-M[1]
     if(k>0 && k<=3){
       message("Too few candidate model degrees. Add 5 more.")
@@ -183,7 +193,7 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
           as.integer(m), as.integer(n), as.double(p), as.double(x), 
           as.integer(controls$maxit), as.double(controls$eps),  as.double(llik), 
           as.logical(convergent), as.double(del))
-        ans<-list(p=res[[3]], m=m, mloglik=res[[7]], interval=c(a,b), 
+        ans<-list(p=res[[3]], m=m, mloglik=res[[7]], interval=interval, 
         convergent=!res[[8]], del=res[[9]])
     }
     else{
@@ -220,7 +230,7 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
         }
         ans<-list(p=res[[3]][1:(m[1]+1)],
             m=m, mloglik=mloglik, lk=lk, lr=res[[8]][1:k], M=M,
-            interval=c(a,b), pval=res[[10]][1:(k+1)], ic=ic,
+            interval=interval, pval=res[[10]][1:(k+1)], ic=ic,
             chpts=res[[12]][1:(k+1)]+M[1], convergence=res[[15]], delta=res[[16]])
     }
     ans$xNames<-xName
@@ -228,6 +238,8 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
     class(ans)<-"mable"
     return(ans)
 }
+
+
 ################################################
 #        One-sample grouped data
 ################################################
@@ -295,7 +307,7 @@ mable<-function(x, M, interval = c(0,1), IC = c("none", "aic", "hqic", "all"),
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references Guan, Z. (2017) Bernstein polynomial model for grouped continuous data.
 #'         \emph{Journal of Nonparametric Statistics}, 29(4):831-848.
 #' @examples
@@ -418,6 +430,9 @@ mable.group<-function(x, breaks, M, interval=c(0, 1), IC=c("none", "aic", "hqic"
     class(ans)<-"mable"
     return(ans)
 }
+
+
+
 ###########################################################
 #'  check if sequence contains repeated subvector
 #' @keywords internal
@@ -446,7 +461,7 @@ repCheck <- function(x) {
 #' @param interval support/truncation interval
 #' @param del small positive number used to calculate density histogram at 0/1 
 #' @keywords internal
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @importFrom stats qnorm 
 # @importFrom ks kde 
 # @importFrom multimode locmodes 
@@ -515,7 +530,7 @@ ucl.fz<-function(x, z=NULL, nz=length(z), alpha=0.05, interval=c(0,1), del=1/len
 #'   \item \code{m}  the method of mode estimate of degree 
 #'   \item \code{lam} a vector of rough estimates of the mixing proportions 
 #'  }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @keywords internal
  
 momodem<-function(modes, x){
@@ -615,8 +630,8 @@ momodem<-function(modes, x){
 #' erupt2<-mable(x1, M=m1, interval=c(a[1],b[1])) 
 #' wait1<-mable(x2, M=mb[2],interval=c(a[2],b[2])) 
 #' wait2<-mable(x2, M=m2,interval=c(a[2],b[2])) 
-#' ans1<- mable.mvar(faithful, M = mb, search =FALSE, interval = cbind(a,b))
-#' ans2<- mable.mvar(faithful, M = c(m1,m2), search =FALSE, interval = cbind(a,b))
+#' ans1<- mable.mvar(faithful, M = mb, search =FALSE, method="em",  interval = cbind(a,b))
+#' ans2<- mable.mvar(faithful, M = c(m1,m2), search =FALSE, method="em", interval = cbind(a,b))
 #' op<-par(mfrow=c(1,2), cex=0.8)
 #' hist(x1, probability = TRUE, col="grey", border="white", main="", 
 #'       xlab="Eruptions", ylim=c(0,.65), las=1)
@@ -638,7 +653,7 @@ momodem<-function(modes, x){
 #' plot(ans2, which="cumulative", contour=TRUE, add=TRUE, lty=2, col=2)
 #' par(op)
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @export
 
 
@@ -776,7 +791,7 @@ optimable<-function(x, interval, m=NULL, mu=NULL, lam=NULL, modes=NULL, nmod=1,
 #'  function \eqn{F_m(x; p)} and its inverse, respectively, and \code{dmixbeta()}
 #'  returns a Bernstein polynomial \eqn{f_m(x; p)}. If components of \code{p} are not
 #'  all nonnegative or do not sum to one, warning message will be returned.
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references
 #' Bernstein, S.N. (1912), Demonstration du theoreme de Weierstrass fondee sur le calcul des probabilities,
 #' Communications of the Kharkov Mathematical Society, 13, 1–2.
@@ -806,11 +821,11 @@ dmixbeta<-function(x, p, interval=c(0, 1)){
     n<-length(x)
     a<-interval[1]
     b<-interval[2]
-    eps<-.Machine$double.eps^.25
+    eps<-.Machine$double.eps^.5
     if(a>=b) stop("a must be smaller than b")
     #if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p+eps^2<0) || abs(sum(p)-1)>eps) 
+    if(any(p+eps<0) || abs(sum(p)-1)>eps) 
       message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) y<-dunif(x, a, b)
@@ -829,11 +844,11 @@ pmixbeta<-function(x, p, interval=c(0, 1)){
     n<-length(x)
     a<-interval[1]
     b<-interval[2]
-    eps<-.Machine$double.eps^.25
+    eps<-.Machine$double.eps^.5
     if(a>=b) stop("a must be smaller than b")
     #if(any(x<a) || any(x>b)) stop("Argument 'x' must be in 'interval'.")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p+eps^2<0) || abs(sum(p)-1)>eps) 
+    if(any(p+eps<0) || abs(sum(p)-1)>eps) 
       message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) y<-punif(x, a, b)
@@ -854,11 +869,11 @@ pmixbeta<-function(x, p, interval=c(0, 1)){
 qmixbeta<-function(u, p, interval=c(0, 1)){
     a<-interval[1]
     b<-interval[2]
-    eps<-.Machine$double.eps^.25
+    eps<-.Machine$double.eps^.5
     if(a>=b) stop("a must be smaller than b")
     if(any(u<0) || any(u>1)) stop("Argument 'u' must be in [0,1].")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
-    if(any(p+eps^2<0) || abs(sum(p)-1)>eps)
+    if(any(p+eps<0) || abs(sum(p)-1)>eps)
       message("Components of 'p' are not all nonnegative or do not sum to 1.")
     m<-length(p)-1
     if(m==0) Q<-qunif(u, a, b)
@@ -881,11 +896,11 @@ qmixbeta<-function(u, p, interval=c(0, 1)){
 rmixbeta<-function(n, p, interval=c(0, 1)){
     a<-interval[1]
     b<-interval[2]
-    eps<-.Machine$double.eps^.25
+    eps<-.Machine$double.eps^.5
     if(a>=b) stop("a must be smaller than b")
     if(length(p)==0) stop("Missing mixture proportions 'p' without default.")
     if(any(p<0)) stop("Negative component(s) of argument 'p'is not allowed.")
-    if(any(p+eps^2<0) || abs(sum(p)-1)>eps){
+    if(any(p+eps<0) || abs(sum(p)-1)>eps){
         message("Sum of 'p's is not 1. Dividing 'p's by the total.")
         p<-p/sum(p)
     }
@@ -904,8 +919,9 @@ rmixbeta<-function(n, p, interval=c(0, 1)){
 ##############################################
 #' Plot mathod for class 'mable'
 ##############################################
-#' @param x  Class "mable" object return by \code{mablem}, \code{mable}, \code{mablem.group} or \code{mable.group} functions
-#'      which contains \code{p}, \code{mloglik}, and \code{M = m0:m1}, \code{lk}, \code{lr},
+#' @param x  Class "mable" object return by \code{mablem}, \code{mable}, \code{mable.mvar},
+#'     \code{mablem.group} or \code{mable.group} functions which contains \code{p}, 
+#'      \code{mloglik}, and \code{M = m0:m1}, \code{lk}, \code{lr},
 #' @param which indicates which graphs to plot, options are
 #'  "density", "cumulative", "likelihood", "change-point", "all". If not "all",
 #'  \code{which} can contain more than one options.
@@ -924,6 +940,7 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
   phat<-obj$p
   m<-obj$m
   dim<-length(m)
+  allarg<-as.list(match.call())
   if(dim>2) stop("There is no method to 'plot' the object.\n")
   support<-obj$interval
   if(is.null(lgd.x)) lgd.x="topright"
@@ -987,33 +1004,89 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
   else{
     a<-support[1,]
     b<-support[2,]
-    if(!any(which=="cumulative")&& !any(which=="density")&& !any(which=="all")){
+    if(is.null(obj$chpts) && !any(which=="cumulative")&& !any(which=="density")&& !any(which=="all")){
       cat("Only 'density' and 'cumulative' distribution can be plotted.\n")
       which<-"all"
     }
-    if(any(which=="all")) op<-par(mfrow=c(2,1))
+    if(any(which=="all")) {
+        add=FALSE
+        if(is.null(obj$chpts)) op<-par(mfrow=c(1,2))
+        else op<-par(mfrow=c(2,2))
+    }
+
+    if(!is.null(obj$chpts) &&(any(which=="likelihood")|| any(which=="all"))){
+      if(is.null(obj$lk)) message("Cannot plot 'likelihood'.")
+      if(!add) plot(obj$lk, type="p", xlab="k",ylab="Loglikelihood",
+          main="Loglikelihood")
+      else points(obj$lk, pch=1)
+      segments(obj$chpts[obj$khat], min(obj$lk), obj$chpts[obj$khat], obj$mloglik, lty=2, col=2)
+      axis(1, obj$chpts[obj$khat],  as.character(obj$chpts[obj$khat]))
+      out<-list(x=1:length(obj$lk), y=obj$lk)
+    }
+    if(!is.null(obj$chpts) &&(any(which=="change-point")||any(which=="all"))){
+      if(is.null(obj$lr)) message("Cannot plot 'likelihood ratios'.")
+      ymin<-min(obj$lr)
+      ymax<-max(obj$lr)
+      if(!add){
+        plot(obj$lr, type="p", xlab="k", ylim=c(ymin,ymax), ylab="Likelihood Ratio")
+        segments(obj$chpts[obj$khat], ymin, obj$chpts[obj$khat], ymax, lty=2, col=2)
+        axis(1, obj$chpts[obj$khat],  as.character(obj$chpts[obj$khat]), col=2)
+        title("LR of Change-Point")}
+      else{
+        points(obj$lr, ...)
+        segments(obj$chpts[obj$khat], ymin, obj$chpts[obj$khat], max(obj$lr), ...)
+        axis(1, obj$chpts[obj$khat],  as.character(obj$chpts[obj$khat]), ...)}
+      out<-list(x=1:length(obj$lr), y=obj$lr)
+    }
     if(any(which=="density")||any(which=="all")){
+      main<-ifelse(is.null(allarg$main), main<-expression(paste("MABLE ",hat(f))), allarg$main)
       fn<-function(x1, x2) dmixmvbeta(cbind(x1, x2), phat, m, interval=support)
       x1 <- seq(a[1], b[1], length= 40)
       x2 <- seq(a[2], b[2], length= 40)
-       z <- outer(x1, x2, fn)
-      if(contour) contour(x1, x2, z, add=add, main = expression(paste("MABLE ",hat(f))),
-        xlab = obj$xNames[1], ylab = obj$xNames[2],...)
+    
+      if(obj$data.type=="copula" && !is.null(obj$margin)){
+        fn<-function(x1, x2) {
+            y1<-dmixbeta(x1, obj$margin[[1]]$p, obj$margin[[1]]$interval)
+            y2<-dmixbeta(x2, obj$margin[[2]]$p, obj$margin[[2]]$interval)
+            x1<-pmixbeta(x1, obj$margin[[1]]$p, obj$margin[[1]]$interval)
+            x2<-pmixbeta(x2, obj$margin[[2]]$p, obj$margin[[2]]$interval)
+            dmixmvbeta(cbind(x1, x2), phat, m)*y1*y2
+            #dmixbetacopula(cbind(x1, x2), phat, m, N=obj$N)*y1*y2
+        }
+        x1 <- seq(obj$margin[[1]]$interval[1], obj$margin[[1]]$interval[2], length= 40)
+        x2 <- seq(obj$margin[[2]]$interval[1], obj$margin[[2]]$interval[2], length= 40)
+      }
+      z <- outer(x1, x2, fn)
+      if(contour) contour(x1, x2, z, add=add, xlab = obj$xNames[1], 
+        ylab = obj$xNames[2], ...)
       else persp(x1, x2, z, theta = 30, phi = 20, expand = 0.5, col = "lightblue",
-        ltheta = 90, shade = 0.1, ticktype = "detailed", main = expression(paste("MABLE ",hat(f))),
-        xlab = obj$xNames[1], ylab = obj$xNames[2], zlab = "Joint Density")
+        ltheta = 90, shade = 0.1, ticktype = "detailed", main = main,
+        xlab = obj$xNames[1], ylab = obj$xNames[2], 
+        zlab = ifelse(is.null(allarg$zlab),"Joint Density", allarg$zlab))
       out<-list(x1=x1,x2=x2,z=z)
     }
     if(any(which=="cumulative")||any(which=="all")){
+        main<-ifelse(is.null(allarg$main), expression(paste("MABLE ",hat(F))), main)
       fn<-function(x1, x2) pmixmvbeta(cbind(x1, x2), phat, m, interval=support)
       x1 <- seq(a[1], b[1], length= 40)
       x2 <- seq(a[2], b[2], length= 40)
+      
+      if(obj$data.type=="copula" && !is.null(obj$margin)){
+        fn<-function(x1, x2) {
+            x1<-pmixbeta(x1, obj$margin[[1]]$p, obj$margin[[1]]$interval)
+            x2<-pmixbeta(x2, obj$margin[[2]]$p, obj$margin[[2]]$interval)
+            pmixmvbeta(cbind(x1, x2), phat, m, interval=support)
+        }
+        x1 <- seq(obj$margin[[1]]$interval[1], obj$margin[[1]]$interval[2], length= 40)
+        x2 <- seq(obj$margin[[2]]$interval[1], obj$margin[[2]]$interval[2], length= 40)
+      }
       z  <- outer(x1, x2, fn)
-      if(contour) contour(x1, x2, z, add=add, main = expression(paste("MABLE ",hat(F))),
-        xlab = obj$xNames[1], ylab = obj$xNames[2],...)
+      if(contour) contour(x1, x2, z, add=add, xlab = obj$xNames[1], 
+            ylab = obj$xNames[2], ...)
       else persp(x1, x2, z, theta = 30, phi = 20, expand = 0.5, col = "lightblue",
-        ltheta = 90, shade = 0.1, ticktype = "detailed", main = expression(paste("MABLE ",hat(F))),
-        xlab = obj$xNames[1], ylab = obj$xNames[2], zlab = "Joint CDF")
+        ltheta = 90, shade = 0.1, ticktype = "detailed", main = main,
+        xlab = obj$xNames[1], ylab = obj$xNames[2], 
+        zlab = ifelse(is.null(allarg$zlab),"Joint CDF", allarg$zlab))
       out<-list(x1=x1,x2=x2,z=z)
     }
     if(any(which=="all")) par(op)
@@ -1038,10 +1111,8 @@ plot.mable<-function(x, which=c("density", "cumulative", "survival", "likelihood
 # }
 #' \donttest{
 #' ## Breast Cosmesis Data
-#'   bcos=cosmesis
-#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
-#'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=.41, 
-#'        tau=100, x0=1)
+#'   aft.res<-mable.aft(cbind(left, right)~treat, data=cosmesis, M=c(1, 30), g=.41, 
+#'        tau=100, x0=data.frame(treat="RCT"))
 #'   summary(aft.res)
 #' }
 #' @importFrom stats printCoefmat
@@ -1178,7 +1249,7 @@ optim.gcp<-function(obj){
 #' @param maxit.nt maximum number of Newton-Raphson iterations
 #' @param tini a small positive number used to make sure initial \code{p} 
 #'    is in the interior of the simplex
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @return a list of the arguments' values
 #' @export
 mable.ctrl<-function(sig.level=1.0e-2, eps = 1.0e-7, maxit = 5000L, eps.em = 1.0e-7, 

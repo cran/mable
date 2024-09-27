@@ -7,13 +7,12 @@
 mable.reg(
   formula,
   data,
-  model = c("ph", "aft"),
+  model = c("ph", "aft", "po"),
   M,
   g = NULL,
   pi0 = NULL,
   tau = Inf,
   x0 = NULL,
-  eta = 1,
   controls = mable.ctrl(),
   progress = TRUE
 )
@@ -21,7 +20,7 @@ mable.reg(
 \arguments{
 \item{formula}{regression formula. Response must be of the form \code{cbind(l, u)}.  See 'Details'.}
 
-\item{data}{a dataset}
+\item{data}{a data frame containing variables in \code{formula}.}
 
 \item{model}{the model to fit. Current options are "\code{ph}"
 (Cox PH) or "\code{aft}" (accelerated failure time model)}
@@ -34,9 +33,7 @@ mable.reg(
 
 \item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
-\item{x0}{a working baseline covariate. See 'Details'.}
-
-\item{eta}{the given positive value of \eqn{\eta}. Used when \code{model="po"}.}
+\item{x0}{a data frame containing working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}
@@ -47,7 +44,7 @@ and other control options. Default is \code{\link{mable.ctrl}}.}
 A 'mable_reg' class object
 }
 \description{
-Wrapping all code{mable} fit of regression models in one function.
+Wrapping all \code{mable} fit of regression models in one function.
 Using maximum approximate Bernstein/Beta likelihood
 estimation to fit semiparametric regression models: Cox ph model,
 proportional odds(po) model, accelerated failure time model, and so on.
@@ -61,10 +58,10 @@ For "\code{ph}"  model a missing initial guess of the regression coefficients
    \code{aftsrr()} as a right-censored data.
 }
 \seealso{
-\code{\link{mable.aft}}, \code{\link{mable.ph}}
+\code{\link{mable.aft}}, \code{\link{mable.ph}}, \code{\link{mable.po}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Cox proportional hazards model}
 \concept{accelerated failure time model}

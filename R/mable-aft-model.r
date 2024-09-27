@@ -19,8 +19,8 @@
 #' Mable fit of Accelerated Failure Time Model
 #' @description Maximum approximate Bernstein/Beta likelihood estimation for
 #' accelerated failure time model based on interval censored data.
-#' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
-#' @param data a dataset
+#' @param formula regression formula. Response must be \code{cbind}. See 'Details'.
+#' @param data a data frame containing variables in \code{formula}.
 #' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1 = m},  
 #'   then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
@@ -33,13 +33,17 @@
 #' @param tau the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the   
 #'   baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
 #'   then it is taken as a known value of \eqn{\tau}.  See 'Details'. 
-#' @param x0 a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'. 
+#' @param x0 a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+#' \eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x} and \eqn{x_0} may
+#' contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+#' contains only the values of terms excluding dummy variables and interaction terms 
+#' in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+#' the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}.   
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on a truncation interval \eqn{[0, \tau]} can be approximated by  
@@ -93,21 +97,20 @@
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references 
 #' Guan, Z. (2019) Maximum Approximate Likelihood Estimation in Accelerated Failure Time Model for Interval-Censored Data, 
 #' arXiv:1911.07087.
 #' @examples \donttest{
 #' ## Breast Cosmesis Data
-#'   bcos=cosmesis
-#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   g <- 0.41 #Hanson and  Johnson 2004, JCGS
-#'   aft.res<-mable.aft(cbind(left, right)~x, data=bcos2, M=c(1, 30), g=g, tau=100, x0=1)
+#'   aft.res<-mable.aft(cbind(left, right)~treat, data=cosmesis, M=c(1, 30), 
+#'               g=g, tau=100, x0=data.frame(treat="RCT"))
 #'   op<-par(mfrow=c(1,2), lwd=1.5)
 #'   plot(x=aft.res, which="likelihood")
-#'   plot(x=aft.res, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 
+#'   plot(x=aft.res, y=data.frame(treat="RT"), which="survival", model='aft', type="l", col=1, 
 #'       add=FALSE, main="Survival Function")
-#'   plot(x=aft.res, y=data.frame(x=1), which="survival", model='aft', lty=2, col=1)
+#'   plot(x=aft.res, y=data.frame(treat="RCT"), which="survival", model='aft', lty=2, col=1)
 #'   legend("bottomleft", bty="n", lty=1:2, col=1, c("Radiation Only", "Radiation and Chemotherapy"))
 #'   par(op)
 #' }
@@ -124,11 +127,36 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
   fmla<-Reduce(paste, deparse(formula))
   Dta<-get.mableData(formula, data)
   x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
+#  if(is.null(x0)) x0<-rep(0,d)
+  delta<-Dta$delta; n<-length(y)
+#   vars<-get.facMatrix(formula, data)
+#   allvars<-vars$allvars  # all variables 
+   allvars<-all.vars(formula)  # all variables 
+  if(!is.null(x0)){
+    if(length(x0)!=length(allvars)-2 || !is.data.frame(x0)){
+        message("Baseline 'x0' must be a dataframe with names matching the RHS of 'formula'.\n")
+        message("I will assign an 'x0' for you.\n")
+        x0<-NULL}
+    data0<-data.frame(cbind(0,1,x0))
+    names(data0)<-c(allvars[1:2], names(x0))
+    data1<-rbind(data[,names(data0)],data0)
+#    data1<-rbind(data[,allvars],data0)
+    Dta0<-get.mableData(formula, data1)
+    x0<-as.matrix(Dta0$x)[n+1,]
+  }
+  if(is.null(x0)){
+     for(i in 1:d) x0<-rep(0,length(allvars)-2)
+   }
   x<-as.matrix(x)
   d<-ncol(x)
-  n<-length(y)
-  if(is.null(x0)) x0<-rep(0,d)
-  delta<-Dta$delta
+#  n<-length(y)
+   if(is.null(g)){
+     g<-rep(0,d)
+    #g<--unname(coef(lm(log((y+min(y2,tau))/2)~ x))[-1])
+    #cat("glsq=",g,"\n")
+   }
+   else if(length(g)!=d) stop("Invalid argument 'g'.")
+
   b<-max(y2[y2<Inf], y);
   n0<-sum(delta==0)
   n1<-sum(delta==1)
@@ -138,12 +166,6 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
 ###
   i2<-(y2<Inf)
   xt<-t(t(x)-x0)
-  if(is.null(g)){
-    g<-rep(0,d)
-    #g<--unname(coef(lm(log((y+min(y2,tau))/2)~ x))[-1])
-    #cat("glsq=",g,"\n")
-  }
-  else if(length(g)!=d) stop("length of 'g' does not match number of covariates.")
   known.tau<-FALSE
   if(is.null(tau)){ 
     tau<-max((y2*exp(xt%*%g))[i2,],y*exp(xt%*%g))+1/n #???    
@@ -242,6 +264,10 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
   ans$model<-"aft"
   ans$callText<-fmla
   ans$data.name<-data.name
+#  ans$fmatrices<-vars[[1]]
+#  ans$factors<-vars$factors
+  ans$allvars<-allvars
+#  ans$whichisfactor<-vars$whichisfactor
   class(ans)<-"mable_reg"
   return(ans)
 }
@@ -251,7 +277,7 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
 ######################################################################################
 #' Mable fit of AFT model with given regression coefficients
 #' @param formula regression formula. Response must be \code{cbind}.  See 'Details'.
-#' @param data a dataset
+#' @param data a data frame containing variables in \code{formula}.
 #' @param M a positive integer or a vector \code{(m0, m1)}. If \code{M = m0} or \code{m0 = m1},  
 #'   then \code{m0} is a preselected degree. If \code{m0 < m1} it specifies the set of 
 #'   consective candidate model degrees \code{m0:m1} for searching an optimal degree,
@@ -262,7 +288,7 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
 #' @param tau the right endpoint of the support or truncation interval \eqn{[0,\tau)} of the   
 #'   baseline density. Default is \code{NULL} (unknown), otherwise if \code{tau} is given 
 #'   then it is taken as a known value of \eqn{\tau}.  See 'Details'. 
-#' @param x0 a working baseline covariate \eqn{x_0}, default is zero vector. See 'Details'. 
+#' @param x0 a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.
 #' @param controls Object of class \code{mable.ctrl()} specifying iteration limit 
 #' and other control options. Default is \code{\link{mable.ctrl}}.
 #' @param progress if \code{TRUE} a text progressbar is displayed
@@ -272,7 +298,11 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
 #'  estimates provided by other semiparametric methods. 
 #' @details
 #' Consider the accelerated failure time model with covariate for interval-censored failure time data: 
-#' \eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x_0} is a baseline covariate.   
+#' \eqn{S(t|x) = S(t \exp(\gamma^T(x-x_0))|x_0)}, where \eqn{x} and \eqn{x_0} may
+#' contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+#' contains only the values of terms excluding dummy variables and interaction terms 
+#' in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+#' the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}. 
 #'   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 #' functions of the event time given \eqn{X = x}, respectively.
 #' Then \eqn{f(t|x_0)} on a support or truncation interval \eqn{[0, \tau]} can be approximated by  
@@ -320,21 +350,20 @@ mable.aft<-function(formula, data, M, g=NULL, p=NULL, tau=NULL, x0=NULL,
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references 
 #' Guan, Z. (2019) Maximum Approximate Likelihood Estimation in Accelerated Failure Time Model for Interval-Censored Data, 
 #' arXiv:1911.07087.
 #' @examples \donttest{
 #' ## Breast Cosmesis Data
-#'   bcos=cosmesis
-#'   bcos2<-data.frame(bcos[,1:2], x=1*(bcos$treat=="RCT"))
 #'   g<-0.41 #Hanson and  Johnson 2004, JCGS, 
-#'   res1<-maple.aft(cbind(left, right)~x, data=bcos2, M=c(1,30),  g=g, tau=100, x0=1)
+#'   res1<-maple.aft(cbind(left, right)~treat, data=cosmesis, M=c(1,30),  g=g, 
+#'                tau=100, x0=data.frame(treat="RCT"))
 #'   op<-par(mfrow=c(1,2), lwd=1.5)
 #'   plot(x=res1, which="likelihood")
-#'   plot(x=res1, y=data.frame(x=0), which="survival", model='aft', type="l", col=1, 
+#'   plot(x=res1, y=data.frame(treat="RT"), which="survival", model='aft', type="l", col=1, 
 #'       add=FALSE, main="Survival Function")
-#'   plot(x=res1, y=data.frame(x=1), which="survival", model='aft', lty=2, col=1)
+#'   plot(x=res1, y=data.frame(treat="RCT"), which="survival", model='aft', lty=2, col=1)
 #'   legend("bottomleft", bty="n", lty=1:2, col=1, c("Radiation Only", "Radiation and Chemotherapy"))
 #'   par(op)
 #' }
@@ -347,19 +376,37 @@ maple.aft<-function(formula, data, M, g, tau=NULL, p=NULL, x0=NULL,
           controls = mable.ctrl(), progress=TRUE){
   data.name<-deparse(substitute(data)) 
   fmla<-Reduce(paste, deparse(formula))
+  if(missing(g)) stop("missing argument 'g'.")
+  d<-length(g)
   Dta<-get.mableData(formula, data)
   x<-Dta$x;  y<-Dta$y; y2<-Dta$y2
-  delta<-Dta$delta
-  if(is.null(x0)) x0<-rep(0,d)
+  delta<-Dta$delta; n<-length(y)
+#  if(is.null(x0)) x0<-rep(0,d)
+#  vars<-get.facMatrix(formula, data)
+#  allvars<-vars$allvars  # all variables 
+  allvars<-all.vars(formula)  # all variables 
+  if(!is.null(x0)){
+    if(length(x0)!=length(allvars)-2 || !is.data.frame(x0)){
+        message("Baseline 'x0' must be a dataframe with names matching the RHS of 'formula'.\n")
+        message("I will assign an 'x0' for you.\n")
+        x0<-NULL}
+    data0<-data.frame(cbind(0,1,x0))
+    names(data0)<-c(allvars[1:2], names(x0))
+    data1<-rbind(data[,names(data0)],data0)
+#    data1<-rbind(data[,allvars],data0)
+    Dta0<-get.mableData(formula, data1)
+    x0<-as.matrix(Dta0$x)[n+1,]
+  }
+  if(is.null(x0)){
+    x0<-rep(0,d)   
+  }
   b<-max(y2[y2<Inf], y);
   #if(b>tau) stop("tau must be greater than or equal to the maximum observed time")
   #y<-y/tau; y2<-y2/tau
-#    y2[y2==Inf]<-.Machine$double.xmax/2 
+  #y2[y2==Inf]<-.Machine$double.xmax/2 
   #y2[y2==Inf]<-1 # truncation interval is [0, tau)
   x<-as.matrix(x)
-  if(missing(g)) stop("missing arguement 'g'.")
-  d<-length(g)
-  if(d!=ncol(x)) stop("length of gamma and number of covariates do not match.")
+  if(d!=ncol(x)) stop("Invalid argument 'g'.")
 ###
   i2<-(y2<Inf)
   if(is.null(tau)) {
@@ -427,7 +474,12 @@ maple.aft<-function(formula, data, M, g, tau=NULL, p=NULL, x0=NULL,
   ans$model<-"aft"
   ans$callText<-fmla
   ans$data.name<-data.name
+#  ans$fmatrices<-vars[[1]]
+#  ans$factors<-vars$factors
+  ans$allvars<-allvars
+#  ans$whichisfactor<-vars$whichisfactor
   class(ans)<-"mable_reg"
   return(ans)
 }
+
 

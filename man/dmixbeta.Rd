@@ -80,7 +80,7 @@ Guan, Z. (2017) Bernstein polynomial model for grouped continuous data. \emph{Jo
 \code{\link{mable}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Bernstein polynomial model}
 \concept{Mixture beta distribution}

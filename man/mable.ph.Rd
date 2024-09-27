@@ -20,7 +20,7 @@ mable.ph(
 \arguments{
 \item{formula}{regression formula. Response must be \code{cbind}.  See 'Details'.}
 
-\item{data}{a dataset}
+\item{data}{a data frame containing variables in \code{formula}.}
 
 \item{M}{a positive integer or a vector \code{(m0, m1)}. If \code{M = m} or \code{m0 = m1},
 then \code{m0} is a preselected degree. If \code{m0<m1} it specifies the set of 
@@ -36,7 +36,7 @@ default is the uniform initial.}
 
 \item{tau}{right endpoint of support \eqn{[0, \tau)} must be greater than or equal to the maximum observed time}
 
-\item{x0}{a working baseline covariate. See 'Details'.}
+\item{x0}{a data frame specifying working baseline covariates on the right-hand-side of \code{formula}. See 'Details'.}
 
 \item{controls}{Object of class \code{mable.ctrl()} specifying iteration limit 
 and other control options. Default is \code{\link{mable.ctrl}}.}
@@ -78,7 +78,12 @@ based on interal censored event time data.
 }
 \details{
 Consider Cox's PH model with covariate for interval-censored failure time data: 
-\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0}.   
+\eqn{S(t|x) = S(t|x_0)^{\exp(\gamma^T(x-x_0))}}, where \eqn{x_0} satisfies \eqn{\gamma^T(x-x_0)\ge 0},
+where \eqn{x} and \eqn{x_0} may
+contain dummy variables and interaction terms.  The working baseline \code{x0} in arguments
+contains only the values of terms excluding dummy variables and interaction terms 
+in the right-hand-side of \code{formula}. Thus \code{g} is the initial guess of 
+the coefficients \eqn{\gamma} of \eqn{x-x_0} and could be longer than \code{x0}.   
   Let \eqn{f(t|x)} and \eqn{F(t|x) = 1-S(t|x)} be the density and cumulative distribution
 functions of the event time given \eqn{X = x}, respectively.
 Then \eqn{f(t|x_0)} on \eqn{[0, \tau_n]} can be approximated by  
@@ -114,7 +119,7 @@ This process takes longer than \code{\link{maple.ph}} to select an optimal degre
    ovarian2<-data.frame(age=ovarian$age, futime1=ovarian$futime, 
         futime2=futime2)
    ova<-mable.ph(cbind(futime1, futime2) ~ age, data = ovarian2, 
-        M=c(2,35), g=.16, x0=35)
+        M=c(2,35), g=.16, x0=data.frame(age=35))
    op<-par(mfrow=c(2,2))
    plot(ova, which = "likelihood")
    plot(ova, which = "change-point")
@@ -133,7 +138,7 @@ Statistics in Medicine. 2020; 1–21. https://doi.org/10.1002/sim.8801.
 \code{\link{maple.ph}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }
 \concept{Cox proportional hazards model}
 \concept{interval censoring}

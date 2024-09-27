@@ -16,7 +16,7 @@
 #' MABLE in Desnity Ratio Model
 #' @description  Maximum approximate Bernstein/Beta likelihood estimation in a
 #'   density ratio model based on two-sample raw data. 
-#' @param x,y  original two sample raw data, code{x}:"Control", \code{y}: "Case".
+#' @param x,y  original two sample raw data, \code{x}:"Control", \code{y}: "Case".
 #' @param M a positive integer or a vector \code{(m0, m1)}. 
 #' @param regr regressor vector function \eqn{r(x)=(1,r_1(x),...,r_d(x))} 
 #'     which returns n x (d+1) matrix, n=length(x)
@@ -65,7 +65,7 @@
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references Guan, Z., Maximum Approximate Bernstein Likelihood Estimation of 
 #'   Densities in a Two-sample Semiparametric Model
 #' @examples
@@ -169,7 +169,7 @@ mable.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
     res
 }
 
-
+ 
 ########################################################
 #  Bootstrap sd of coefficients in density ratio model #
 ########################################################
@@ -297,7 +297,7 @@ se.coef.dr<-function(obj, grouped=FALSE, B=500L, parallel=FALSE, ncore=NULL,
 
 #' Maximum approximate profile likelihood estimate of the density ratio model 
 #' @description Select optimal degree with a given regression coefficients. 
-#' @param x,y  original two sample raw data, code{x}:"Control", \code{y}: "Case".
+#' @param x,y  original two sample raw data, \code{x}:"Control", \code{y}: "Case".
 #' @param M a positive integer or a vector \code{(m0, m1)}. 
 #' @param regr regressor vector function \eqn{r(x)=(1,r_1(x),...,r_d(x))} 
 #'     which returns n x (d+1) matrix, n=length(x)
@@ -348,7 +348,7 @@ se.coef.dr<-function(obj, grouped=FALSE, B=500L, parallel=FALSE, ncore=NULL,
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references Guan, Z., Maximum Approximate Bernstein Likelihood Estimation of 
 #'   Densities in a Two-sample Semiparametric Model
 #' @importFrom stats binomial glm 
@@ -445,7 +445,7 @@ maple.dr<-function(x, y, M, regr, ..., interval = c(0,1), alpha=NULL, vb=0,
 #'   density ratio model based on two-sample grouped data.
 #' @param t cutpoints of class intervals
 #' @param n0,n1 frequencies of two sample data grouped by the classes 
-#'       specified by \code{t}. code{n0}:"Control", \code{n1}: "Case".
+#'       specified by \code{t}. \code{n0}:"Control", \code{n1}: "Case".
 #' @param M a positive integer or a vector \code{(m0, m1)}. 
 #' @param regr regressor vector function \eqn{r(x)=(1,r_1(x),...,r_d(x))} 
 #'     which returns n x (d+1) matrix, n=length(x)
@@ -568,7 +568,7 @@ mable.dr.group<-function(t, n0, n1, M, regr, ..., interval=c(0,1), alpha=NULL,
 #'   with a given regression coefficients. 
 #' @param t cutpoints of class intervals
 #' @param n0,n1 frequencies of two sample data grouped by the classes 
-#'       specified by \code{t}. code{n0}:"Control", \code{n1}: "Case".
+#'       specified by \code{t}. \code{n0}:"Control", \code{n1}: "Case".
 #' @param M a positive integer or a vector \code{(m0, m1)}. 
 #' @param regr regressor vector function \eqn{r(x)=(1,r_1(x),...,r_d(x))} 
 #'     which returns n x (d+1) matrix, n=length(x)
@@ -617,7 +617,7 @@ mable.dr.group<-function(t, n0, n1, M, regr, ..., interval=c(0,1), alpha=NULL,
 #'   \item \code{pval} the p-values of the change-point tests for choosing optimal model degree
 #'   \item \code{chpts} the change-points chosen with the given candidate model degrees
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references Guan, Z., Application of Bernstein Polynomial Model to Density 
 #'  and ROC Estimation in a Semiparametric Density Ratio Model
 #' @importFrom stats binomial glm 
@@ -733,7 +733,7 @@ maple.dr.group<-function(t, n0, n1, M, regr, ..., interval=c(0,1), alpha=NULL,
 #' function is \eqn{F_m(x; p) = \sum_{i=0}^m p_i B_{mi}[(x-a)/(b-a);alpha]}, where
 #' \eqn{B_{mi}(u ;alpha)}, \eqn{i = 0, 1, \ldots, m}, is the exponentially tilted 
 #'  beta cumulative distribution function with shapes \eqn{(i+1, m-i+1)}. 
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references Guan, Z., Application of Bernstein Polynomial Model to Density 
 #'  and ROC Estimation in a Semiparametric Density Ratio Model
 #' @keywords distribution  models  nonparametric  smooth

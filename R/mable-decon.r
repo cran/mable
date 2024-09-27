@@ -75,7 +75,7 @@
 #'      \item \code{bic} a matrix containing the Bayesian information criterion(s) at
 #'        \eqn{m \in \{m_0, \ldots, m_1\}} and \eqn{k \in \{k_0, \ldots, k_1\}}
 #' }
-#' @author Zhong Guan <zguan@iusb.edu>
+#' @author Zhong Guan <zguan@iu.edu>
 #' @references
 #' Guan, Z., (2019) Fast Nonparametric Maximum Likelihood Density Deconvolution Using Bernstein Polynomials, Statistica Sinica,
 #' doi:10.5705/ss.202018.0173
@@ -199,3 +199,4 @@ mable.decon<-function(y, gn=NULL, ...,  M, interval=c(0, 1),
     class(res) <- "mable"
     res
 }
+ 

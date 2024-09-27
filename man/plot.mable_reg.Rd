@@ -44,5 +44,5 @@ curve to be plotted.}
 Plot mathod for class 'mable_reg'
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }

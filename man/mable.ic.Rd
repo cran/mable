@@ -105,5 +105,5 @@ arXiv:1906.08882 .
 \code{\link{mable.group}}
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }

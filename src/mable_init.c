@@ -22,13 +22,35 @@ void mable_optim_group(int *M, int *N, double *p, double *t, int *n, int *maxit,
     double *pval, int *chpts, double *level, int *vb);
 void mable_approx(double *u, double *p, int *m, int *n, int *cdf);
 void rbeta_mi(int *n, int *m, int *w, double *v);
-void mable_mvar(int *M0, int *M, int *n, int *d, int *search, double *phat,  
-        int *mhat, double *x, int *maxit,  double *eps, double *lk, int *progress,   
-        int *conv, double *D, int *cdf, int *hd);
+
+void mable_m_mvar(int *M, int *n, int *d, double *phat, double *x, int *maxit,  
+        double *eps, double *lk, int *progress, int *conv,  int *hd);
+
+void mable_mvar(int *m, int *M, int *n, int *d, double *phat, double *x,  
+      int *maxit,  double *eps, double *level, double *pval, double *lk, 
+      double *lr, int *chpts, int *progress, int *conv,  int *hd);
+
+void mable_m_cd(int *M, int *n, int *d, double *phat, double *x, int *maxit,  
+        double *eps, double *lk);
+
+void mable_cd(int *m, int *M, int *n, int *d, double *phat, double *x,  
+      int *maxit,  double *eps, double *level, double *pval, double *lk, 
+      double *lr, int *chpts, int *progress);
+
+void made_m_cd(int *m, int *n, int *d, double *alpha, double *x, double *Fn, 
+      int *maxit, double *eps, double *Dn);
+
+void made_cd(int *m, int *M, int *n, int *d, double *phat, double *x, double *Fn,  
+      int *maxit, double *eps, double *level, double *pval, double *Dn, 
+      double *lr, int *chpts, int *progress);
+
 void mable_mvdf(int *d, int *m, int *km, int *n, double *t, double *p, 
             double *mvdf, int *density);
 void optim_gcp(int *M, double *lk, double *lr, int *m, double *pval, int *chpts);
-
+void mable_copula(int *M, int *n, int *d, int *search, double *phat, int *mhat, 
+      double *x, int *maxit,  double *eps, double *level, double *pval,  
+      double *lk, double *lr, int *chpts, int *progress, int *conv,  int *hd);
+      
 static R_NativePrimitiveArgType em_t[] = {
     INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, LGLSXP, REALSXP};
 static R_NativePrimitiveArgType em_group_t[] = {
@@ -42,13 +64,36 @@ static R_NativePrimitiveArgType optim_group_t[] = {
 static R_NativePrimitiveArgType approx_t[] = {
     REALSXP, REALSXP, INTSXP, INTSXP, LGLSXP};
 static R_NativePrimitiveArgType rbeta_t[] = {INTSXP, INTSXP, INTSXP, REALSXP};
+
+static R_NativePrimitiveArgType m_mvar_t[] = {
+    INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, LGLSXP,
+    INTSXP, LGLSXP};
+
 static R_NativePrimitiveArgType mvar_t[] = {
-    INTSXP, INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,  
-    REALSXP, REALSXP, LGLSXP, INTSXP, REALSXP, LGLSXP, LGLSXP};
+    INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP,  
+    REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, LGLSXP};
+
+static R_NativePrimitiveArgType m_cd_t[] = {
+    INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP};
+
+static R_NativePrimitiveArgType cd_t[] = {
+    INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, INTSXP,  
+    REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP};
+
+static R_NativePrimitiveArgType made_m_cd_t[] = {
+    INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP, REALSXP};
+
+static R_NativePrimitiveArgType made_cd_t[] = {
+    INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP,  
+    REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP};
+
 static R_NativePrimitiveArgType mvdf_t[] = {
     INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP, LGLSXP};
 static R_NativePrimitiveArgType gcp_t[] = {
     INTSXP, REALSXP, REALSXP, INTSXP, REALSXP, INTSXP};
+static R_NativePrimitiveArgType copula_t[] = {
+    INTSXP, INTSXP, INTSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,  
+    REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, LGLSXP};
 
 /* PH Regression */
 void mable_ph(int *M, double *gama_hat, int *dm, double *p, double *pi0, 
@@ -105,37 +150,37 @@ static R_NativePrimitiveArgType aft_gamma_t[] = {
     REALSXP, REALSXP, INTSXP, LGLSXP, REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, LGLSXP};
 
 /* GPO Regression */
-/*
-void mable_po(int *M, double *gama_hat, int *dm, double *p, double *pi0, 
+
+void mable_po(int *M, double *gama_hat, int *dm, double *p, 
     double *x, double *y, double *y2, int *N, double *x0, double *lk, double *lr,
     double *ddell, double *EPS, int *MAXIT, int *progress, double *level,
     double *pval, int *chpts, int *conv, double *eta, int *eta_known);
-void mable_po_gamma(int *M, double *gama, int *dm, double *pi0, double *x, 
+void mable_po_gamma(int *M, double *gama, int *dm, double *x, 
     double *y, double *y2, int *N, double *x0, double *lk, double *lr, double *p,
     double *ddell, double *eps, int *maxit, int *progress, double *level, 
     double *pval, int *chpts, int *conv, double *delta, double *eta);
 void mable_po_m(double *gama, double *p, int *dm, double *x, double *y, 
     double *y2, int *N, double *x0, double *ell, double *ddell, double *EPS, 
-    int *MAXIT, int *progress, int *conv, double *delta, double *eta, int *eta_known);
+    int *MAXIT, int *progress, int *conv, double *delta, double *eta, int *eta_known, int *method);
 void weib_gpo(double *theta, int *d, double *x, int *n0, int *n1, double *y,     
     double *y2, double *lk, double *ddell, double *eps, int *maxit, int *prog, 
     int *conv, double *delta, int *eta_known);
 
 static R_NativePrimitiveArgType po_t[] = {
-    INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, 
+    INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, 
     INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, 
     REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, LGLSXP};
 static R_NativePrimitiveArgType po_gamma_t[] = {
-    INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, 
+    INTSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, 
     REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, 
     REALSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP};
 static R_NativePrimitiveArgType po_m_t[] = {
     REALSXP, REALSXP, INTSXP, REALSXP, REALSXP, REALSXP, INTSXP, REALSXP,
-    REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, REALSXP, LGLSXP};
+    REALSXP, REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, REALSXP, LGLSXP, INTSXP};
 static R_NativePrimitiveArgType weib_gpo_t[] = {
     REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, REALSXP, REALSXP, REALSXP,  
     REALSXP, REALSXP, INTSXP, LGLSXP, INTSXP, REALSXP, LGLSXP};
-*/
+
 
 /* Register .C */
 static const R_CMethodDef cMethods[] = {
@@ -145,9 +190,15 @@ static const R_CMethodDef cMethods[] = {
    {"mable_optim_group", (DL_FUNC) &mable_optim_group, 19, optim_group_t},
    {"mable_approx", (DL_FUNC) &mable_approx, 5, approx_t},
    {"rbeta_mi", (DL_FUNC) &rbeta_mi, 4, rbeta_t},
+   {"mable_m_mvar", (DL_FUNC) &mable_m_mvar, 11, m_mvar_t},
    {"mable_mvar", (DL_FUNC) &mable_mvar, 16, mvar_t},
+   {"mable_m_cd", (DL_FUNC) &mable_m_cd, 8, m_cd_t},
+   {"mable_cd", (DL_FUNC) &mable_cd, 14, cd_t},
+   {"made_m_cd", (DL_FUNC) &made_m_cd, 9, made_m_cd_t},
+   {"made_cd", (DL_FUNC) &made_cd, 15, made_cd_t},
    {"mable_mvdf", (DL_FUNC) &mable_mvdf, 8, mvdf_t},
    {"optim_gcp", (DL_FUNC) &optim_gcp, 6, gcp_t},
+   {"mable_copula", (DL_FUNC) &mable_copula, 17, copula_t},
    {"mable_ph", (DL_FUNC) &mable_ph, 20, ph_t},
    {"mable_ph_gamma", (DL_FUNC) &mable_ph_gamma, 21, ph_gamma_t},
    {"mable_ph_m", (DL_FUNC) &mable_ph_m, 15, ph_m_t},
@@ -155,10 +206,10 @@ static const R_CMethodDef cMethods[] = {
    {"mable_aft", (DL_FUNC) &mable_aft, 21, aft_t},
    {"mable_aft_m", (DL_FUNC) &mable_aft_m, 18, aft_m_t},
    {"mable_aft_gamma", (DL_FUNC) &mable_aft_gamma, 22, aft_gamma_t},
-//   {"mable_po", (DL_FUNC) &mable_po, 22, po_t},
-//   {"mable_po_gamma", (DL_FUNC) &mable_po_gamma, 22, po_gamma_t},
-//   {"mable_po_m", (DL_FUNC) &mable_po_m, 17, po_m_t},
-//   {"weib_gpo", (DL_FUNC) &weib_gpo, 15, weib_gpo_t},
+   {"mable_po", (DL_FUNC) &mable_po, 21, po_t},
+   {"mable_po_gamma", (DL_FUNC) &mable_po_gamma, 21, po_gamma_t},
+   {"mable_po_m", (DL_FUNC) &mable_po_m, 18, po_m_t},
+   {"weib_gpo", (DL_FUNC) &weib_gpo, 15, weib_gpo_t},
    {NULL, NULL, 0, NULL}
 };
 /* Deconvolution*/
@@ -173,7 +224,6 @@ SEXP C_mable_dr_group(SEXP args);
 SEXP maple_dr_group(SEXP args);
 SEXP mixtbeta_cdf(SEXP args);
 /* Integrate */
-//SEXP C_integrate_ibp(SEXP args);
 
 /* Register .External */
 static const R_ExternalMethodDef externalMethods[] = {
@@ -184,7 +234,6 @@ static const R_ExternalMethodDef externalMethods[] = {
    {"maple_dr", (DL_FUNC) &maple_dr, 19},
    {"maple_dr_group", (DL_FUNC) &maple_dr_group, 19},
    {"mixtbeta_cdf", (DL_FUNC) &mixtbeta_cdf, 8},
-//   {"C_integrate_ibp", (DL_FUNC) &C_integrate_ibp, 6},
    {NULL, NULL, 0}
 };
 

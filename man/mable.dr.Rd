@@ -20,7 +20,7 @@ mable.dr(
 )
 }
 \arguments{
-\item{x, y}{original two sample raw data, code{x}:"Control", \code{y}: "Case".}
+\item{x, y}{original two sample raw data, \code{x}:"Control", \code{y}: "Case".}
 
 \item{M}{a positive integer or a vector \code{(m0, m1)}.}
 
@@ -108,5 +108,5 @@ Guan, Z., Maximum Approximate Bernstein Likelihood Estimation of
   Densities in a Two-sample Semiparametric Model
 }
 \author{
-Zhong Guan <zguan@iusb.edu>
+Zhong Guan <zguan@iu.edu>
 }

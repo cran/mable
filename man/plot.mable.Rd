@@ -16,8 +16,9 @@
 )
 }
 \arguments{
-\item{x}{Class "mable" object return by \code{mablem}, \code{mable}, \code{mablem.group} or \code{mable.group} functions
-which contains \code{p}, \code{mloglik}, and \code{M = m0:m1}, \code{lk}, \code{lr},}
+\item{x}{Class "mable" object return by \code{mablem}, \code{mable}, \code{mable.mvar},
+\code{mablem.group} or \code{mable.group} functions which contains \code{p}, 
+ \code{mloglik}, and \code{M = m0:m1}, \code{lk}, \code{lr},}
 
 \item{which}{indicates which graphs to plot, options are
 "density", "cumulative", "likelihood", "change-point", "all". If not "all",
