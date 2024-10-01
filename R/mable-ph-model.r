@@ -678,17 +678,17 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
     tau.n<-x$tau.n
     tau<-x$tau
 
-#    ellipsis<-dots_list(...)
-#    if(is.null(ellipsis$col)) cl<-1:nr
-#    else if(length(ellipsis$col)<nr) cl<-1:nr
-#    else cl<-ellipsis$col
-#    if(is.null(ellipsis$lty)) lt<-1:nr
-#    else if(length(ellipsis$lty)<nr) lt<-1:nr
-#    else lt<-ellipsis$lty
-    ddd<-dots_list(...)
-    if(length(ddd$col)<nr) ddd$col<-1:nr
-    if(length(ddd$lty)<nr) ddd$lty<-1:nr
-    if(is.null(ddd$xlim)) ddd$xlim<-c(0,min(tau.n,tau))
+    ellipsis<-dots_list(...)
+    if(is.null(ellipsis$col)) cl<-1:nr
+    else if(length(ellipsis$col)<nr) cl<-1:nr
+    else cl<-ellipsis$col
+    if(is.null(ellipsis$lty)) lt<-1:nr
+    else if(length(ellipsis$lty)<nr) lt<-1:nr
+    else lt<-ellipsis$lty
+#    ddd<-dots_list(...)
+#    if(length(ddd$col)<nr) ddd$col<-1:nr
+#    if(length(ddd$lty)<nr) ddd$lty<-1:nr
+#    if(is.null(ddd$xlim)) ddd$xlim<-c(0,min(tau.n,tau))
 #    if(!("xlim" %in% names(ellipsis))) ellipsis$xlim<-c(0,min(tau.n,tau))
     
     
@@ -730,13 +730,13 @@ plot.mable_reg<-function(x, y, newdata =NULL, ntime=512, xlab="Time",
       if(any(which=="density")||any(which=="all"))
         if(!add && i==1) 
           plot(time, fbx, xlab=xlab, ylab="Density", ...)
-        #else lines(time, fbx, xlab=xlab, ylab="Density",  col=cl[i], lty=lt[i])
-        #else lines(time, fbx, xlab=xlab, ylab="Density",  unlist(ddd))
+        else lines(time, fbx, xlab=xlab, ylab="Density",  col=cl[i], lty=lt[i])
+#        else lines(time, fbx, xlab=xlab, ylab="Density",  unlist(ddd))
       if(any(which=="survival")||any(which=="all")) # default is "survival" for plotting "all" 
         if(!add && i==1) 
           plot(time, Sbx, xlab=xlab, ylab="Probability",  ylim=c(0,1), ...)
-        #else lines(time, Sbx, xlab=xlab, ylab="Probability", col=cl[i], lty=lt[i])  
-        #else lines(time, Sbx, xlab=xlab, ylab="Probability", unlist(ddd))  
+        else lines(time, Sbx, xlab=xlab, ylab="Probability", col=cl[i], lty=lt[i])  
+#        else lines(time, Sbx, xlab=xlab, ylab="Probability", unlist(ddd))  
     }
   }
 }

@@ -1,4 +1,4 @@
-6a303f327a90b84ca4ce2b450e9b06cd *DESCRIPTION
+2829067828e3bcae93718c7301df8171 *DESCRIPTION
 82b7f87c392250221a65cf855b8fd512 *NAMESPACE
 9adb2a3eb3219c417f1391c075768d1a *R/Vaal-Flow.r
 c333926036958f19721119f5a8428be3 *R/bivariate-copula.r
@@ -9,7 +9,7 @@ ef3eb20396d0d6a3d1c72df4cce025df *R/cosmesis-data.r
 b390e035a7efd72d36fc597f0c274221 *R/mable-decon.r
 69935a377f6511d7d91f39cfb537595a *R/mable-dr.r
 2be7692c4412dc7ae01094a9f1874419 *R/mable-multivar.r
-95c1b9d8eb40deb5926827171a40c233 *R/mable-ph-model.r
+9ee5a881ce5d4d9cc35898736a7d49a3 *R/mable-ph-model.r
 ee05cd5cd19b5350c32f71aabcd4873e *R/mable-po-model.r
 c789250c1254a9a5d36f513b4c54d01a *R/mable.r
 90c97fc7c18e10b25e4274938a4dd5d5 *R/made.r
@@ -73,4 +73,4 @@ af3558182bbd8c674d11212d202cb2a2 *man/umc.mat.Rd
 d7e49c50a655b0e3b73b73c1fc8e03fd *src/mable_init.c
 9f25f232a69a2c7953cfb618254b0e6a *vignettes/bernstein.bib
 75ca26576cf83d7ec5b038465cabc2e6 *vignettes/mable.Rmd
-2968554ac9238103733ceafc9251c695 *vignettes/mable.html
+8dddfe507e5abe190ab4c0a7acbdc66b *vignettes/mable.html
